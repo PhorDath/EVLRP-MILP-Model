@@ -2153,5 +2153,22 @@ float Model::getCT()
 
 float Model::dist(node a, node b)
 {
-	return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
+	if(inst->type == 0 || inst->type == 1)
+		return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
+	else if (inst->type == 2) {
+		return distEdges(a.key, b.key);
+	}
+}
+
+float Model::distEdges(int a, int b)
+{
+	float dist = 0;
+	
+	for (edge e : inst->edges) {
+		if (e.beg == a && e.end == b) {
+			return e.value;
+		}
+	}
+	cout << "Error edge not found between nodes " << a << " and " << b << endl;
+	return -1;
 }

@@ -126,6 +126,7 @@ private:
 	float	getS	(int key); // get service time of a node
 	float	getCT	();
 	float	dist	(node a, node b); // distance between points
+	float	distEdges(int a, int b); // get the distance between two nodes on the edge list
 	vector<node> vectorUnion	(vector<node> a, vector<node> b); // union between two vectors of nodes, the vectors are trated as sets
 	vector<node> vectorSub		(vector<node> a, vector<node> b);
 

@@ -212,6 +212,7 @@ void instance::readInstace()
 
 void instance::readPaz()
 {
+	type = 0;
 	fstream file;
 	file.open(dir + fileName, ios::in);
 	if (file.is_open() == false) {
@@ -326,6 +327,7 @@ void instance::readPaz()
 
 void instance::readprplib()
 {
+	type = 2;
 	fstream file;
 	file.open(dir + fileName, ios::in);
 	if (file.is_open() == false) {
@@ -348,7 +350,10 @@ void instance::readprplib()
 			file >> m.at(i).at(j);
 		}
 	}
-	
+	// create a vector of edges to becames easier to get distances in this type of instance
+	createEdgesVector();
+
+
 	// read depot node
 	node a;
 	a.type = "d";
@@ -445,6 +450,21 @@ vector<node> instance::removeNodesByIndex(vector<node> customers, set<int> ind)
 
 void instance::rearrangeDMatrix(vector<vector<float>>& m)
 {
+
+}
+
+// use the distance matrix to create the edges vector
+void instance::createEdgesVector()
+{
+	for (int i = 0; i < distanceMatrix.size(); i++) {
+		for (int j = 0; j < distanceMatrix.at(i).size(); j++) {
+			edge e;
+			e.beg = i;
+			e.end = j;
+			e.value = distanceMatrix.at(i).at(j);
+			this->edges.push_back(e);
+		}
+	}
 }
 
 void instance::printNode(node i)
@@ -454,6 +474,7 @@ void instance::printNode(node i)
 
 void instance::readSSG14()
 {
+	type = 1;
 	// source: https://akrzemi1.wordpress.com/2011/07/13/parsing-xml-with-boost/
 
 	// populate tree structure pt

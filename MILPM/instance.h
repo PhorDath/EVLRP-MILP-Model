@@ -23,7 +23,7 @@ struct node{
 };
 
 struct edge {
-	int b, e;
+	int beg, end;
 	float value;
 };
 
@@ -33,6 +33,7 @@ class instance
 {
 public:
 	string dir, fileName;
+	int type = 0; // store the type of instance that was opened
 	vector<node> nodes;
 	int numD = 0;
 	int numF = 0;
@@ -75,6 +76,7 @@ public:
 	vector<node> chooseStationsLocation(vector<node> &customers);
 	vector<node> removeNodesByIndex(vector<node> customers, set<int> ind);
 	void rearrangeDMatrix(vector<vector<float>> &m);
+	void createEdgesVector();
 	void printNode(node n);
 
 public:
