@@ -9,6 +9,9 @@ using namespace std;
 const string dir1 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/MDEVLRPTW-BSPR/Instances/";
 const string dir2 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/SSG14/";
 const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
+const string file1 = "c101C5.txt";
+const string file2 = "c101_21.xml";
+const string file3 = "UK10_01.txt";
 
 const string curDir = dir2;
 const int MAX = 10000;
@@ -248,6 +251,9 @@ string menuInstance() {
 }
 
 int main() {
+
+	instance j(dir1, file1, 0);
+	j.test();
 
 	instance i(dir3, "UK10_01.txt", 2);
 	i.test();

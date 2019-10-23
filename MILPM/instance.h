@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <set>
 #include <random>
+#include <iomanip>
 
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -19,7 +20,7 @@ struct node{
 	string id, type;
 	int x, y, demand, readyTime, dueDate, serviceTime;
 	int ref, ref2;
-	int id_n; // model's id parameter 
+	int id_n = -1; // model's id parameter 
 };
 
 struct edge {

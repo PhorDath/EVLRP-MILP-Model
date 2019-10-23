@@ -172,15 +172,22 @@ vector<node> instance::sortSet(vector<node> set)
 
 void instance::print()
 {
-	cout << numD << " " << numF << " " << numC << endl;
+	cout << "\nData in " << fileName << " \n\n";
+	cout << "Number of depots        : " << numD << endl;
+	cout << "Number of stations      : " << numF << endl;
+	cout << "Number of clients       : " << numC << endl;
+	cout << endl;
+	cout << "Battery capacity        : " << Q << endl;
+	cout << "Vehicle load capacity   : " << C << endl;
+	cout << "Energy consumption rate : " << r << endl;
+	cout << "Recharging rate         : " << g << endl;
+	cout << "Speed                   : " << v << endl;
+	cout << endl;
+	cout << setw(3) << "key" << setw(16) << "id" << setw(15) << "type" << setw(6) << "x" << setw(6) << "y" << setw(6) << "dem" << setw(6) << "rTime" << setw(6) << "dDate" << setw(6) << "sTime" << setw(6) << "ref" << setw(6) << "ref2" << setw(6) << "id_n" << endl;
 	for (auto i : nodes) {
-		cout << i.key << " " << i.id << " " << i.type << " " << i.x << " " << i.y << " " << i.demand << " " << i.readyTime << " " << i.dueDate << " " << i.serviceTime << " " << i.ref << " " << i.id_n << endl;
+		cout << setw(3) << i.key << setw(25) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(6) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ref << setw(6) << i.ref2 << setw(6) << i.id_n << endl;
 	}
-	cout << Q << endl;
-	cout << C << endl;
-	cout << r << endl;
-	cout << g << endl;
-	cout << v << endl;
+
 
 	/*
 	cout << "Set: \n";
@@ -353,31 +360,71 @@ void instance::readprplib()
 	// create a vector of edges to becames easier to get distances in this type of instance
 	createEdgesVector();
 
-
 	// read depot node
 	node a;
 	a.type = "d";
 	a.x = -1;
 	a.y = -1;
-	a.ref = 0;
-	a.ref2 = 0;
+	a.id_n = 1;
 	file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
 	this->nodes.push_back(a);
 
+	// create the duplicated depot node as a siting place
+	a.type = "r";
+	a.id_n = -1;
+	nodes.push_back(a);
+
 	// read customers nodes
-	vector<node> customersNodes;
+	vector<node> customers;
 	for (int i = 0; i < numC; i++) {
 		a.type = "c";
 		file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
-		customersNodes.push_back(a);
+		customers.push_back(a);
 	}
-	numC = customersNodes.size();
+	numC = customers.size();
 	
 	// create the nodes of stations with selected customers. the customersNodes is modified without the stations
-	vector<node> stations = chooseStationsLocation(customersNodes);
+	vector<node> stations = chooseStationsLocation(customers);
 
-	
+	// insert the stations nodes
+	nodes.insert(nodes.end(), stations.begin(), stations.end());
+	// insert the customers nodes
+	nodes.insert(nodes.end(), customers.begin(), customers.end());
+
+	// adding depot arrival nodes
+	for (auto i : nodes) {
+		if (i.type == "d") {
+			i.ref2 = i.key; // modification
+			i.type = "a";
+			nodes.push_back(i);
+		}		
+	}
+
+	// organize intial nodes key
+	for (int i = 0; i < nodes.size(); i++) {
+		nodes.at(i).key = i;
+		nodes.at(i).ref = -1;
+		nodes.at(i).ref2 = i;
+		//nodes.at(i).id_n = i;
+	}
+
 	addDummyNodes();
+
+	// get number of clients, depots and stations
+	numC = 0;
+	numD = 0;
+	numF = 0;
+	for (node n : nodes) {
+		if (n.type == "d") {
+			numD++;
+		}
+		else if (n.type == "f") {
+			numF++;
+		}
+		else if (n.type == "c") {
+			numC++;
+		}
+	}
 
 	Q = 80; // The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40].
 
@@ -409,7 +456,7 @@ void instance::addDummyNodes()
 vector<node> instance::chooseStationsLocation(vector<node> &customers)
 {
 	set <int, less <int> > cStations;
-	int num = (alfa * numC); // number of stations
+	float num = ceil(alfa * numC); // number of stations
 
 	// select the customers node that will become stations sites
 	default_random_engine generator;
@@ -425,6 +472,7 @@ vector<node> instance::chooseStationsLocation(vector<node> &customers)
 		for (int i : cStations) {
 			if (i == n.key) {
 				n.type = "r";
+				stations.push_back(n);
 			}
 		}
 	}
@@ -438,14 +486,19 @@ vector<node> instance::chooseStationsLocation(vector<node> &customers)
 // receive a vector nodes and a set of indexes, then remove all nodes with the indexes in the index set
 vector<node> instance::removeNodesByIndex(vector<node> customers, set<int> ind)
 {
-	for (int i : ind) {
-		for (node j : customers) {
-			if (i == j.key) {
-				remove(customers.begin(), customers.end(), j);
+	vector<node> n;
+	for (int j = 0; j < customers.size(); j++) {
+		bool isin = false;
+		for (int i : ind) {
+			if (i == customers.at(j).key) {
+				isin = true;
 			}
 		}
+		if (isin == false) {
+			n.push_back(customers.at(j));
+		}
 	}
-	return customers;
+	return n;
 }
 
 void instance::rearrangeDMatrix(vector<vector<float>>& m)
