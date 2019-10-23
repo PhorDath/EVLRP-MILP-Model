@@ -349,28 +349,28 @@ void instance::readprplib()
 		}
 	}
 	
+	// read depot node
 	node a;
 	a.type = "d";
 	a.x = -1;
 	a.y = -1;
+	a.ref = 0;
+	a.ref2 = 0;
 	file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
 	this->nodes.push_back(a);
-	printNode(a);
 
-	float alfa = 0.2;
-	for (int i = 1; i < numC * alfa; i++) {
-		a.type = "r";
-		file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
-		this->nodes.push_back(a);
-		cout << "node: ";
-		printNode(a);
-	}
-
-	for (int i = alfa * numC; i < numC; i++) {
+	// read customers nodes
+	vector<node> customersNodes;
+	for (int i = 0; i < numC; i++) {
 		a.type = "c";
 		file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
-		this->nodes.push_back(a);
+		customersNodes.push_back(a);
 	}
+	numC = customersNodes.size();
+	
+	// create the nodes of stations with selected customers. the customersNodes is modified without the stations
+	vector<node> stations = chooseStationsLocation(customersNodes);
+
 	
 	addDummyNodes();
 
@@ -398,6 +398,53 @@ void instance::addDummyNodes()
 			}
 		}
 	}
+}
+
+//  this function receives the vector with all customers nodes and return the nodes choosen to be stations sites, the original vector with customers is modified without those nodes
+vector<node> instance::chooseStationsLocation(vector<node> &customers)
+{
+	set <int, less <int> > cStations;
+	int num = (alfa * numC); // number of stations
+
+	// select the customers node that will become stations sites
+	default_random_engine generator;
+	uniform_int_distribution<int> distribution(0, numC);
+	while (cStations.size() < num) {
+		int s = distribution(generator);
+		cStations.insert(s);
+	}
+
+	// create a vector only with the selected customers to turn then into stations
+	vector<node> stations;
+	for (node n : customers) {
+		for (int i : cStations) {
+			if (i == n.key) {
+				n.type = "r";
+			}
+		}
+	}
+
+	// remove the selecteds customers from the customer vector
+	customers = removeNodesByIndex(customers, cStations);
+
+	return stations;
+}
+
+// receive a vector nodes and a set of indexes, then remove all nodes with the indexes in the index set
+vector<node> instance::removeNodesByIndex(vector<node> customers, set<int> ind)
+{
+	for (int i : ind) {
+		for (node j : customers) {
+			if (i == j.key) {
+				remove(customers.begin(), customers.end(), j);
+			}
+		}
+	}
+	return customers;
+}
+
+void instance::rearrangeDMatrix(vector<vector<float>>& m)
+{
 }
 
 void instance::printNode(node i)
@@ -553,159 +600,7 @@ void instance::readSSG14()
 	UB = numC + numF;
 	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
 }
-/*
-void instance::readSSG14()
-{
-	// source: https://akrzemi1.wordpress.com/2011/07/13/parsing-xml-with-boost/
 
-	// populate tree structure pt
-	using boost::property_tree::ptree;
-	ptree pt;
-	read_xml(dir + fileName, pt);
-
-	// get depots
-	int k = 0;
-	BOOST_FOREACH(ptree::value_type const& v, pt.get_child("Instance").get_child("Vertices").get_child("Depot")) {
-		if (v.first == "Vertex") {
-			node n;
-
-			n.key = k;
-			k++;
-			n.ref = -1;
-			n.ref2 = n.key;
-			n.id_n = k;
-
-			n.id = v.second.get<std::string>("StrID");
-			n.type = "d";
-			n.x = v.second.get<float>("X");
-			n.y = v.second.get<float>("Y");
-			n.demand = v.second.get<float>("Demand");
-			n.serviceTime = v.second.get<float>("ServiceTime");
-			n.readyTime = v.second.get<float>("EarliestTimeOfArrival");
-			n.dueDate = v.second.get<float>("LatestTimeOfArrival");
-			//v.second.get("<xmlattr>.cancelled", false);
-			nodes.push_back(n);
-			numD++;
-		}
-	}
-
-	// get stations
-	BOOST_FOREACH(ptree::value_type const& v, pt.get_child("Instance").get_child("Vertices").get_child("Stations")) {
-		if (v.first == "Vertex") {
-			node n;
-
-			n.key = k;
-			k++;
-			n.ref = -1;
-			n.ref2 = n.key;
-			n.id_n = -1;
-
-			n.id = v.second.get<std::string>("StrID");
-			n.type = "r";
-			n.x = v.second.get<float>("X");
-			n.y = v.second.get<float>("Y");
-			n.serviceTime = v.second.get<float>("Demand");
-			n.readyTime = v.second.get<float>("EarliestTimeOfArrival");
-			n.dueDate = v.second.get<float>("LatestTimeOfArrival");
-			//v.second.get("<xmlattr>.cancelled", false);
-			nodes.push_back(n);
-			numF++;
-		}
-	}
-
-	// get customers
-	BOOST_FOREACH(ptree::value_type const& v, pt.get_child("Instance").get_child("Vertices").get_child("Customers")) {
-		if (v.first == "Vertex") {
-			node n;
-
-			n.key = k;
-			k++;
-			n.ref = -1;
-			n.ref2 = n.key;
-			n.id_n = -1;
-
-			n.id = v.second.get<std::string>("StrID");
-			n.type = "c";
-			n.x = v.second.get<float>("X");
-			n.y = v.second.get<float>("Y");
-			n.serviceTime = v.second.get<float>("Demand");
-			n.readyTime = v.second.get<float>("EarliestTimeOfArrival");
-			n.dueDate = v.second.get<float>("LatestTimeOfArrival");
-			//v.second.get("<xmlattr>.cancelled", false);
-			nodes.push_back(n);
-			numC++;
-		}
-	}
-	
-	BOOST_FOREACH(ptree::value_type const& v, pt.get_child("Instance")) {
-		// getting Q
-		if (v.first == "Parameters") {
-			Q = v.second.get<float>("FuelCapacity");
-		}
-
-		// getting C
-		if (v.first == "Parameters") {
-			C = v.second.get<float>("StorageCapacity");
-		}
-
-		// getting r
-		if (v.first == "Parameters") {
-			r = v.second.get<float>("ConsumptionRate");
-		}
-
-		// getting g
-		if (v.first == "Parameters") {
-			g = v.second.get<float>("RefuelingRate");
-		}
-
-		// getting v
-		if (v.first == "Parameters") {
-			this->v = v.second.get<float>("VehicleVelocity");
-		}
-	}
-
-	// adding depot arrival nodes
-	int total = numC + numD + numF;
-	for (auto i : nodes) {
-		if (i.type != "d") {
-			break;
-		}
-		i.ref2 = i.key; // modification
-		i.key += total;
-		i.type = "a";
-		nodes.push_back(i);
-	}
-
-	// adding dummy nodes (set S)
-	int size = nodes.size();
-	int a = size;
-	for (int j = 0; j < revis; j++) {
-		for (int i = 0; i < size; i++) {
-			if (nodes.at(i).type != "d" && nodes.at(i).type != "a" && nodes.at(i).type != "c") {
-				//if (nodes.at(i).type != "" && nodes.at(i).type != "" && nodes.at(i).type != "") {
-				node temp = nodes.at(i);
-				temp.key = a;// total + numD; // new key
-				a++;
-				temp.type = temp.type + "_d"; // new type
-				temp.ref = nodes.at(i).key; // reference of dummy node
-				temp.ref2 = nodes.at(i).key; // reference of dummy node
-				nodes.push_back(temp);
-			}
-		}
-	}
-
-	// calculating extra parameters
-	fullRechargeTime = Q * g;
-	ct = 0.1 * fullRechargeTime;
-
-	o = numC + numF;
-
-	LB = 0; // wrong
-	UB = numC + numF;
-	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
-
-}
-*/
 instance::~instance()
 {
 }

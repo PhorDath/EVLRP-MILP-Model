@@ -4,6 +4,8 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <set>
+#include <random>
 
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -18,6 +20,11 @@ struct node{
 	int x, y, demand, readyTime, dueDate, serviceTime;
 	int ref, ref2;
 	int id_n; // model's id parameter 
+};
+
+struct edge {
+	int b, e;
+	float value;
 };
 
 bool compKey(node a, node b);
@@ -36,6 +43,10 @@ public:
 	float g; // inverse refueling rate
 	float v; // average Velocity
 
+	// used for the uk instances
+	vector<vector<float>> distanceMatrix; // used only for some instances
+	vector<edge> edges;
+
 	// extra parameters
 	int revis = 1; // number of dummy nodes
 	int fullRechargeTime, rechargeTime;
@@ -44,14 +55,16 @@ public:
 	int ct; // Swapping time of battery, was defined as ten percent of the total battery charge time by conventional means
 	int M;
 
-	float bssc = 10000;
-	float brsc = 1000;
-	float cput = 2;
-	float vehicleFixedCost = 1000;
-	float costPerEnergyUnitA = 5;
-	float costPerEnergyUnitb = 2;
-	float depotCost = 2000;
-	int stationCap = 2;
+	float bssc = 10000; // cost of siting a battery swap station
+	float brsc = 1000; // cost of siting a battery recharging station
+	float cput = 2; // cost per unit travelled
+	float vehicleFixedCost = 1000; // fixed cost of a vehicle
+	float costPerEnergyUnitA = 5; // cost per energy unit in the battery recharging stations
+	float costPerEnergyUnitb = 2; // cost per energy unit in the battery swap stations
+	float depotCost = 2000; // cost of siting a depot
+	int stationCap = 2; //station capacity
+
+	float alfa = 0.2; // percentagem of customers that will be transformed in stattions siting locations, used on the UK instances
 
 	void readInstace();
 	void readPaz();
@@ -59,6 +72,9 @@ public:
 	void readprplib(); // uk instances
 
 	void addDummyNodes();
+	vector<node> chooseStationsLocation(vector<node> &customers);
+	vector<node> removeNodesByIndex(vector<node> customers, set<int> ind);
+	void rearrangeDMatrix(vector<vector<float>> &m);
 	void printNode(node n);
 
 public:
