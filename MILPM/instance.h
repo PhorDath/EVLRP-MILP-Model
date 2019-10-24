@@ -57,14 +57,19 @@ public:
 	int ct; // Swapping time of battery, was defined as ten percent of the total battery charge time by conventional means
 	int M;
 
-	float bssc = 10000; // cost of siting a battery swap station
-	float brsc = 1000; // cost of siting a battery recharging station
-	float cput = 2; // cost per unit travelled
-	float vehicleFixedCost = 1000; // fixed cost of a vehicle
-	float costPerEnergyUnitA = 5; // cost per energy unit in the battery recharging stations
-	float costPerEnergyUnitb = 2; // cost per energy unit in the battery swap stations
-	float depotCost = 2000; // cost of siting a depot
+	float bssCost = 500000; // cost of siting a battery swap station
+	float brsCost = 126500; // cost of siting a battery recharging station
+	float driverWage = 13.14; // cost per unit travelled
+	float vehicleCost = 70000; // fixed cost of a vehicle, https://www.theverge.com/2019/9/19/20873947/amazon-electric-delivery-van-rivian-jeff-bezos-order
+	float brsEnergyCost = 0.32; // cost per energy unit in the battery recharging stations
+	float bssEnergyCost = 0.15; // cost per energy unit in the battery swap stations
+	float depotCost = 1000000; // cost of siting a depot
 	int stationCap = 2; //station capacity
+	float vehicleRange = 161;
+	float depotLifetime = 40 * 365;
+	float bssLifetime = 20 * 365;
+	float brsLifetime = 10 * 365;
+	float vehicleLifetime = 10 * 365;
 
 	float alfa = 0.2; // percentagem of customers that will be transformed in stattions siting locations, used on the UK instances
 

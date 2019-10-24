@@ -357,8 +357,7 @@ void instance::readprplib()
 			file >> m.at(i).at(j);
 		}
 	}
-	// create a vector of edges to becames easier to get distances in this type of instance
-	createEdgesVector();
+	
 
 	// read depot node
 	node a;
@@ -418,7 +417,7 @@ void instance::readprplib()
 		if (n.type == "d") {
 			numD++;
 		}
-		else if (n.type == "f") {
+		else if (n.type == "r") {
 			numF++;
 		}
 		else if (n.type == "c") {
@@ -427,7 +426,13 @@ void instance::readprplib()
 	}
 
 	Q = 80; // The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40].
+	v = 90;
+	vehicleRange = 161;
+	r = vehicleRange / Q;
+	g = 4;
 
+	// create a vector of edges to becames easier to get distances in this type of instance
+	createEdgesVector();
 
 }
 

@@ -728,31 +728,31 @@ void Model::fo_cost(GRBModel & model)
 	// bss and brs location cost
 	for (auto i : C) {
 		GRBVar yi = getY(model, i.key);
-		fo += inst->brsc * yi;
+		fo += (inst->brsCost / inst->brsLifetime) * yi;
 	}	
 	for (auto i : R) {
 		GRBVar yi = getY(model, i.key);
-		fo += inst->bssc * yi;
+		fo += (inst->bssCost / inst->bssLifetime) * yi;
 	}
 
-	/*
+	
 	// driving cost
 	for (auto i : V0) {
 		for (auto j : V1) {
 			if (i.key != j.key) {
 				//string var = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
 				GRBVar xij = getX(model, i.key, j.key);
-				fo += inst->cput * dist(i, j) * xij; // model.getVarByName(var);
+				fo += inst->driverWage * dist(i, j) * xij; // model.getVarByName(var);
 			}
 		}
-	}*/
+	}
 
 	// vehicle fixed cost
 	for (auto i : UD0) {
 		for (auto j : V1) {
 			if (i.key != j.key) {
 				GRBVar xij = getX(model, i.key, j.key);
-				fo += inst->vehicleFixedCost * xij;
+				fo += (inst->vehicleCost / inst->vehicleLifetime) * xij;
 			}			
 		}
 	}
@@ -769,7 +769,7 @@ void Model::fo_cost(GRBModel & model)
 	for (auto i : CUSKc) {
 		GRBVar wi = getW(model, i.key);
 
-		fo += inst->costPerEnergyUnitA * wi;
+		fo += inst->brsEnergyCost * wi;
 	}
 
 	model.setObjective(fo, GRB_MINIMIZE);

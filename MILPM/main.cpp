@@ -13,7 +13,8 @@ const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK10_01.txt";
 
-const string curDir = dir2;
+const string curDir = dir3;
+const string fl = file3;
 const int MAX = 10000;
 
 string getDate() {
@@ -251,7 +252,7 @@ string menuInstance() {
 }
 
 int main() {
-
+	/*
 	instance j(dir1, file1, 0);
 	j.test();
 
@@ -259,6 +260,7 @@ int main() {
 	i.test();
 
 	return 0;
+	*/
 
 	char again = 'y';
 
@@ -309,7 +311,7 @@ int main() {
 			}
 		}		
 		else if (op == 10) {
-			Model m(curDir, file, 0);
+			Model m(curDir, file, 0, 2);
 		}
 
 
