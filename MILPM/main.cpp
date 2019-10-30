@@ -13,7 +13,8 @@ const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK10_01.txt";
 
-const string curDir = dir3;
+string curDir = dir3;
+int t;
 const string fl = file3;
 const int MAX = 10000;
 
@@ -251,6 +252,32 @@ string menuInstance() {
 	return fileName;
 }
 
+void instanceTypeMenu() {
+	cout << "Which instances would you like to set? \n";
+	cout << "  1 - Paz\n";
+	cout << "  2 - Max\n";
+	cout << "  3 - UK\n";
+	int op;
+	cin >> op;
+	while (op < 1 && op > 3) {
+		cout << "Invalid option, try again: ";
+		cin >> op;
+	}
+	if (op == 1) {
+		curDir = dir1;
+		t = 0;
+	}
+	else if (op == 2) {
+		curDir = dir2;
+		t = 1;
+	}
+	else if (op == 3) {
+		curDir = dir3;
+		t = 2;
+	}
+	cout << endl;
+}
+
 int main() {
 	/*
 	instance j(dir1, file1, 0);
@@ -266,6 +293,7 @@ int main() {
 
 	while (again == 'y') {
 		int op = menuModel();
+		instanceTypeMenu();
 
 		string file;
 		if(op < 7 || op >9)
@@ -276,7 +304,8 @@ int main() {
 			Model m(curDir, file, 0);
 		}
 		else if (op >= 1 && op <= 6) {
-			Model m(curDir, file, op);
+			Model m(curDir, file, op, t);
+			//Model m(curDir, file, op);
 		}
 		else if (op >= 7 && op <= 9 || op == 11) {
 			string date = getDate();
@@ -307,11 +336,11 @@ int main() {
 				exp3(curDir, dirOutput, 1);
 			}
 			else if (op == 11) {
-				exp4(curDir, dirOutput, 1);
+				exp4(curDir, dirOutput, t);
 			}
 		}		
 		else if (op == 10) {
-			Model m(curDir, file, 0, 2);
+			Model m(curDir, file, 0, t);
 		}
 
 

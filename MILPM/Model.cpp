@@ -344,6 +344,10 @@ void Model::model4(GRBModel & model)
 	c39(model);
 	c40(model);
 	c41(model);
+
+	c45(model);
+	c46(model);
+
 }
 
 void Model::setup(GRBModel &model)
@@ -420,6 +424,17 @@ void Model::result(GRBModel & model)
 		for (auto i : V01) {
 			file << i.key << " " << i.x << " " << i.y << " " << i.type << " " << i.ref2 << endl;
 		}
+		file << "Time                 : " << model.get(GRB_DoubleAttr_Runtime) << endl;
+		file << "Status               : " << model.get(GRB_IntAttr_Status) << endl;
+		file << "Gap                  : " << model.get(GRB_DoubleAttr_MIPGap)* 100 << endl;
+		file << "Depot siting cost    : " << dCost << endl;
+		file << "Stations siting cost : " << sCost << endl;
+		file << "Drivers wage cost    : " << dwCost << endl;
+		file << "Vehicle cost         : " << vCost << endl;
+		file << "Energy cost          : " << eCost << endl;
+		file << "Total cost           : " << dCost + sCost + dwCost + vCost + eCost << endl;
+		file << "Number of vehicles used : " << vehiclesNum << endl;
+		file << "Recharging stations cited in : " << endl;
 		file.close();
 	}
 
@@ -500,8 +515,13 @@ void Model::model()
 		model.update();
 
 		//model.write(this->directory + this->fileName + ".lp");
+		model.write("lp.lp");
 		model.getEnv().set(GRB_DoubleParam_TimeLimit, TMAX);
 		model.optimize();
+		if (w == 0) {
+			getFOParcels(model);
+		}
+		getNumVehicles(model);
 
 		result(model);
 		
@@ -555,6 +575,96 @@ vector<node> Model::vectorSub(vector<node> a, vector<node> b)
 		}
 	}
 	return res;
+}
+
+void Model::getFOParcels(GRBModel &model)
+{
+	dCost = 0; // depot cost
+	sCost = 0; // stations cost
+	dwCost = 0; // driver wage cost
+	vCost = 0; // vehicle cost
+	eCost = 0; // energy cost
+	   
+	auto UD0 = inst->set_UD0();
+	auto UD1 = inst->set_UD1();
+	auto C = inst->set_C();
+	auto R = inst->set_R();
+	auto V0 = inst->set_V0();
+	auto V1 = inst->set_V1();
+
+	// depot location cost
+	for (auto i : UD0) {
+		dCost += getZ(model, i.key).get(GRB_DoubleAttr_X) * (inst->depotCost / inst->numC);
+	}
+
+	// bss and brs location cost
+	for (auto i : C) {
+		GRBVar yi = getY(model, i.key);
+		sCost += (inst->brsCost / inst->numC) * yi.get(GRB_DoubleAttr_X);
+	}
+	for (auto i : R) {
+		GRBVar yi = getY(model, i.key);
+		sCost += (inst->bssCost / inst->numC) * yi.get(GRB_DoubleAttr_X);
+	}
+
+
+	// driving cost
+	for (auto i : V0) {
+		for (auto j : V1) {
+			if (i.key != j.key) {
+				//string var = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
+				GRBVar xij = getX(model, i.key, j.key);
+				dwCost += inst->driverWage * dist(i, j) * xij.get(GRB_DoubleAttr_X); // model.getVarByName(var);
+			}
+		}
+	}
+
+	// vehicle fixed cost
+	for (auto i : UD0) {
+		for (auto j : V1) {
+			if (i.key != j.key) {
+				GRBVar xij = getX(model, i.key, j.key);
+				vCost += (inst->vehicleCost / inst->numC) * xij.get(GRB_DoubleAttr_X);
+			}
+		}
+	}
+
+	// energy cost
+	vector<node> SK;
+	for (auto h : C) {
+		auto SKc = inst->set_SK(h.key);
+		SK.insert(SK.end(), SKc.begin(), SKc.end());
+	}
+
+	auto CUSKc = vectorUnion(C, SK);
+
+	for (auto i : CUSKc) {
+		GRBVar wi = getW(model, i.key);
+
+		eCost += inst->brsEnergyCost * wi.get(GRB_DoubleAttr_X);
+	}
+	
+	// cost of the energy recharged at the depot in the end of the route
+	for (node i : UD1) {
+		GRBVar qi = getQ(model, i.key);
+		eCost += qi.get(GRB_DoubleAttr_X) * inst->bssCost;
+	}
+
+}
+
+void Model::getNumVehicles(GRBModel & model)
+{
+	vector<node> UD0 = inst->set_UD0();
+	vector<node> V1 = inst->set_V1();
+
+	vehiclesNum = 0;
+	for (node a : UD0) {
+		for (node b : V1) {
+			GRBVar xij = getX(model, a.key, b.key);
+			vehiclesNum += xij.get(GRB_DoubleAttr_X);
+		}		
+	}
+	cout << "VN: " << vehiclesNum << endl;
 }
 
 Model::~Model()
@@ -712,6 +822,80 @@ void Model::fo(GRBModel & model)
 void Model::fo_cost(GRBModel & model)
 {
 	auto UD0 = inst->set_UD0();
+	auto UD1 = inst->set_UD1();
+	auto C = inst->set_C();
+	auto R = inst->set_R();
+	auto V0 = inst->set_V0();
+	auto V1 = inst->set_V1();
+	auto V01 = inst->set_V01();
+
+	GRBLinExpr fo = 0;
+
+
+	// depot location cost
+	for (auto i : UD0) {
+		fo += getZ(model, i.key) * (inst->depotCost / inst->numC);
+	}
+
+	// bss and brs location cost
+	for (auto i : C) {
+		GRBVar yi = getY(model, i.key);
+		fo += (inst->brsCost / inst->numC) * yi;
+	}
+	for (auto i : R) {
+		GRBVar yi = getY(model, i.key);
+		fo += (inst->bssCost / inst->numC) * yi;
+	}
+
+	// driving cost
+	for (auto i : V0) {
+		for (auto j : V1) {
+			if (i.key != j.key) {
+				//string var = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
+				GRBVar xij = getX(model, i.key, j.key);
+				fo += inst->driverWage * dist(i, j) * xij; // model.getVarByName(var);
+			}
+		}
+	}
+
+	// vehicle fixed cost
+	for (auto i : UD0) {
+		for (auto j : V1) {
+			if (i.key != j.key) {
+				GRBVar xij = getX(model, i.key, j.key);
+				fo += (inst->vehicleCost / inst->numC) * xij;
+			}
+		}
+	}
+
+	// energy cost in brs
+	vector<node> SK;
+	for (auto h : C) {
+		auto SKc = inst->set_SK(h.key);
+		SK.insert(SK.end(), SKc.begin(), SKc.end());
+	}
+
+	auto CUSKc = vectorUnion(C, SK);
+	for (auto i : CUSKc) {
+		GRBVar wi = getW(model, i.key);
+		fo += inst->brsEnergyCost * wi;
+	}
+
+	// cost of using a bss (energy + operation cost)
+
+	// cost of the energy recharged at the depot in the end of the route
+	for (node i : UD1) {
+		GRBVar qi = getQ(model, i.key);
+		fo += qi * inst->bssCost;
+	}
+	
+	model.setObjective(fo, GRB_MINIMIZE);
+	model.update();
+}
+
+void Model::fo_cost_2(GRBModel & model)
+{
+	auto UD0 = inst->set_UD0();
 	auto C = inst->set_C();
 	auto R = inst->set_R();
 	auto V0 = inst->set_V0();
@@ -719,11 +903,11 @@ void Model::fo_cost(GRBModel & model)
 
 	GRBLinExpr fo = 0;
 
-	/*
+	
 	// depot location cost
 	for (auto i : UD0) {
-		fo += getZ(model, i.key) * inst->depotCost;
-	}*/
+		fo += getZ(model, i.key) * (inst->depotCost / inst->depotLifetime);
+	}
 	
 	// bss and brs location cost
 	for (auto i : C) {
@@ -1041,7 +1225,7 @@ void Model::c10(GRBModel & model)
 	}
 	model.update();
 }
-// --------------------------
+
 void Model::c10_M(GRBModel & model)
 {
 	auto V1 = inst->set_V1();
@@ -2138,7 +2322,13 @@ GRBVar Model::getZ(GRBModel & model, int key)
 
 float Model::getTD(node a, node b)
 {
-	return dist(a, b)/inst->v;
+	if (inst->type == 2) {
+		//cout << a.key << " - " << b.key << " - " << int(dist(a, b) / inst->v * 60 * 60) << endl;
+		return (distEdges(a.ogKey, b.ogKey) / (inst->v));// *60 * 60;
+	}
+	else {
+		return dist(a, b) / inst->v;
+	}	
 }
 
 float Model::getS(int key) // verify
@@ -2156,19 +2346,19 @@ float Model::dist(node a, node b)
 	if(inst->type == 0 || inst->type == 1)
 		return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
 	else if (inst->type == 2) {
-		return distEdges(a.key, b.key);
+		return distEdges(a.ogKey, b.ogKey);
 	}
 }
 
-float Model::distEdges(int a, int b)
+float Model::distEdges(int keya, int keyb)
 {
 	float dist = 0;
 	
 	for (edge e : inst->edges) {
-		if (e.beg == a && e.end == b) {
+		if (e.beg == keya && e.end == keyb) {
 			return e.value;
 		}
 	}
-	cout << "Error edge not found between nodes " << a << " and " << b << endl;
+	cout << "Error edge not found between nodes " << keya << " and " << keyb << endl;
 	return -1;
 }

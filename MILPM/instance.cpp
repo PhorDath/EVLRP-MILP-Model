@@ -9,33 +9,23 @@ instance::instance(string file)
 {
 	dir = "";
 	this->fileName = file;
-	readInstace();
+	readPaz();
 }
 
 instance::instance(string dir, string file)
 {
 	this->dir = dir;
 	this->fileName = file;
-	readInstace();
+	readPaz();
 }
 
-instance::instance(string dir, string file, int t)
+instance::instance(string dir, string file, int type)
 {
-	if (t == 0) {
-		this->dir = dir;
-		this->fileName = file;
-		readPaz();
-	}
-	if (t == 1) {
-		this->dir = dir;
-		this->fileName = file;
-		readSSG14();
-	}
-	if (t == 2) {
-		this->dir = dir;
-		this->fileName = file;
-		readprplib();
-	}
+	setDefaultParameters();
+	this->dir = dir;
+	this->fileName = file;
+	this->type = type;
+	readInstace();
 }
 
 void instance::test()
@@ -183,10 +173,37 @@ void instance::print()
 	cout << "Recharging rate         : " << g << endl;
 	cout << "Speed                   : " << v << endl;
 	cout << endl;
-	cout << setw(3) << "key" << setw(16) << "id" << setw(15) << "type" << setw(6) << "x" << setw(6) << "y" << setw(6) << "dem" << setw(6) << "rTime" << setw(6) << "dDate" << setw(6) << "sTime" << setw(6) << "ref" << setw(6) << "ref2" << setw(6) << "id_n" << endl;
+	cout << setw(3) << "key" << setw(16) << "id" << setw(15) << "type" << setw(6) << "x" << setw(6) << "y" << setw(6) << "dem" << setw(6) << "rTime" << setw(6) << "dDate" << setw(6) << "sTime" << setw(6) << "ref" << setw(6) << "ref2" << setw(6) << "id_n" << setw(6) << "ogKey" << endl;
 	for (auto i : nodes) {
-		cout << setw(3) << i.key << setw(25) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(6) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ref << setw(6) << i.ref2 << setw(6) << i.id_n << endl;
+		cout << setprecision(2) << setw(3) << i.key << setw(25) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(6) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ref << setw(6) << i.ref2 << setw(6) << i.id_n << setw(6) << i.ogKey << endl;
 	}
+	cout << "Distances \n";
+	if (type != 2) {
+		distanceMatrix.resize(nodes.size());
+		for (int i = 0; i < nodes.size(); i++) {
+			distanceMatrix.at(i).resize(nodes.size());
+			for (int j = 0; j < nodes.size(); j++) {
+				distanceMatrix.at(i).at(j) = dist(nodes.at(i), nodes.at(j));
+			}
+		}
+	}
+
+	cout << fixed << setprecision(2);
+	for (vector<float> i : distanceMatrix) {
+		for (float j : i) {
+			cout << setw(10) << j;// << " ";
+		}
+		cout << endl;
+	}
+	cout << "\nTime \n";
+	for (vector<float> i : distanceMatrix) {
+		for (float j : i) {
+			cout << setw(10) << (j / v);// << " ";
+		}
+		cout << endl;
+	}
+	
+
 
 
 	/*
@@ -212,9 +229,35 @@ void instance::printSet(vector<node> set)
 	}
 }
 
+void instance::setDefaultParameters()
+{
+	bssCost = 500000; // cost of siting a battery swap station
+	brsCost = 126500; // cost of siting a battery recharging station
+	driverWage = 13.14 / 1000; // cost per m travelled
+	vehicleCost = 70000; // fixed cost of a vehicle, https://www.theverge.com/2019/9/19/20873947/amazon-electric-delivery-van-rivian-jeff-bezos-order
+	brsEnergyCost = 0.32 / 1000; // cost per energy unit in the battery recharging stations
+	bssEnergyCost = 0.15 / 1000; // cost per energy unit in the battery swap stations
+	depotCost = 1000000; // cost of siting a depot
+	stationCap = 2; //station capacity
+	vehicleRange = 161;
+	depotLifetime = 40 * 365;
+	bssLifetime = 20 * 365;
+	brsLifetime = 10 * 365;
+	vehicleLifetime = 10 * 365;
+	alfa = 0.2; // percentagem of customers that will be transformed in stattions siting locations, used on the UK instances
+}
+
 void instance::readInstace()
 {
-	readPaz();
+	if (type == 0) {
+		readPaz();
+	}
+	if (type == 1) {
+		readSSG14();
+	}
+	if (type == 2) {
+		readprplib();
+	}
 }
 
 void instance::readPaz()
@@ -349,15 +392,18 @@ void instance::readprplib()
 	file >> ig >> C;
 	file >> ig >> v;
 
-	vector<vector<int>> m;
-	m.resize(numC + 1);
+	//vector<vector<int>> m;
+	//m.resize(numC + 1);
+	distanceMatrix.resize(numC + 1);
 	for (int i = 0; i < numC + 1; i++) {
-		m.at(i).resize(numC + 1);
+		distanceMatrix.at(i).resize(numC + 1);
 		for (int j = 0; j < numC + 1; j++) {
-			file >> m.at(i).at(j);
+			float d;
+			file >> d;
+			d = d;// / 1000; // convert from meters to kilometers
+			distanceMatrix.at(i).at(j) = d;
 		}
 	}
-	
 
 	// read depot node
 	node a;
@@ -366,18 +412,37 @@ void instance::readprplib()
 	a.y = -1;
 	a.id_n = 1;
 	file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
+
+
+	// convert seconds to hours
+	/*
+	a.readyTime /= (60 * 60);
+	a.dueDate /= (60 * 60);
+	a.serviceTime /= (60 * 60);
+	*/
+	a.ogKey = a.key;
 	this->nodes.push_back(a);
 
+	
 	// create the duplicated depot node as a siting place
-	a.type = "r";
+	a.type = "f";
 	a.id_n = -1;
 	nodes.push_back(a);
+	
 
 	// read customers nodes
 	vector<node> customers;
 	for (int i = 0; i < numC; i++) {
 		a.type = "c";
 		file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
+
+		// convert seconds to hours
+		/*
+		a.readyTime /= (60 * 60);
+		a.dueDate /= (60 * 60);
+		a.serviceTime /= (60 * 60);
+		*/
+		a.ogKey = a.key;
 		customers.push_back(a);
 	}
 	numC = customers.size();
@@ -387,6 +452,7 @@ void instance::readprplib()
 
 	// insert the stations nodes
 	nodes.insert(nodes.end(), stations.begin(), stations.end());
+
 	// insert the customers nodes
 	nodes.insert(nodes.end(), customers.begin(), customers.end());
 
@@ -417,7 +483,7 @@ void instance::readprplib()
 		if (n.type == "d") {
 			numD++;
 		}
-		else if (n.type == "r") {
+		else if (n.type == "f") {
 			numF++;
 		}
 		else if (n.type == "c") {
@@ -425,15 +491,22 @@ void instance::readprplib()
 		}
 	}
 
-	Q = 80; // The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40].
-	v = 90;
-	vehicleRange = 161;
-	r = vehicleRange / Q;
+	Q = 80 * 60 * 60;// The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40]. // the conversion between KWh to KWs was done
+	v = v / 3.6; // convert the speed to m/s;
+	vehicleRange = 161 * 1000; // meters
+	r = 1;// (Q / vehicleRange);// 1;// (Q / vehicleRange) / 200;// vehicleRange
 	g = 4;
 
 	// create a vector of edges to becames easier to get distances in this type of instance
 	createEdgesVector();
+	//cout << edges.size() << endl;
+	//for (auto e : edges) {
+	//	cout << e.beg << " - " << e.end << " - " << e.value << endl;
+	//}
 
+	LB = 0; // wrong
+	UB = numC + numF;
+	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
 }
 
 void instance::addDummyNodes()
@@ -460,32 +533,44 @@ void instance::addDummyNodes()
 //  this function receives the vector with all customers nodes and return the nodes choosen to be stations sites, the original vector with customers is modified without those nodes
 vector<node> instance::chooseStationsLocation(vector<node> &customers)
 {
-	set <int, less <int> > cStations;
-	float num = ceil(alfa * numC); // number of stations
+	if (numC < 50) { // all clients are candidates
+		vector<node> stations;
+		for (node c : customers) {
+			node r = c;
+			r.type = "f";
+			stations.push_back(r);
+		}
 
-	// select the customers node that will become stations sites
-	default_random_engine generator;
-	uniform_int_distribution<int> distribution(0, numC);
-	while (cStations.size() < num) {
-		int s = distribution(generator);
-		cStations.insert(s);
+		return stations;
 	}
+	else { // only 20% of clients are candidates
+		set <int, less <int> > cStations;
+		float num = ceil(alfa * numC); // number of stations
 
-	// create a vector only with the selected customers to turn then into stations
-	vector<node> stations;
-	for (node n : customers) {
-		for (int i : cStations) {
-			if (i == n.key) {
-				n.type = "r";
-				stations.push_back(n);
+		// select the customers node that will become stations sites
+		default_random_engine generator;
+		uniform_int_distribution<int> distribution(0, numC);
+		while (cStations.size() < num) {
+			int s = distribution(generator);
+			cStations.insert(s);
+		}
+
+		// create a vector only with the selected customers to turn then into stations
+		vector<node> stations;
+		for (node n : customers) {
+			for (int i : cStations) {
+				if (i == n.key) {
+					n.type = "r";
+					stations.push_back(n);
+				}
 			}
 		}
+		
+		// remove the selecteds customers from the customer vector
+		customers = removeNodesByIndex(customers, cStations);
+
+		return stations;
 	}
-
-	// remove the selecteds customers from the customer vector
-	customers = removeNodesByIndex(customers, cStations);
-
-	return stations;
 }
 
 // receive a vector nodes and a set of indexes, then remove all nodes with the indexes in the index set
@@ -528,6 +613,11 @@ void instance::createEdgesVector()
 void instance::printNode(node i)
 {
 	cout << i.key << " " << i.id << " " << i.type << " " << i.x << " " << i.y << " " << i.demand << " " << i.readyTime << " " << i.dueDate << " " << i.serviceTime << " " << i.ref << " " << i.id_n << endl;
+}
+
+float instance::dist(node a, node b)
+{
+	return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
 }
 
 void instance::readSSG14()

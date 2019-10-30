@@ -7,6 +7,7 @@
 #include <set>
 #include <random>
 #include <iomanip>
+#include <math.h>
 
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -18,9 +19,11 @@ using namespace std;
 struct node{
 	int key;
 	string id, type;
-	int x, y, demand, readyTime, dueDate, serviceTime;
+	int x, y, demand;
+	int readyTime, dueDate, serviceTime;
 	int ref, ref2;
 	int id_n = -1; // model's id parameter 
+	int ogKey;
 };
 
 struct edge {
@@ -41,7 +44,7 @@ public:
 	int numC = 0;
 	float Q; // battery capacity
 	float C; // Vehicle load capacity
-	float r; // battery consumption rate
+	double r; // battery consumption rate
 	float g; // inverse refueling rate
 	float v; // average Velocity
 
@@ -57,38 +60,41 @@ public:
 	int ct; // Swapping time of battery, was defined as ten percent of the total battery charge time by conventional means
 	int M;
 
-	float bssCost = 500000; // cost of siting a battery swap station
-	float brsCost = 126500; // cost of siting a battery recharging station
-	float driverWage = 13.14; // cost per unit travelled
-	float vehicleCost = 70000; // fixed cost of a vehicle, https://www.theverge.com/2019/9/19/20873947/amazon-electric-delivery-van-rivian-jeff-bezos-order
-	float brsEnergyCost = 0.32; // cost per energy unit in the battery recharging stations
-	float bssEnergyCost = 0.15; // cost per energy unit in the battery swap stations
-	float depotCost = 1000000; // cost of siting a depot
-	int stationCap = 2; //station capacity
-	float vehicleRange = 161;
-	float depotLifetime = 40 * 365;
-	float bssLifetime = 20 * 365;
-	float brsLifetime = 10 * 365;
-	float vehicleLifetime = 10 * 365;
+	float alfa; // percentagem of customers that will be transformed in stattions siting locations, used on the UK instances
 
-	float alfa = 0.2; // percentagem of customers that will be transformed in stattions siting locations, used on the UK instances
+	// parameters for onbective function with cost
+	float bssCost; // cost of siting a battery swap station
+	float brsCost; // cost of siting a battery recharging station
+	float driverWage; // cost per unit travelled
+	float vehicleCost; // fixed cost of a vehicle, https://www.theverge.com/2019/9/19/20873947/amazon-electric-delivery-van-rivian-jeff-bezos-order
+	float brsEnergyCost; // cost per energy unit in the battery recharging stations
+	float bssEnergyCost; // cost per energy unit in the battery swap stations
+	float depotCost; // cost of siting a depot
+	int stationCap; //station capacity
+	float vehicleRange;
+	float depotLifetime;
+	float bssLifetime;
+	float brsLifetime;
+	float vehicleLifetime;	
 
+
+	void setDefaultParameters();
 	void readInstace();
 	void readPaz();
 	void readSSG14();
 	void readprplib(); // uk instances
-
 	void addDummyNodes();
 	vector<node> chooseStationsLocation(vector<node> &customers);
 	vector<node> removeNodesByIndex(vector<node> customers, set<int> ind);
 	void rearrangeDMatrix(vector<vector<float>> &m);
 	void createEdgesVector();
 	void printNode(node n);
+	float dist(node a, node b);
 
 public:
 	instance(string file);
 	instance(string dir, string file);
-	instance(string dir, string file, int t);
+	instance(string dir, string file, int type);
 
 	void test();
 

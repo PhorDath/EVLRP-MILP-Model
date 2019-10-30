@@ -14,6 +14,7 @@ private:
 	string directory, fileName, dirOutput = "";
 	instance *inst; // data
 	int w = 6; // which model will be runned
+	int vehiclesNum = 0;
 
 	// extra parameters
 	long unsigned int M;
@@ -40,6 +41,7 @@ private:
 	// objective function
 	void fo(GRBModel &model);
 	void fo_cost(GRBModel &model);
+	void fo_cost_2(GRBModel &model);
 
 	// constraints
 
@@ -109,6 +111,13 @@ private:
 	void c44(GRBModel &model); // 
 
 	// model 4
+	// individual FO costs
+	float dCost = 0; // depot cost
+	float sCost = 0; // stations cost
+	float dwCost = 0; // driver wage cost
+	float vCost = 0; // vehicle cost
+	float eCost = 0; // energy cost
+
 	void c45(GRBModel &model); // determine which depots where opened
 	void c46(GRBModel &model); // stations limit
 
@@ -126,9 +135,12 @@ private:
 	float	getS	(int key); // get service time of a node
 	float	getCT	();
 	float	dist	(node a, node b); // distance between points
-	float	distEdges(int a, int b); // get the distance between two nodes on the edge list
+	float	distEdges(int keya, int keyb); // get the distance between two nodes on the edge list
 	vector<node> vectorUnion	(vector<node> a, vector<node> b); // union between two vectors of nodes, the vectors are trated as sets
 	vector<node> vectorSub		(vector<node> a, vector<node> b);
+
+	void getFOParcels(GRBModel &model);
+	void getNumVehicles(GRBModel &model);
 
 
 public:
@@ -156,4 +168,3 @@ public:
 
 	~Model();
 };
-
