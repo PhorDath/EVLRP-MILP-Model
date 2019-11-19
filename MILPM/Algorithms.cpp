@@ -403,6 +403,7 @@ int Algorithms::greed()
 				}
 
 				cout << nextNodeKey << " is infeasible\n";
+				
 			}
 			else { // if node is infeasible due to time windows or vehicle load criteria
 				bu = coverage; // safe a copy of the coverage vector
