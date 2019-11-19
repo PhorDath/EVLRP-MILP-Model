@@ -48,9 +48,8 @@ bool Algorithms::isCovered(int key)
 // the node must have the lowest ready time. also we check if is possible to reach a station node with the battery level left when the vehicle arrives at the node.
 int Algorithms::chooseNextNode(vector<vertex> partialRoute)
 {
-	int nextNodeKey = getNearestFeasibleNode(partialRoute); // get the nearest customer node
 
-	return nextNodeKey;
+	return getNearestFeasibleNode(partialRoute); // get the nearest customer node;
 }
 
 // v is the las vertex in the partial route
@@ -72,9 +71,17 @@ int Algorithms::getNearestFeasibleNode(vector<vertex> route)
 				continue;
 			}
 
+			vector<int> f = checkFeasibility(route, b);
+
+			//cout << "Node: " << b.key << endl;
+			//for (auto i : f) {
+			//	cout << i << " ";
+			//}
+			//cout << endl;
+
 			int distKI = inst->dist(a, b);
 			vector<int> t = { 1, 1, 1 };
-			if (distKI <= dist && coverage.at(i) == false && checkFeasibility(route, b) == t) {
+			if (distKI <= dist && coverage.at(i) == false && f == t) {
 				dist = distKI;
 				n = inst->nodes.at(i);
 			}
@@ -175,6 +182,9 @@ vector<int> Algorithms::checkFeasibility(vector<vertex> route, node c)
 	float distanceAB = inst->dist(an, bn);
 	float travelTimeAB = inst->getTD(an, bn);
 
+	//cout << a.key << " - " << bn.key << endl;
+	//cout << "tt: " << fixed << travelTimeAB << endl;
+
 	// battery level
 	if (a.bLevel - distanceAB < 0) {
 		ret.push_back(0); // if infeasible by battery level criteria, 0
@@ -190,7 +200,7 @@ vector<int> Algorithms::checkFeasibility(vector<vertex> route, node c)
 		ret.push_back(1);
 	}
 	// arrival time
-	if (a.lTime + travelTimeAB + bn.serviceTime > bn.dueDate) {
+	if (a.lTime + travelTimeAB + bn.serviceTime > bn.dueDate && a.lTime + travelTimeAB < bn.readyTime) {
 		ret.push_back(0); // if infeasible by time window criteria, 0
 	}
 	else {
@@ -366,6 +376,8 @@ int Algorithms::greed()
 		// add nodes to the route until it ends with a "a" node
 		while (true) {
 			nextNodeKey = chooseNextNode(route);
+
+			cout << "nextNodeKey: " << nextNodeKey << endl;
 
 			vector<int> feasibility = checkFeasibility(route, inst->getNodeByKey(nextNodeKey));
 			node n = inst->getNodeByKey(nextNodeKey);
