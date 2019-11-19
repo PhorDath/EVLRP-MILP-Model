@@ -8,11 +8,11 @@
 #include <random>
 #include <iomanip>
 #include <math.h>
-
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-
 #include <boost/foreach.hpp>
+#include "Solution.h"
+//#include "MCLPModel.h"
 
 using namespace std;
 
@@ -48,9 +48,14 @@ public:
 	float g; // inverse refueling rate
 	float v; // average Velocity
 
+	Solution solution;
+
 	// used for the uk instances
+	int mDim;
 	vector<vector<float>> distanceMatrix; // used only for some instances
 	vector<edge> edges;
+	float maxDist, minDist;
+	set<int> st;
 
 	// extra parameters
 	int revis = 1; // number of dummy nodes
@@ -65,7 +70,7 @@ public:
 	// parameters for onbective function with cost
 	float bssCost; // cost of siting a battery swap station
 	float brsCost; // cost of siting a battery recharging station
-	float driverWage; // cost per unit travelled
+	double driverWage; // cost per unit travelled
 	float vehicleCost; // fixed cost of a vehicle, https://www.theverge.com/2019/9/19/20873947/amazon-electric-delivery-van-rivian-jeff-bezos-order
 	float brsEnergyCost; // cost per energy unit in the battery recharging stations
 	float bssEnergyCost; // cost per energy unit in the battery swap stations
@@ -75,7 +80,8 @@ public:
 	float depotLifetime;
 	float bssLifetime;
 	float brsLifetime;
-	float vehicleLifetime;	
+	float vehicleLifetime;
+	float bssUseCost = 400; // cost of using the bss
 
 
 	void setDefaultParameters();
@@ -83,13 +89,16 @@ public:
 	void readPaz();
 	void readSSG14();
 	void readprplib(); // uk instances
+	void readUKAdapt();
 	void addDummyNodes();
-	vector<node> chooseStationsLocation(vector<node> &customers);
+	vector<node> chooseStationsLocationRandom(vector<node> &customers);
+	vector<node> chooseStationsLocationMCLP(vector<node> &customers);
 	vector<node> removeNodesByIndex(vector<node> customers, set<int> ind);
 	void rearrangeDMatrix(vector<vector<float>> &m);
 	void createEdgesVector();
 	void printNode(node n);
-	float dist(node a, node b);
+
+	//float dist(node a, node b);
 
 public:
 	instance(string file);
@@ -113,8 +122,18 @@ public:
 
 	vector<node> sortSet(vector<node> set);
 
-	void print();
+	float dist(int a, int b);
+	float dist(node a, node b); // distance between points
+	float distEdges(int keya, int keyb); // get the distance between two nodes on the edge list
+	float getTD(node a, node b); // get travel time between nodes a and b
+	float getS(int key);
+	float getCT();
+
+	void print2(ostream & strm);
+	void print3(ostream & strm);
+	void print(ostream &stream);
 	void printSet(vector<node> set);
+	void printSolution(ostream &stream);
+	node getNodeByKey(int key);
 	~instance();
 };
-

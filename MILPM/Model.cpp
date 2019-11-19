@@ -53,9 +53,9 @@ Model::Model(string dir, string fileName, int w, int t, string dirOutput)
 {
 	this->directory = dir;
 	this->fileName = fileName;
-	cout << 1 << endl;
+
 	inst = new instance(dir, fileName, t);
-	cout << 2 << endl;
+
 	this->w = w;
 	M = inst->M;
 	this->dirOutput = dirOutput;
@@ -224,7 +224,9 @@ void Model::model3_indC(GRBModel & model)
 	var_q(model);
 	var_u(model);
 	var_w_model3(model);
+
 	fo(model);
+
 	c2(model);
 	c3(model);
 	c4(model);
@@ -269,7 +271,9 @@ void Model::model3_bigM(GRBModel & model)
 	var_q(model);
 	var_u(model);
 	var_w_model3(model);
+
 	fo(model);
+
 	c2(model);
 	c3(model);
 	c4(model);
@@ -301,6 +305,50 @@ void Model::model3_bigM(GRBModel & model)
 	c41(model);
 }
 
+/*
+	var_x(model);
+	var_y_model2(model);
+	var_t(model);
+	var_d(model);
+	var_q(model);
+	var_u(model);
+	var_w_model3(model);
+	var_z(model);
+	fo_cost(model);
+	c2(model);
+	c3(model);
+	c4(model);
+	c5(model);
+	c7(model);
+	c8_M(model);
+	c9_M(model);
+	c11_M(model);
+	c12(model);
+	c14_M(model);
+	c15(model);
+	c16_M(model);
+	c17(model);
+	c18_M(model);
+	c19_M(model);
+	c20_M(model);
+	c21_M(model);
+	c22(model);
+	c43(model);
+	c44(model);
+
+	c27(model);
+
+	c36_M(model);
+	c37_M(model);
+	c38_M(model);
+	c39_M(model);
+	c40_M(model);
+	c41(model);
+
+	c45(model);
+	c46(model);
+*/
+
 void Model::model4(GRBModel & model)
 {
 	string newName = "model4_" + fileName;
@@ -312,9 +360,46 @@ void Model::model4(GRBModel & model)
 	var_d(model);
 	var_q(model);
 	var_u(model);
-	var_w_model3(model);
+	var_w_model3(model); // var_w_model3(model);
 	var_z(model);
+
 	fo_cost(model);
+
+
+	c2(model);
+	c3(model);
+	c4(model);
+	c5(model);
+	c7(model);
+	c8_M(model);
+	c9_M(model);
+	c11_M(model);
+	c12(model);
+	c14_M(model);
+	c15(model);
+	c16_M(model);
+	c17(model);
+	c18_M(model);
+	c19_M(model);
+	c20_M(model);
+	c21_M(model);
+	c22(model);
+	c43(model);
+	c44(model);
+
+	c27(model);
+
+	c36_M(model);
+	c37_M(model);
+	c38_M(model);
+	c39_M(model);
+	c40_M(model);
+	c41(model);
+
+	c45(model);
+	c46(model);
+
+	/*
 	c2(model);
 	c3(model);
 	c4(model);
@@ -347,7 +432,7 @@ void Model::model4(GRBModel & model)
 
 	c45(model);
 	c46(model);
-
+	*/
 }
 
 void Model::setup(GRBModel &model)
@@ -424,18 +509,57 @@ void Model::result(GRBModel & model)
 		for (auto i : V01) {
 			file << i.key << " " << i.x << " " << i.y << " " << i.type << " " << i.ref2 << endl;
 		}
-		file << "Time                 : " << model.get(GRB_DoubleAttr_Runtime) << endl;
-		file << "Status               : " << model.get(GRB_IntAttr_Status) << endl;
-		file << "Gap                  : " << model.get(GRB_DoubleAttr_MIPGap)* 100 << endl;
-		file << "Depot siting cost    : " << dCost << endl;
-		file << "Stations siting cost : " << sCost << endl;
-		file << "Drivers wage cost    : " << dwCost << endl;
-		file << "Vehicle cost         : " << vCost << endl;
-		file << "Energy cost          : " << eCost << endl;
-		file << "Total cost           : " << dCost + sCost + dwCost + vCost + eCost << endl;
-		file << "Number of vehicles used : " << vehiclesNum << endl;
-		file << "Recharging stations cited in : " << endl;
+
+		inst->solution.FO = model.get(GRB_DoubleAttr_ObjVal);
+		inst->solution.runTime = model.get(GRB_DoubleAttr_Runtime);
+		inst->solution.gap = model.get(GRB_DoubleAttr_MIPGap) * 100;
+		inst->solution.status = model.get(GRB_IntAttr_Status);
+		if (w == 0) {
+			vector<float> costs = getFOParcels(model);
+			inst->solution.dCost = costs.at(0); // depot cost
+			inst->solution.sCost = costs.at(1); // stations cost
+			inst->solution.dwCost = costs.at(2); // driver wage cost
+			inst->solution.vCost = costs.at(3); // vehicle cost
+			inst->solution.eCost = costs.at(4); // energy cost		
+			inst->solution.bssUseCost = costs.at(5);
+		}
+		inst->solution.numVehicles = getNumVehicles(model);
+		
+		getSolution(model);
+		inst->printSolution(cout);
+		inst->printSolution(file);
+		inst->print(file);
+
+		/*
+		vector<node> C = inst->set_C();
+		vector<node> R = inst->set_R();
+
+		vector<node> CUR = vectorUnion(C, R);
+		for (node n : CUR) {
+			GRBVar y = getY(model, n.key);
+			if (y.get(GRB_DoubleAttr_X) != 0) {
+				file << n.key << " ";
+			}
+		}
+		file << endl << "Arcs used: \n";
+		vector<node> V0 = inst->set_V0();
+		vector<node> V1 = inst->set_V1();
+
+		for (auto i : V0) {
+			for (auto j : V1) {
+				if (i.key != j.key) {
+					GRBVar xij = getX(model, i.key, j.key);
+
+					if (xij.get(GRB_DoubleAttr_X) != 0) {
+						file << "(" << i.key << ", " << j.key << ")" << endl;
+					}
+				}				
+			}
+		}*/
+		
 		file.close();
+		
+
 	}
 
 	cout << "Generating image\n";
@@ -455,6 +579,7 @@ struct x {
 	int a, b;
 };
 
+/*
 void Model::getSolution(GRBModel & model)
 {
 	// get all xij != 0
@@ -483,10 +608,8 @@ void Model::getSolution(GRBModel & model)
 			y.push_back(i.key);
 		}
 	}
-
-
-
 }
+*/
 
 void Model::getRow(GRBModel & model)
 {
@@ -501,7 +624,7 @@ void Model::getRow(GRBModel & model)
 
 void Model::model()
 {
-	inst->print();
+	inst->print3(cout);
 
 	GRBEnv env = GRBEnv(true);
 	env.start();
@@ -518,11 +641,7 @@ void Model::model()
 		model.write("lp.lp");
 		model.getEnv().set(GRB_DoubleParam_TimeLimit, TMAX);
 		model.optimize();
-		if (w == 0) {
-			getFOParcels(model);
-		}
-		getNumVehicles(model);
-
+		
 		result(model);
 		
 	}
@@ -577,13 +696,14 @@ vector<node> Model::vectorSub(vector<node> a, vector<node> b)
 	return res;
 }
 
-void Model::getFOParcels(GRBModel &model)
+vector<float> Model::getFOParcels(GRBModel &model)
 {
-	dCost = 0; // depot cost
-	sCost = 0; // stations cost
-	dwCost = 0; // driver wage cost
-	vCost = 0; // vehicle cost
-	eCost = 0; // energy cost
+	float dCost = 0; // depot cost
+	float sCost = 0; // stations cost
+	float dwCost = 0; // driver wage cost
+	float vCost = 0; // vehicle cost
+	float eCost = 0; // energy cost
+	float bssUseCost = 0;
 	   
 	auto UD0 = inst->set_UD0();
 	auto UD1 = inst->set_UD1();
@@ -614,7 +734,7 @@ void Model::getFOParcels(GRBModel &model)
 			if (i.key != j.key) {
 				//string var = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
 				GRBVar xij = getX(model, i.key, j.key);
-				dwCost += inst->driverWage * dist(i, j) * xij.get(GRB_DoubleAttr_X); // model.getVarByName(var);
+				dwCost += inst->driverWage * inst->dist(i, j) * xij.get(GRB_DoubleAttr_X); // model.getVarByName(var);
 			}
 		}
 	}
@@ -643,6 +763,24 @@ void Model::getFOParcels(GRBModel &model)
 
 		eCost += inst->brsEnergyCost * wi.get(GRB_DoubleAttr_X);
 	}
+
+	// cost of using a bss (energy + operation cost)
+	// operational cost
+	for (node i : V0) {
+
+
+		auto S = inst->set_S();
+
+		vector<node> RUS = vectorUnion(R, S);
+
+		for (node j : RUS) {
+			if (i.key != j.key) {
+				GRBVar xij = getX(model, i.key, j.key);
+				bssUseCost += xij.get(GRB_DoubleAttr_X) * inst->bssUseCost;
+			}
+		}
+
+	}
 	
 	// cost of the energy recharged at the depot in the end of the route
 	for (node i : UD1) {
@@ -650,9 +788,10 @@ void Model::getFOParcels(GRBModel &model)
 		eCost += qi.get(GRB_DoubleAttr_X) * inst->bssCost;
 	}
 
+	return { dCost, sCost, dwCost, vCost, eCost , bssUseCost};
 }
 
-void Model::getNumVehicles(GRBModel & model)
+int Model::getNumVehicles(GRBModel & model)
 {
 	vector<node> UD0 = inst->set_UD0();
 	vector<node> V1 = inst->set_V1();
@@ -664,7 +803,157 @@ void Model::getNumVehicles(GRBModel & model)
 			vehiclesNum += xij.get(GRB_DoubleAttr_X);
 		}		
 	}
-	cout << "VN: " << vehiclesNum << endl;
+	return vehiclesNum;
+}
+
+void Model::getSolution(GRBModel &model)
+{
+	if(w == 0)
+		getFOParcels(model);
+
+	vector<node> V0 = inst->set_V0();
+	vector<node> V1 = inst->set_V1();
+	vector<node> V01 = inst->set_V01();
+	vector<node> V = inst->set_V();
+	vector<node> C = inst->set_C();
+	vector<node> R = inst->set_R();
+	vector<node> CUR = vectorUnion(C, R);
+
+	int totalV = V01.size();
+
+	// put used arcs in the solution
+	for (auto i : V0) {
+		for (auto j : V1) {
+			if (i.key != j.key) {
+				GRBVar xij = getX(model, i.key, j.key);
+				float value = xij.get(GRB_DoubleAttr_X);
+				if (value < 0.1 && value > -0.1) {
+					value = 0;
+				}
+				else{
+					value = 1;
+				}
+
+				if (value != 0) {
+					inst->solution.insertArc(i.key, j.key, inst->dist(i, j));
+				}
+			}
+		}
+	}
+
+	// generate the routes
+	getRoutes();
+
+	// put sited stations in the solution
+	for (auto i : CUR) {
+		GRBVar yi = getY(model, i.key);
+		if (yi.get(GRB_DoubleAttr_X) != 0) {
+			inst->solution.insertStation(i.key);
+		}
+	}
+
+	// put the Moment of time in which a vehicle arrives
+	inst->solution.arrivalTime.resize(totalV, 0);
+	for (node i : V01) {
+		GRBVar ti = getT(model, i.key);
+
+		inst->solution.arrivalTime.at(i.key) = ti.get(GRB_DoubleAttr_X);
+
+	}
+
+	// put the Amount of freight left when the vehicle arrives
+	inst->solution.freightLeft.resize(totalV, 0);
+	for (auto i : V01) {
+		GRBVar di = getD(model, i.key);
+		inst->solution.freightLeft.at(i.key) = di.get(GRB_DoubleAttr_X);
+	}
+
+	// put the Amount of energy left in the battery when the vehicle arrives
+	inst->solution.batteryLevel.resize(totalV, 0);
+	for (auto i : V01) {
+		GRBVar qi = getQ(model, i.key);
+		inst->solution.batteryLevel.at(i.key) = qi.get(GRB_DoubleAttr_X);
+	}
+
+	vector<node> SK;
+	for (auto h : C) {
+		auto SKc = inst->set_SK(h.key);
+		SK.insert(SK.end(), SKc.begin(), SKc.end());
+	}
+
+	auto CUSKc = vectorUnion(C, SK);
+	// Amount of energy to be charged
+	inst->solution.energyCharged.resize(totalV, 0);
+	for (auto i : CUSKc) {
+		GRBVar wi = getW(model, i.key);
+		inst->solution.energyCharged.at(i.key) = wi.get(GRB_DoubleAttr_X);
+	}
+}
+
+void Model::getRoutes()
+{
+	vector<arc> arcs = inst->solution.arcs;
+
+
+	// get the depots
+	vector<int> depots;
+	for (node i : inst->nodes) {
+		if (i.type == "d") {
+			depots.push_back(i.key);
+		}
+	}
+
+	vector<int> pos;
+	// get the inital arc of each route
+	for (int dpt : depots) { // for each depot
+		int count = 0;
+		for (arc i : arcs) { // for each arc
+		//for (int i = 0; i < arcs.size(); i++) { // for each arc
+			//arc a = arcs.at(i);
+			arc a = i;
+			if (a.beg == dpt) { // if the arc begins in the current depot
+				vector<int> route = {a.beg, a.end};
+
+				inst->solution.routes.push_back(route); // add the inital arc in each route
+				//inst->solution.arcs.erase(inst->solution.arcs.begin() + i); // erase the arc
+				//arcs.erase(arcs.begin() + count); // erase the arc
+				pos.push_back(count);
+				
+			}
+			count++;
+		}
+	}
+
+	sort(pos.begin(), pos.end(), greater<int>());
+	// erase all depots arcs
+	for (int i : pos) {
+		arcs.erase(arcs.begin() + i);
+	}
+
+	// get the rest of the route
+	while (arcs.size() > 0) {
+		for (int b = 0; b < arcs.size(); b++) { // for each arc
+
+
+			arc a = arcs.at(b);
+			
+			//  search in the current built routes if its time to add the arc a
+			for (int i = 0; i < inst->solution.routes.size(); i++) {
+				bool found = false;
+				for (int j = 0; j < inst->solution.routes.at(i).size(); j++) {
+					if (inst->solution.routes.at(i).at(j) == a.beg) { // if the current end of the route is equal to the begin of the arc
+						inst->solution.routes.at(i).push_back(a.end); // add the end of the arc in the route
+						arcs.erase(arcs.begin() + b); // erase the arc
+						found = true;
+						break;
+					}
+				}
+				if (found == true) {
+					break;
+				}
+			}
+		}
+	}
 }
 
 Model::~Model()
@@ -675,7 +964,7 @@ void Model::var_x(GRBModel & model)
 {
 	auto V0 = inst->set_V0();
 	auto V1 = inst->set_V1();
-	
+
 	for (auto i : V0) {
 		vector<GRBVar> aux;
 		for (auto j : V1) {
@@ -811,7 +1100,7 @@ void Model::fo(GRBModel & model)
 				string var = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
 				// cout << var << endl;
 				// cout << model.getVarByName(var).get(GRB_StringAttr_VarName) << endl;
-				fo += dist(i, j) * model.getVarByName(var);
+				fo += inst->dist(i, j) * model.getVarByName(var);
 			}
 		}
 	}
@@ -830,7 +1119,6 @@ void Model::fo_cost(GRBModel & model)
 	auto V01 = inst->set_V01();
 
 	GRBLinExpr fo = 0;
-
 
 	// depot location cost
 	for (auto i : UD0) {
@@ -853,7 +1141,7 @@ void Model::fo_cost(GRBModel & model)
 			if (i.key != j.key) {
 				//string var = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
 				GRBVar xij = getX(model, i.key, j.key);
-				fo += inst->driverWage * dist(i, j) * xij; // model.getVarByName(var);
+				fo += inst->driverWage * inst->dist(i, j) * xij; // model.getVarByName(var);
 			}
 		}
 	}
@@ -874,14 +1162,35 @@ void Model::fo_cost(GRBModel & model)
 		auto SKc = inst->set_SK(h.key);
 		SK.insert(SK.end(), SKc.begin(), SKc.end());
 	}
-
 	auto CUSKc = vectorUnion(C, SK);
 	for (auto i : CUSKc) {
 		GRBVar wi = getW(model, i.key);
 		fo += inst->brsEnergyCost * wi;
 	}
-
 	// cost of using a bss (energy + operation cost)
+	// operational cost
+	for (node i : V0) {
+		GRBLinExpr sum = 0;
+
+		auto S = inst->set_S();
+
+		vector<node> RUS = vectorUnion(R, S);
+
+		for (node j : RUS) {
+			if (i.key != j.key) {
+				GRBVar xij = getX(model, i.key, j.key);
+				sum += xij * inst->bssUseCost;
+			}
+		}
+		fo += sum;
+	}
+	/*
+	// energy cost
+	for (auto i : R) {
+		GRBVar wi = getW(model, i.key);
+		fo += wi * inst->bssEnergyCost;
+	}
+	*/
 
 	// cost of the energy recharged at the depot in the end of the route
 	for (node i : UD1) {
@@ -902,58 +1211,26 @@ void Model::fo_cost_2(GRBModel & model)
 	auto V1 = inst->set_V1();
 
 	GRBLinExpr fo = 0;
-
-	
-	// depot location cost
-	for (auto i : UD0) {
-		fo += getZ(model, i.key) * (inst->depotCost / inst->depotLifetime);
-	}
 	
 	// bss and brs location cost
 	for (auto i : C) {
 		GRBVar yi = getY(model, i.key);
-		fo += (inst->brsCost / inst->brsLifetime) * yi;
+		fo += (inst->brsCost) * yi;
 	}	
 	for (auto i : R) {
 		GRBVar yi = getY(model, i.key);
-		fo += (inst->bssCost / inst->bssLifetime) * yi;
+		fo += (inst->bssCost) * yi;
 	}
 
-	
 	// driving cost
 	for (auto i : V0) {
 		for (auto j : V1) {
 			if (i.key != j.key) {
 				//string var = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
 				GRBVar xij = getX(model, i.key, j.key);
-				fo += inst->driverWage * dist(i, j) * xij; // model.getVarByName(var);
+				fo += inst->driverWage * inst->dist(i, j) * xij; // model.getVarByName(var);
 			}
 		}
-	}
-
-	// vehicle fixed cost
-	for (auto i : UD0) {
-		for (auto j : V1) {
-			if (i.key != j.key) {
-				GRBVar xij = getX(model, i.key, j.key);
-				fo += (inst->vehicleCost / inst->vehicleLifetime) * xij;
-			}			
-		}
-	}
-
-	// energy cost
-	vector<node> SK;
-	for (auto h : C) {
-		auto SKc = inst->set_SK(h.key);
-		SK.insert(SK.end(), SKc.begin(), SKc.end());
-	}
-
-	auto CUSKc = vectorUnion(C, SK);
-
-	for (auto i : CUSKc) {
-		GRBVar wi = getW(model, i.key);
-
-		fo += inst->brsEnergyCost * wi;
 	}
 
 	model.setObjective(fo, GRB_MINIMIZE);
@@ -969,8 +1246,9 @@ void Model::c2(GRBModel & model)
 		GRBLinExpr c = 0;
 		for (auto j : V1) {
 			if (i.key != j.key) {
-				string varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
-				GRBVar xij = model.getVarByName(varName);
+				//string varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
+				//GRBVar xij = model.getVarByName(varName);
+				GRBVar xij = getX(model, i.key, j.key);
 				c += xij;
 			}
 		}
@@ -988,8 +1266,9 @@ void Model::c3(GRBModel & model)
 		GRBLinExpr c = 0;
 		for (auto j : V1) {
 			if (i.key != j.key) {
-				string varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
-				GRBVar xij = model.getVarByName(varName);
+				//string varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
+				//GRBVar xij = model.getVarByName(varName);
+				GRBVar xij = getX(model, i.key, j.key);
 				c += xij;
 			}
 		}
@@ -1008,16 +1287,18 @@ void Model::c4(GRBModel & model)
 		GRBLinExpr c1 = 0;
 		for (auto i : V1) {
 			if (i.key != j.key) {
-				string varName = "x(" + to_string(j.key) + "," + to_string(i.key) + ")";
-				GRBVar xji = model.getVarByName(varName);
+				//string varName = "x(" + to_string(j.key) + "," + to_string(i.key) + ")";
+				//GRBVar xji = model.getVarByName(varName);
+				GRBVar xji = getX(model, j.key, i.key);
 				c1 += xji;
 			}
 		}
 		GRBLinExpr c2 = 0;
 		for (auto i : V0) {
 			if (i.key != j.key) {
-				string varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
-				GRBVar xij = model.getVarByName(varName);
+				//string varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
+				//GRBVar xij = model.getVarByName(varName);
+				GRBVar xij = getX(model, i.key, j.key);
 				c2 += xij;
 			}
 		}
@@ -1034,8 +1315,9 @@ void Model::c5(GRBModel & model) // verify
 	for (auto i : UD0) {
 		GRBLinExpr c = 0;
 		for (auto j : V1) {
-			string varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
-			GRBVar xij = model.getVarByName(varName);
+			//string varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
+			//GRBVar xij = model.getVarByName(varName);
+			GRBVar xij = getX(model, i.key, j.key);
 			c += xij;
 		}
 		model.addConstr(c <= inst->UB, "c5_1(" + to_string(i.key) + ")");
@@ -1088,13 +1370,15 @@ void Model::c7_M(GRBModel & model)
 		GRBLinExpr c = 0;
 		for (auto j : V0) {
 			if (i.key != j.key) {
-				string varName = "x(" + to_string(j.key) + "," + to_string(i.key) + ")";
-				GRBVar xji = model.getVarByName(varName);
+				//string varName = "x(" + to_string(j.key) + "," + to_string(i.key) + ")";
+				//GRBVar xji = model.getVarByName(varName);
+				GRBVar xji = getX(model, j.key, i.key);
 				c += xji;
 			}
 		}
-		string varName = "y(" + to_string(i.key) + ")";
-		GRBVar yi = model.getVarByName(varName);
+		//string varName = "y(" + to_string(i.key) + ")";
+		//GRBVar yi = model.getVarByName(varName);
+		GRBVar yi = getY(model, i.key);
 		model.addConstr(c <= M * yi, "c7_M(" + to_string(i.key) + ")");
 	}
 	model.update();
@@ -1166,7 +1450,7 @@ void Model::c9(GRBModel & model)
 				varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
 				GRBVar xij = model.getVarByName(varName);
 
-				GRBLinExpr c = ti + (getTD(i, j) + i.serviceTime) * xij;
+				GRBLinExpr c = ti + (inst->getTD(i, j) + i.serviceTime) * xij;
 
 				model.addGenConstrIndicator(xij, true, tj >= c, "c9(" + to_string(i.key) + "," + to_string(j.key) + ")");
 			}
@@ -1192,7 +1476,7 @@ void Model::c9_M(GRBModel & model)
 				varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
 				GRBVar xij = model.getVarByName(varName);
 
-				GRBLinExpr c = ti + (getTD(i, j) + i.serviceTime) * xij; // verify getS
+				GRBLinExpr c = ti + (inst->getTD(i, j) + i.serviceTime) * xij; // verify getS
 
 				model.addConstr(tj >= c - M * (1 - xij), "c9_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
 			}
@@ -1214,7 +1498,7 @@ void Model::c10(GRBModel & model)
 					GRBVar ti = getT(model, i.key);
 					GRBVar tj = getT(model, j.key);
 					GRBVar xij = getX(model, i.key, j.key);
-					float tdij = getTD(i, j);
+					float tdij = inst->getTD(i, j);
 
 					GRBLinExpr c = ti + tdij * xij;
 					
@@ -1239,7 +1523,7 @@ void Model::c10_M(GRBModel & model)
 					GRBVar ti = getT(model, i.key);
 					GRBVar tj = getT(model, j.key);
 					GRBVar xij = getX(model, i.key, j.key);
-					float tdij = getTD(i, j);
+					float tdij = inst->getTD(i, j);
 
 					GRBLinExpr c = ti + tdij * xij;
 
@@ -1265,8 +1549,8 @@ void Model::c11(GRBModel & model)
 					GRBVar ti = getT(model, i.key);
 					GRBVar tj = getT(model, j.key);
 					GRBVar xij = getX(model, i.key, j.key);
-					float tdij = getTD(i, j);
-					float ct = getCT();
+					float tdij = inst->getTD(i, j);
+					float ct = inst->getCT();
 
 					GRBLinExpr c = ti + tdij * xij + ct * xij;
 
@@ -1292,8 +1576,8 @@ void Model::c11_M(GRBModel & model)
 					GRBVar ti = getT(model, i.key);
 					GRBVar tj = getT(model, j.key);
 					GRBVar xij = getX(model, i.key, j.key);
-					float tdij = getTD(i, j);
-					float ct = getCT();
+					float tdij = inst->getTD(i, j);
+					float ct = inst->getCT();
 
 					GRBLinExpr c = ti + tdij * xij + ct * xij;
 
@@ -1336,7 +1620,7 @@ void Model::c13(GRBModel & model)
 					GRBVar qi = getQ(model, i.key);
 					GRBVar qj = getQ(model, j.key);
 					GRBVar xij = getX(model, i.key, j.key);
-					float diij = dist(i, j);
+					float diij = inst->dist(i, j);
 					float c = inst->r;
 
 					GRBLinExpr c_ = qi - c * diij * xij;
@@ -1367,7 +1651,7 @@ void Model::c13_M(GRBModel & model)
 					GRBVar qi = getQ(model, i.key);
 					GRBVar qj = getQ(model, j.key);
 					GRBVar xij = getX(model, i.key, j.key);
-					float diij = dist(i, j);
+					float diij = inst->dist(i, j);
 					float c = inst->r;
 
 					GRBLinExpr c_ = qi - c * diij * xij;
@@ -1395,7 +1679,7 @@ void Model::c14(GRBModel & model)
 				if (i.key != j.key) {
 					GRBVar qj = getQ(model, j.key);
 					GRBVar xij = getX(model, i.key, j.key);
-					float diij = dist(i, j);
+					float diij = inst->dist(i, j);
 					float c = inst->r;
 					float Q = inst->Q;
 
@@ -1424,7 +1708,7 @@ void Model::c14_M(GRBModel & model)
 				if (i.key != j.key) {
 					GRBVar qj = getQ(model, j.key);
 					GRBVar xij = getX(model, i.key, j.key);
-					float diij = dist(i, j);
+					float diij = inst->dist(i, j);
 					float c = inst->r;
 					float Q = inst->Q;
 
@@ -1758,7 +2042,7 @@ void Model::c30(GRBModel & model)
 			if (i.key != j.key) {
 				GRBVar ti = getT(model, i.key);
 				GRBVar tj = getT(model, j.key);				
-				float tdij = getTD(i, j);
+				float tdij = inst->getTD(i, j);
 				GRBVar xij = getX(model, i.key, j.key);
 				float r = inst->g;
 				GRBVar wi = getW(model, i.key);
@@ -1779,7 +2063,7 @@ void Model::c30_M(GRBModel & model)
 			if (i.key != j.key) {
 				GRBVar ti = getT(model, i.key);
 				GRBVar tj = getT(model, j.key);
-				float tdij = getTD(i, j);
+				float tdij = inst->getTD(i, j);
 				GRBVar xij = getX(model, i.key, j.key);
 				float r = inst->g;
 				GRBVar wi = getW(model, i.key);
@@ -1800,7 +2084,7 @@ void Model::c31(GRBModel & model)
 			if (i.key != j.key) {
 				GRBVar qi = getQ(model, i.key);
 				GRBVar qj = getQ(model, j.key);
-				float dij = dist(i, j);
+				float dij = inst->dist(i, j);
 				GRBVar xij = getX(model, i.key, j.key);
 				float c = inst->r;
 				model.addGenConstrIndicator(xij, true, qj <= qi - c * dij * xij, "c31(" + to_string(i.key) + "," + to_string(j.key) + ")");
@@ -1820,7 +2104,7 @@ void Model::c31_M(GRBModel & model)
 			if (i.key != j.key) {
 				GRBVar qi = getQ(model, i.key);
 				GRBVar qj = getQ(model, j.key);
-				float dij = dist(i, j);
+				float dij = inst->dist(i, j);
 				GRBVar xij = getX(model, i.key, j.key);
 				float c = inst->r;
 				model.addConstr(qj <= qi - c * dij * xij + inst->M * (1 - xij), "c31_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
@@ -1841,7 +2125,7 @@ void Model::c32(GRBModel & model)
 				GRBVar qi = getQ(model, i.key);
 				GRBVar qj = getQ(model, j.key);
 				GRBVar wi = getW(model, i.key);
-				float dij = dist(i, j);
+				float dij = inst->dist(i, j);
 				GRBVar xij = getX(model, i.key, j.key);
 				float c = inst->r;
 				model.addGenConstrIndicator(xij, true, qj <= qi + wi - c * dij * xij, "c32(" + to_string(i.key) + "," + to_string(j.key) + ")");
@@ -1862,7 +2146,7 @@ void Model::c32_M(GRBModel & model)
 				GRBVar qi = getQ(model, i.key);
 				GRBVar qj = getQ(model, j.key);
 				GRBVar wi = getW(model, i.key);
-				float dij = dist(i, j);
+				float dij = inst->dist(i, j);
 				GRBVar xij = getX(model, i.key, j.key);
 				float c = inst->r;
 				model.addConstr(qj <= qi + wi - c * dij * xij + inst->M * (1 - xij), "c32_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
@@ -1951,7 +2235,7 @@ void Model::c38(GRBModel & model)
 				if (i.key != j.key) {
 					GRBVar tj = getT(model, j.key);
 					GRBVar ti = getT(model, i.key);
-					float tdij = getTD(i, j);
+					float tdij = inst->getTD(i, j);
 					GRBVar xij = getX(model, i.key, j.key);
 					float r = inst->g;
 					GRBVar wi = getW(model, i.key);
@@ -1976,7 +2260,7 @@ void Model::c38_M(GRBModel & model)
 				if (i.key != j.key) {
 					GRBVar tj = getT(model, j.key);
 					GRBVar ti = getT(model, i.key);
-					float tdij = getTD(i, j);
+					float tdij = inst->getTD(i, j);
 					GRBVar xij = getX(model, i.key, j.key);
 					float r = inst->g;
 					GRBVar wi = getW(model, i.key);
@@ -1999,7 +2283,7 @@ void Model::c39(GRBModel & model)
 				GRBVar qj = getQ(model, j.key);
 				GRBVar qi = getQ(model, i.key);
 				float c = inst->r;
-				float dij = dist(i, j);
+				float dij = inst->dist(i, j);
 				GRBVar xij = getX(model, i.key, j.key);
 				model.addGenConstrIndicator(xij, true, qj <= qi - c * dij * xij, "c39(" + to_string(i.key) + "," + to_string(j.key) + ")");
 			}
@@ -2019,7 +2303,7 @@ void Model::c39_M(GRBModel & model)
 				GRBVar qj = getQ(model, j.key);
 				GRBVar qi = getQ(model, i.key);
 				float c = inst->r;
-				float dij = dist(i, j);
+				float dij = inst->dist(i, j);
 				GRBVar xij = getX(model, i.key, j.key);
 				model.addConstr(qj <= qi - c * dij * xij + inst->M * (1 - xij), "c39_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
 			}
@@ -2043,7 +2327,7 @@ void Model::c40(GRBModel & model)
 					GRBVar qi = getQ(model, i.key);
 					GRBVar wi = getW(model, i.key);
 					float c = inst->r;
-					float dij = dist(i, j);
+					float dij = inst->dist(i, j);
 					GRBVar xij = getX(model, i.key, j.key);
 					model.addGenConstrIndicator(xij, true, qj <= qi + wi - c * dij * xij, "c40(" + to_string(i.key) + "," + to_string(j.key) + ")");
 				}
@@ -2068,7 +2352,7 @@ void Model::c40_M(GRBModel & model)
 					GRBVar qi = getQ(model, i.key);
 					GRBVar wi = getW(model, i.key);
 					float c = inst->r;
-					float dij = dist(i, j);
+					float dij = inst->dist(i, j);
 					GRBVar xij = getX(model, i.key, j.key);
 					model.addConstr(qj <= qi + wi - c * dij * xij + inst->M * (1 - xij), "c40_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
 				}
@@ -2311,54 +2595,11 @@ GRBVar Model::getZ(GRBModel & model, int key)
 		cout << "Error getting variable: " << varName << endl;
 		cout << "Error code: " << e.getErrorCode() << endl;
 		cout << "Message: " << e.getMessage() << endl;
-		cout << e.getMessage() << endl;
-		exit(1);
+		//exit(1);
 	}
 	catch (exception e) {
 		cout << e.what() << endl;
-		exit(1);
+		//exit(1);
 	}
 }
 
-float Model::getTD(node a, node b)
-{
-	if (inst->type == 2) {
-		//cout << a.key << " - " << b.key << " - " << int(dist(a, b) / inst->v * 60 * 60) << endl;
-		return (distEdges(a.ogKey, b.ogKey) / (inst->v));// *60 * 60;
-	}
-	else {
-		return dist(a, b) / inst->v;
-	}	
-}
-
-float Model::getS(int key) // verify
-{
-	return inst->nodes.at(key).serviceTime;
-}
-
-float Model::getCT()
-{
-	return this->inst->ct;
-}
-
-float Model::dist(node a, node b)
-{
-	if(inst->type == 0 || inst->type == 1)
-		return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
-	else if (inst->type == 2) {
-		return distEdges(a.ogKey, b.ogKey);
-	}
-}
-
-float Model::distEdges(int keya, int keyb)
-{
-	float dist = 0;
-	
-	for (edge e : inst->edges) {
-		if (e.beg == keya && e.end == keyb) {
-			return e.value;
-		}
-	}
-	cout << "Error edge not found between nodes " << keya << " and " << keyb << endl;
-	return -1;
-}

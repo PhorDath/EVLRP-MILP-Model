@@ -1,4 +1,5 @@
 #include "instance.h"
+#include "Model.h"
 
 bool compKey(node a, node b)
 {
@@ -30,7 +31,7 @@ instance::instance(string dir, string file, int type)
 
 void instance::test()
 {
-	print();
+	print(cout);
 }
 
 // this functions can be optimized if nodes are read always in the same order (DFC)
@@ -160,24 +161,164 @@ vector<node> instance::sortSet(vector<node> set)
 	return set;
 }
 
-void instance::print()
+void instance::print2(ostream & strm)
 {
-	cout << "\nData in " << fileName << " \n\n";
-	cout << "Number of depots        : " << numD << endl;
-	cout << "Number of stations      : " << numF << endl;
-	cout << "Number of clients       : " << numC << endl;
-	cout << endl;
-	cout << "Battery capacity        : " << Q << endl;
-	cout << "Vehicle load capacity   : " << C << endl;
-	cout << "Energy consumption rate : " << r << endl;
-	cout << "Recharging rate         : " << g << endl;
-	cout << "Speed                   : " << v << endl;
-	cout << endl;
-	cout << setw(3) << "key" << setw(16) << "id" << setw(15) << "type" << setw(6) << "x" << setw(6) << "y" << setw(6) << "dem" << setw(6) << "rTime" << setw(6) << "dDate" << setw(6) << "sTime" << setw(6) << "ref" << setw(6) << "ref2" << setw(6) << "id_n" << setw(6) << "ogKey" << endl;
+	strm << "depots_number                    " << numD << endl;
+	strm << "facilities_number                " << numF << endl;
+	strm << "customers_number                 " << numC << endl;
+	strm << "maximum_num_statios              " << o << endl;
+	strm << "LB                               " << LB << endl;
+	strm << "UB                               " << UB << endl;
+	strm << "M                                " << M << endl;
+	strm << fixed;
+	strm << "depot_cost                 usd   " << depotCost << endl;
+	strm.unsetf(ios_base::fixed);
+	strm << "bss_cost                   usd   " << bssCost << endl;
+	strm << "brs_cost                   usd   " << brsCost << endl;
+	strm << "bss_energy_cost            usd   " << bssEnergyCost << endl;
+	strm << "brs_energy_cost            usd   " << brsEnergyCost << endl;
+	strm << "vehicle_cost               usd   " << vehicleCost << endl;
+	strm << "driver_wage                usd   " << driverWage << endl;
+	strm << "depot_lifetime            year   " << depotLifetime << endl;
+	strm << "bss_lifetime              year   " << bssLifetime << endl;
+	strm << "brs_lifetime              year   " << brsLifetime << endl;
+	strm << "vehicle_lifetime          year   " << vehicleLifetime << endl;
+	strm << "vehicle_range              km    " << vehicleRange << endl;
+	strm << "battery_capacity           kwh   " << Q << endl;
+	strm << "battery_swap_time        second  " << ct << endl;
+	strm << "battery_consumption_rate    x    " << r << endl;
+	strm << "recharging_rate             x    " << g << endl;
+	strm << "vehicle_load               kg    " << C << endl;
+	strm << "vehicle_speed             km/h   " << v << endl << endl;
+
+	int bigger = 0;
 	for (auto i : nodes) {
-		cout << setprecision(2) << setw(3) << i.key << setw(25) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(6) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ref << setw(6) << i.ref2 << setw(6) << i.id_n << setw(6) << i.ogKey << endl;
+		if (i.id.size() > bigger) {
+			bigger = i.id.size();
+		}
 	}
-	cout << "Distances \n";
+
+	int esp = 3;
+	for (auto i : nodes) {
+		//strm << i.key << " " << i.id << " " << i.type << " " << i.x << " " << i.y << " " << i.demand << " " << i.readyTime << " " << i.dueDate << " " << i.serviceTime << " " << i.ref << endl;
+		strm << setw(3) << i.key << setw(bigger + 3) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(7) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ogKey << endl;
+	}
+
+	/*
+	strm << endl;
+	for (auto i : distanceMatrix) {
+		for (auto j : i) {
+			strm << j << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	*/
+}
+
+void instance::print3(ostream & strm)
+{
+	strm << "depots_number                    " << numD << endl;
+	strm << "facilities_number                " << numF << endl;
+	strm << "customers_number                 " << numC << endl;
+	strm << "maximum_num_statios              " << o << endl;
+	strm << "LB                               " << LB << endl;
+	strm << "UB                               " << UB << endl;
+	strm << "M                                " << M << endl;
+	strm << fixed;
+	strm << "depot_cost                 usd   " << depotCost << endl;
+	strm.unsetf(ios_base::fixed);
+	strm << "bss_cost                   usd   " << bssCost << endl;
+	strm << "brs_cost                   usd   " << brsCost << endl;
+	strm << "bss_energy_cost            usd   " << bssEnergyCost << endl;
+	strm << "brs_energy_cost            usd   " << brsEnergyCost << endl;
+	strm << "vehicle_cost               usd   " << vehicleCost << endl;
+	strm << "driver_wage                usd   " << driverWage << endl;
+	strm << "depot_lifetime            year   " << depotLifetime << endl;
+	strm << "bss_lifetime              year   " << bssLifetime << endl;
+	strm << "brs_lifetime              year   " << brsLifetime << endl;
+	strm << "vehicle_lifetime          year   " << vehicleLifetime << endl;
+	strm << "vehicle_range              km    " << vehicleRange << endl;
+	strm << "battery_capacity           kwh   " << Q << endl;
+	strm << "battery_swap_time        second  " << ct << endl;
+	strm << "battery_consumption_rate    x    " << r << endl;
+	strm << "recharging_rate             x    " << g << endl;
+	strm << "vehicle_load               kg    " << C << endl;
+	strm << "vehicle_speed             km/h   " << v << endl << endl;
+
+	int bigger = 0;
+	for (auto i : nodes) {
+		if (i.id.size() > bigger) {
+			bigger = i.id.size();
+		}
+	}
+
+	int esp = 3;
+	for (auto i : nodes) {
+		//strm << i.key << " " << i.id << " " << i.type << " " << i.x << " " << i.y << " " << i.demand << " " << i.readyTime << " " << i.dueDate << " " << i.serviceTime << " " << i.ref << endl;
+		strm << setw(3) << i.key << setw(bigger + 3) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(7) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ogKey << setw(6) << i.ref << setw(6) << i.ref2 << setw(6) << i.id_n << endl;
+
+		//strm << i.key << " " << i.id << " " << i.type << " " << i.x << " " << i.y << " " << i.demand << " " << i.readyTime << " " << i.dueDate << " " << i.serviceTime << " " << i.ref << " " << i.id_n << endl;
+	}
+
+	/*
+	strm << endl;
+	for (auto i : distanceMatrix) {
+		for (auto j : i) {
+			strm << j << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	*/
+}
+
+void instance::print(ostream &stream)
+{
+	stream << "\nData in " << fileName << " \n\n";
+	stream << "Number of depots        : " << numD << endl;
+	stream << "Number of stations      : " << numF << endl;
+	stream << "Number of clients       : " << numC << endl;
+	stream << "Stations: ";
+	for (auto i : st) {
+		cout << i << " ";
+	}
+	stream << endl;
+
+	int esp = 4;
+	stream << "Freight capacity of the vehicle (C)              : " << C << endl;
+	stream << "Battery capacity (Q)                             : " << Q << endl;
+	stream << "Swap time of battery (ct)                        : " << ct << endl;
+	stream << "Consumption rate of energy per distance unit (r) : " << r << endl;
+	stream << "Maximum number of statios to locate (o)          : " << o << endl;
+	stream << "LB                                               : " << LB << endl;
+	stream << "UB                                               : " << UB << endl;
+	stream << "M                                                : " << M << endl;
+	stream << "Speed (v)                                        : " << v << endl;
+	stream << "Recharging rate (g)                              : " << g << endl;
+	
+	stream << endl;
+	int e = 14;
+	//cout << fixed;
+	stream << "Depot cost              : " << depotCost << " | " << depotCost / depotLifetime << " | " << depotCost / numC << endl;
+	stream << "BSS cost                : " << bssCost << " | " << bssCost / bssLifetime << " | " << bssCost / numC << endl;
+	stream << "BRS cost                : " << brsCost << " | " << brsCost / brsLifetime << " | "  << brsCost / numC <<  endl;
+	stream << "Vehicle cost            : " << vehicleCost << " | " << vehicleCost / vehicleLifetime << " | " << vehicleCost / numC << endl;
+	stream << "Driver wage             : " << driverWage << endl;
+	stream << "BRS energy cost         : " << brsEnergyCost << endl;
+	stream << "BSS energy cost         : " << bssEnergyCost << endl;
+	stream << "Vehicle range           : " << vehicleRange << endl;
+	stream << "Depot lifetime          : " << depotLifetime << endl;
+	stream << "BSS lifetime            : " << bssLifetime << endl;
+	stream << "BRS lifetime            : " << brsLifetime << endl;
+	stream << "Vehicle lifetime        : " << vehicleLifetime << endl;
+	stream << endl;
+	stream << setw(3) << "key" << setw(16) << "id" << setw(15) << "type" << setw(6) << "x" << setw(6) << "y" << setw(6) << "dem" << setw(6) << "rTime" << setw(6) << "dDate" << setw(6) << "sTime" << setw(6) << "ref" << setw(6) << "ref2" << setw(6) << "id_n" << setw(6) << "ogKey" << endl;
+	for (auto i : nodes) {
+		stream << setprecision(2) << setw(3) << i.key << setw(25) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(6) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ref << setw(6) << i.ref2 << setw(6) << i.id_n << setw(6) << i.ogKey << endl;
+	}
+	/*
+	stream << "Distances \n";
 	if (type != 2) {
 		distanceMatrix.resize(nodes.size());
 		for (int i = 0; i < nodes.size(); i++) {
@@ -187,38 +328,35 @@ void instance::print()
 			}
 		}
 	}
-
-	cout << fixed << setprecision(2);
+	stream << fixed << setprecision(2);
 	for (vector<float> i : distanceMatrix) {
 		for (float j : i) {
-			cout << setw(10) << j;// << " ";
+			stream << setw(10) << j;// << " ";
 		}
-		cout << endl;
+		stream << endl;
 	}
-	cout << "\nTime \n";
+	stream << "\nTime \n";
 	for (vector<float> i : distanceMatrix) {
 		for (float j : i) {
-			cout << setw(10) << (j / v);// << " ";
+			stream << setw(10) << (j / v);// << " ";
 		}
-		cout << endl;
+		stream << endl;
 	}
-	
-
-
+	*/
 
 	/*
-	cout << "Set: \n";
-	cout << "UD0: \n"; printSet(set_UD0());
-	cout << "UD1: \n"; printSet(set_UD1());
-	cout << "UD: \n"; printSet(set_UD());
-	cout << "C: \n"; printSet(set_C());
-	cout << "R: \n"; printSet(set_R());
-	cout << "S: \n"; printSet(set_S());
-	cout << "V: \n"; printSet(set_V());
-	cout << "C0: \n"; printSet(set_C0());
-	cout << "V0: \n"; printSet(set_V0());
-	cout << "V1: \n"; printSet(set_V1());
-	cout << "V01: \n"; printSet(set_V01());
+	stream << "Set: \n";
+	stream << "UD0: \n"; printSet(set_UD0());
+	stream << "UD1: \n"; printSet(set_UD1());
+	stream << "UD: \n"; printSet(set_UD());
+	stream << "C: \n"; printSet(set_C());
+	stream << "R: \n"; printSet(set_R());
+	stream << "S: \n"; printSet(set_S());
+	stream << "V: \n"; printSet(set_V());
+	stream << "C0: \n"; printSet(set_C0());
+	stream << "V0: \n"; printSet(set_V0());
+	stream << "V1: \n"; printSet(set_V1());
+	stream << "V01: \n"; printSet(set_V01());
 	*/
 }
 
@@ -229,22 +367,117 @@ void instance::printSet(vector<node> set)
 	}
 }
 
+void instance::printSolution(ostream &stream)
+{
+	int esp = 6;
+	stream << "\nSolution for " << this->fileName << endl << endl;
+
+	stream << "FO                   : " << solution.FO << endl;
+	stream << "Time                 : " << solution.runTime << endl;
+	stream << "Status               : " << solution.status << endl;
+	stream << "Gap                  : " << solution.gap << endl;
+	stream << "Depot siting cost    : " << solution.dCost << endl;
+	stream << "Stations siting cost : " << solution.sCost << endl;
+	stream << "Drivers wage cost    : " << solution.dwCost << endl;
+	stream << "Vehicle cost         : " << solution.vCost << endl;
+	stream << "Energy cost          : " << solution.eCost << endl;
+	stream << "BSS use cost         : " << solution.bssUseCost << endl;
+	stream << "Total cost           : " << solution.dCost + solution.sCost + solution.dwCost + solution.vCost + solution.eCost + solution.bssUseCost << endl;
+	stream << "Number of vehicles used : " << solution.numVehicles << endl;
+
+	stream << "Routes : " << endl;
+	for (auto i : solution.routes) {
+		for (auto j : i) {
+			stream << j << " ";
+		}
+		stream << endl;
+	}
+	stream << "Stations: ";
+	if (solution.stations.size() == 0) {
+		stream << "No stations sited" << endl;
+	}
+
+	else {
+		stream << "Stations will be sited at : ";
+		for (auto i : solution.stations) {
+			stream << i << " ";
+		}
+	}
+	stream << endl;
+
+	stream << "key" << setw(esp) << "id" << setw(esp) << "type" << setw(esp) << "x" << setw(esp) << "y" << setw(esp) << "dem" << setw(esp) << "rTime" << setw(esp) << "dDate" << setw(esp) << "sTime" << setw(esp) << "ref" << setw(esp) << "ref2" << setw(esp) << "id_n" << setw(esp) << "ogKey" << endl;
+
+	stream << endl;
+
+	for (int i = 0; i < solution.routes.size(); i++) {
+		stream << "___________________________________________________\n";
+		stream << "Route " << i + 1 << " begin at " << solution.routes.at(i).at(0) << endl << endl;
+
+		for (int j = 1; j < solution.routes.at(i).size(); j++) {
+			int beg = solution.routes.at(i).at(j - 1);
+			int end = solution.routes.at(i).at(j);
+			node b = getNodeByKey(beg);
+			node e = getNodeByKey(end);
+			stream << "Travel from " << beg << " to " << end << endl;
+
+			stream << "Node" << setw(4) << beg << ":" << setw(3);
+			stream << setw(esp) << b.id << setw(esp) << b.type << setw(esp) << setw(esp) << b.demand << setw(esp) << b.readyTime << setw(esp) << b.dueDate << setw(esp) << b.serviceTime << endl;
+
+			stream << "Node" << setw(4) << end << ":" << setw(3);
+			stream << setw(esp) << e.id << setw(esp) << e.type << setw(esp) << setw(esp) << e.demand << setw(esp) << e.readyTime << setw(esp) << e.dueDate << setw(esp) << e.serviceTime << endl;
+
+			stream << "Distance                              : " << dist(b, e) << endl;
+			stream << "Time                                  : " << getTD(b, e) << endl;
+			stream << "Battery consumed                      : " << dist(b, e) * r << endl;
+			stream << "Arrival in " << end << "              : " << solution.arrivalTime.at(end) << endl;
+			stream << "Battery level in " << end << "        : " << solution.batteryLevel.at(end) << endl;
+			// check if freight is left at end
+			//if (solution.freightLeft.at(end) != 0) {
+				stream << "Freight left in " << end << "         : " << solution.freightLeft.at(end) << endl;
+			//}
+			//if (solution.energyCharged.at(end) != 0) {
+				stream << "Energy recharged in " << end << "     : " << solution.energyCharged.at(end) << endl;
+			//}
+			stream << endl;
+		}
+	}
+	stream << "___________________________________________________\n\n";
+
+	
+
+
+}
+
+node instance::getNodeByKey(int key)
+{
+	for (auto i : nodes) {
+		if (i.key == key) {
+			return i;
+		}
+	}
+	cout << "Node with key " << key << " not found\n";
+	return nodes.at(0);
+}
+
 void instance::setDefaultParameters()
 {
+
+
 	bssCost = 500000; // cost of siting a battery swap station
 	brsCost = 126500; // cost of siting a battery recharging station
 	driverWage = 13.14 / 1000; // cost per m travelled
 	vehicleCost = 70000; // fixed cost of a vehicle, https://www.theverge.com/2019/9/19/20873947/amazon-electric-delivery-van-rivian-jeff-bezos-order
 	brsEnergyCost = 0.32 / 1000; // cost per energy unit in the battery recharging stations
 	bssEnergyCost = 0.15 / 1000; // cost per energy unit in the battery swap stations
-	depotCost = 1000000; // cost of siting a depot
+	depotCost = 92000000; // cost of siting a depot, https://www.bizjournals.com/seattle/news/2017/06/09/amazon-to-spend-200m-on-fulfillment-center-for-130.html
 	stationCap = 2; //station capacity
 	vehicleRange = 161;
 	depotLifetime = 40 * 365;
 	bssLifetime = 20 * 365;
 	brsLifetime = 10 * 365;
-	vehicleLifetime = 10 * 365;
+	vehicleLifetime = 20 * 365;
 	alfa = 0.2; // percentagem of customers that will be transformed in stattions siting locations, used on the UK instances
+
 }
 
 void instance::readInstace()
@@ -257,6 +490,24 @@ void instance::readInstace()
 	}
 	if (type == 2) {
 		readprplib();
+	}
+	if (type == 3) {
+		readUKAdapt();
+	}
+	maxDist = 0;
+	minDist = 9999999;
+	for (int i = 0; i < distanceMatrix.size(); i++) {
+		for (int j = 0; j < distanceMatrix.at(i).size(); j++) {
+			if (i != j){
+				float d = distanceMatrix.at(i).at(j);
+				if (d >= maxDist) {
+					maxDist = d;
+				}
+				else if (d < maxDist) {
+					minDist = d;
+				}
+			}			
+		}
 	}
 }
 
@@ -446,9 +697,18 @@ void instance::readprplib()
 		customers.push_back(a);
 	}
 	numC = customers.size();
+
+	int numFacilities;
+	file >> numFacilities;
+	
+	for (int i = 0; i < numFacilities; i++) {
+		int aux;
+		file >> aux;
+		st.insert(aux);
+	}
 	
 	// create the nodes of stations with selected customers. the customersNodes is modified without the stations
-	vector<node> stations = chooseStationsLocation(customers);
+	vector<node> stations = chooseStationsLocationMCLP(customers);
 
 	// insert the stations nodes
 	nodes.insert(nodes.end(), stations.begin(), stations.end());
@@ -491,22 +751,149 @@ void instance::readprplib()
 		}
 	}
 
-	Q = 80 * 60 * 60;// The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40]. // the conversion between KWh to KWs was done
-	v = v / 3.6; // convert the speed to m/s;
-	vehicleRange = 161 * 1000; // meters
-	r = 1;// (Q / vehicleRange);// 1;// (Q / vehicleRange) / 200;// vehicleRange
-	g = 4;
-
 	// create a vector of edges to becames easier to get distances in this type of instance
 	createEdgesVector();
-	//cout << edges.size() << endl;
-	//for (auto e : edges) {
-	//	cout << e.beg << " - " << e.end << " - " << e.value << endl;
-	//}
 
+	// calculating extra parameters
+	Q = 161000;// *60 * 60;// The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40]. // the conversion between KWh to KWs was done
+	v = v / 3.6; // convert the speed to m/s;
+	vehicleRange = 161 * 1000; // meters
+	r = (vehicleRange / Q); // vehicleRange
+	g = 4;	
+	fullRechargeTime = Q / g;
+	ct = 600;
+	o = numC + numF;
 	LB = 0; // wrong
 	UB = numC + numF;
 	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
+}
+
+void instance::readUKAdapt()
+{
+	type = 2;
+	fstream file;
+	file.open(dir + fileName + "_a.txt", ios::in);
+	if (file.is_open() == false) {
+		cout << "Error opening file " << fileName + "_a.txt" << endl;
+		cout << "In directory " << dir << endl;
+		exit(1);
+	}
+
+	int ig;
+	string str;
+
+	file >> str >> numD;
+	file >> str >> numF;
+	file >> str >> numC;
+	file >> str >> o; // maximum number of stations to be sited
+	file >> str >> LB;
+	file >> str >> UB;
+	file >> str >> M;
+	file >> str >> mDim; // distance matrix dimension
+	file >> str >> str >> depotCost;
+	file >> str >> str >> bssCost;
+	file >> str >> str >> brsCost;
+	file >> str >> str >> bssEnergyCost;
+	file >> str >> str >> brsEnergyCost;
+	file >> str >> str >> vehicleCost;
+	file >> str >> str >> driverWage;
+	file >> str >> str >> depotLifetime;
+	file >> str >> str >> bssLifetime;
+	file >> str >> str >> brsLifetime;
+	file >> str >> str >> vehicleLifetime;
+	file >> str >> str >> vehicleRange; // vehicle autonomy
+	file >> str >> str >> Q; // battery capacity
+	file >> str >> str >> ct; // battery swap time
+	file >> str >> str >> r; // battery consumption rate
+	file >> str >> str >> g; // recharging rate
+	file >> str >> str >> C; // vehicle load capacity
+	file >> str >> str >> v; // speed
+
+	int numNodes = numD + numF + numC;
+
+	// read nodes
+	node a;
+	for (int i = 0; i < numNodes; i++) {
+		file >> a.key >> a.id >> a.type >> a.x >> a.y >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime >> a.ogKey;
+		nodes.push_back(a);
+	}
+
+	distanceMatrix.resize(mDim);
+	for (int i = 0; i < mDim; i++) {
+		distanceMatrix.at(i).resize(mDim);
+		for (int j = 0; j < mDim; j++) {
+			float d;
+			file >> d;
+			d = d;// / 1000; // convert from meters to kilometers
+			distanceMatrix.at(i).at(j) = d;
+		}
+	}
+
+	
+	// give all depot nodes a specific id
+	int id = 1;
+	for (int i = 0; i < nodes.size(); i++) {
+		if (nodes.at(i).type == "d") {
+			nodes.at(i).id_n = id;
+			id++;
+		}
+	}
+
+	// adding depot arrival nodes
+	vector<node> UD0 = set_UD0();
+	node n;
+	for (int i = 0; i < UD0.size(); i++) {
+		UD0.at(i).ref2 = i;
+		n = UD0.at(i);
+		n.type = "a";		
+		nodes.push_back(n);
+	}
+
+	// organize intial nodes key
+	for (int i = 0; i < nodes.size(); i++) {
+		nodes.at(i).key = i;
+		nodes.at(i).ref = -1;
+		nodes.at(i).ref2 = i;
+		//nodes.at(i).id_n = i;
+	}
+
+	addDummyNodes();
+
+	// create a vector of edges to becames easier to get distances in this type of instance
+	createEdgesVector();
+
+	//o = numC + numF;
+	//LB = 0; // wrong
+	//UB = numC + numF;
+	//M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
+
+	// measures units 
+	driverWage /= 1000;
+	depotLifetime *= 365;
+	bssLifetime *= 365;
+	brsLifetime *= 365;
+	vehicleLifetime *= 365;
+	depotCost /= depotLifetime;
+	bssCost /= bssLifetime;
+	brsCost /= brsLifetime;
+	vehicleCost /= vehicleLifetime;
+	vehicleRange *= 1000;
+	bssEnergyCost /= 1000;
+	brsEnergyCost /= 1000;
+	Q = vehicleRange; // battery capacity
+	ct; // battery swap time
+	r = 1; // battery consumption rate
+	g = 4; // recharging rate
+	C; // vehicle load capacity
+	v = v/3.6; // speed
+
+	// calculating extra parameters
+	Q = 161000;// *60 * 60;// The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40]. // the conversion between KWh to KWs was done
+	o = numC + numF;
+	LB = 0; // wrong
+	UB = numC + numF;
+	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
+	
 }
 
 void instance::addDummyNodes()
@@ -531,7 +918,7 @@ void instance::addDummyNodes()
 }
 
 //  this function receives the vector with all customers nodes and return the nodes choosen to be stations sites, the original vector with customers is modified without those nodes
-vector<node> instance::chooseStationsLocation(vector<node> &customers)
+vector<node> instance::chooseStationsLocationRandom(vector<node> &customers)
 {
 	if (numC < 50) { // all clients are candidates
 		vector<node> stations;
@@ -560,7 +947,7 @@ vector<node> instance::chooseStationsLocation(vector<node> &customers)
 		for (node n : customers) {
 			for (int i : cStations) {
 				if (i == n.key) {
-					n.type = "r";
+					n.type = "f";
 					stations.push_back(n);
 				}
 			}
@@ -571,6 +958,22 @@ vector<node> instance::chooseStationsLocation(vector<node> &customers)
 
 		return stations;
 	}
+}
+
+vector<node> instance::chooseStationsLocationMCLP(vector<node> &customers)
+{
+	vector<node> stations;
+	
+	for (int i : st) {
+		node n = customers.at(i - 1);
+		n.type = "f";
+		stations.push_back(n);
+	}
+
+	// remove the selecteds customers from the customer vector
+	customers = removeNodesByIndex(customers, st);
+
+	return stations;
 }
 
 // receive a vector nodes and a set of indexes, then remove all nodes with the indexes in the index set
@@ -615,9 +1018,54 @@ void instance::printNode(node i)
 	cout << i.key << " " << i.id << " " << i.type << " " << i.x << " " << i.y << " " << i.demand << " " << i.readyTime << " " << i.dueDate << " " << i.serviceTime << " " << i.ref << " " << i.id_n << endl;
 }
 
+float instance::dist(int a, int b)
+{
+	node na = getNodeByKey(a);
+	node nb = getNodeByKey(b);
+	if (type == 0 || type == 1)
+		return sqrt(pow(nb.x - na.x, 2) + pow(nb.y - na.y, 2));
+	else if (type == 2) {
+		return distanceMatrix.at(na.ogKey).at(nb.ogKey);
+		//return distEdges(na.ogKey, nb.ogKey);
+	}
+}
+
 float instance::dist(node a, node b)
 {
-	return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
+	if (type == 0 || type == 1)
+		return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
+	else if (type == 2) {
+		return distanceMatrix.at(a.ogKey).at(b.ogKey);
+		//return distEdges(na.ogKey, nb.ogKey);
+	}
+}
+
+float instance::distEdges(int keya, int keyb)
+{
+	float dist = 0;
+	for (edge e : edges) {
+		if (e.beg == keya && e.end == keyb) {
+			return e.value;
+		}
+	}
+	cout << "Error edge not found between nodes " << keya << " and " << keyb << endl;
+	return -1;
+}
+
+float instance::getTD(node a, node b)
+{
+	float d = dist(a, b);
+	return (d / (v));
+}
+
+float instance::getS(int key) // verify
+{
+	return nodes.at(key).serviceTime;
+}
+
+float instance::getCT()
+{
+	return ct;
 }
 
 void instance::readSSG14()
@@ -667,7 +1115,7 @@ void instance::readSSG14()
 			n.id_n = -1;
 
 			n.id = v.second.get<std::string>("StrID");
-			n.type = "r";
+			n.type = "f";//"r";
 			n.x = v.second.get<float>("X");
 			n.y = v.second.get<float>("Y");
 			n.serviceTime = v.second.get<float>("Demand");

@@ -8,6 +8,8 @@
 
 #define TMAX 1800
 
+using namespace std;
+
 class Model	
 {
 private:
@@ -112,11 +114,13 @@ private:
 
 	// model 4
 	// individual FO costs
+	/*
 	float dCost = 0; // depot cost
 	float sCost = 0; // stations cost
 	float dwCost = 0; // driver wage cost
 	float vCost = 0; // vehicle cost
 	float eCost = 0; // energy cost
+	*/
 
 	void c45(GRBModel &model); // determine which depots where opened
 	void c46(GRBModel &model); // stations limit
@@ -131,17 +135,14 @@ private:
 	GRBVar	getU	(GRBModel &model, int key);
 	GRBVar	getW	(GRBModel &model, int key);
 	GRBVar	getZ	(GRBModel &model, int key);
-	float	getTD	(node a, node b); // get travel time between nodes a and b
-	float	getS	(int key); // get service time of a node
-	float	getCT	();
-	float	dist	(node a, node b); // distance between points
-	float	distEdges(int keya, int keyb); // get the distance between two nodes on the edge list
 	vector<node> vectorUnion	(vector<node> a, vector<node> b); // union between two vectors of nodes, the vectors are trated as sets
 	vector<node> vectorSub		(vector<node> a, vector<node> b);
+	vector<float> getFOParcels(GRBModel &model);
+	int getNumVehicles(GRBModel &model);
 
-	void getFOParcels(GRBModel &model);
-	void getNumVehicles(GRBModel &model);
-
+	//
+	void getSolution(GRBModel &model);
+	void getRoutes();
 
 public:
 	string	row;
@@ -161,7 +162,6 @@ public:
 	void	model4	(GRBModel &model);
 	void	setup	(GRBModel &model);
 	void	result	(GRBModel &model);
-	void	getSolution(GRBModel &model);
 	void	getRow	(GRBModel &model);
 	void	model	();
 	void	print	();

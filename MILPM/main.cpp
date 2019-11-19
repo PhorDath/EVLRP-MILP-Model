@@ -3,6 +3,7 @@
 #include <boost/filesystem.hpp>
 #include <Python.h>
 #include "Model.h"
+#include "Algorithms.h"
 
 using namespace std;
 
@@ -11,7 +12,7 @@ const string dir2 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/SSG14/";
 const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
-const string file3 = "UK10_01.txt";
+const string file3 = "UK25_01.txt";
 
 string curDir = dir3;
 int t;
@@ -201,7 +202,7 @@ int menuModel() {
 	cout << "  10 - Model 4 \n";
 	cout << "  11 - All experiments with Model 4 with indicator constraints \n";
 	cin >> op;
-	while (op < 0 || op > 11) {
+	while (op < 0 || op > 12) {
 		cout << "Invalid option, enter a new one: ";
 		cin >> op;
 	}
@@ -257,6 +258,7 @@ void instanceTypeMenu() {
 	cout << "  1 - Paz\n";
 	cout << "  2 - Max\n";
 	cout << "  3 - UK\n";
+	cout << "  4 - UK adapted \n";
 	int op;
 	cin >> op;
 	while (op < 1 && op > 3) {
@@ -275,19 +277,22 @@ void instanceTypeMenu() {
 		curDir = dir3;
 		t = 2;
 	}
+	else if (op == 4) {
+		curDir = dir3;
+		t = 3;
+	}
 	cout << endl;
 }
 
 int main() {
-	/*
-	instance j(dir1, file1, 0);
-	j.test();
+	Algorithms alg;
+	alg.loadInstance(curDir, file3, 3);
+	alg.printInstance();
+	alg.greed();
+	alg.printSol();
 
-	instance i(dir3, "UK10_01.txt", 2);
-	i.test();
 
 	return 0;
-	*/
 
 	char again = 'y';
 
@@ -341,6 +346,9 @@ int main() {
 		}		
 		else if (op == 10) {
 			Model m(curDir, file, 0, t);
+		}
+		else if (op == 12) {
+			//MCLPModel m(curDir, file);
 		}
 
 
