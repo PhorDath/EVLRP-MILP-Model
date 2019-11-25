@@ -8,6 +8,7 @@ Util::Util()
 
 int Util::drawGraph(string dir, string fileName, string func, string arg)
 {
+	/*
 	PyObject *pName, *pModule, *pFunc;
 	PyObject *pArgs, *pValue;
 	int i;
@@ -16,14 +17,14 @@ int Util::drawGraph(string dir, string fileName, string func, string arg)
 
 	Py_Initialize();
 	pName = PyUnicode_DecodeFSDefault((dir + fileName).c_str());
-	/* Error checking of pName left out */
+	// Error checking of pName left out 
 
 	pModule = PyImport_Import(pName);
 	Py_DECREF(pName);
 
 	if (pModule != NULL) {
 		pFunc = PyObject_GetAttrString(pModule, func.c_str());
-		/* pFunc is a new reference */
+		// pFunc is a new reference 
 
 		if (pFunc && PyCallable_Check(pFunc)) {
 			pArgs = PyTuple_New(1);
@@ -35,7 +36,7 @@ int Util::drawGraph(string dir, string fileName, string func, string arg)
 				fprintf(stderr, "Cannot convert argument\n");
 				return 1;
 			}
-			/* pValue reference stolen here: */
+			// pValue reference stolen here: 
 			PyTuple_SetItem(pArgs, 0, pValue);
 			
 			pValue = PyObject_CallObject(pFunc, pArgs);
@@ -68,6 +69,7 @@ int Util::drawGraph(string dir, string fileName, string func, string arg)
 	if (Py_FinalizeEx() < 0) {
 		return 120;
 	}
+	*/
 	return 0;
 }
 

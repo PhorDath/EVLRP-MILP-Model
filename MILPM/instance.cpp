@@ -455,7 +455,7 @@ node instance::getNodeByKey(int key)
 			return i;
 		}
 	}
-	cout << "Node with key " << key << " not found\n";
+	// cout << "Node with key " << key << " not found\n";
 	return nodes.at(0);
 }
 

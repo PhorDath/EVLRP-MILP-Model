@@ -2,7 +2,6 @@
 #include <gurobi_c++.h>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
-#include <Python.h>
 #include "instance.h"
 #include "Util.h"
 

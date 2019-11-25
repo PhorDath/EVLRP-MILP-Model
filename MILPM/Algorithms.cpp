@@ -48,12 +48,107 @@ bool Algorithms::isCovered(int key)
 // the node must have the lowest ready time. also we check if is possible to reach a station node with the battery level left when the vehicle arrives at the node.
 int Algorithms::chooseNextNode(vector<vertex> partialRoute)
 {
-
 	return getNearestFeasibleNode(partialRoute); // get the nearest customer node;
 }
 
 // v is the las vertex in the partial route
-int Algorithms::getNearestFeasibleNode(vector<vertex> route)
+int Algorithms::getNearestFeasibleNode(vector<vertex> &route)
+{
+	vertex v = route.back();
+	node n;
+	n.key = -1;
+	int dist = 999999999;
+	for (int i = 0; i < inst->nodes.size(); i++) {
+		node a = inst->getNodeByKey(v.key);
+		node b = inst->nodes.at(i);
+
+		if (a.ogKey != b.ogKey) { // original keys must be different
+			if (route.size() == 2 && b.type == "a") {
+				if(inst->getNodeByKey(route.at(0).key).type == "d" && inst->getNodeByKey(route.at(1).key).type == "f")
+					continue;
+			}
+			if ((a.type == "d" && b.type == "f") || (a.type == "d" && b.type == "f_d")) { // doesnt allow a route that begins in the depot and goes directly to a bss																						  //cout << 11 << endl;
+				continue;
+			}
+			if ((a.type == "f" && b.type == "f") || (a.type == "f_d" && b.type == "f") || (a.type == "f" && b.type == "f_d") || (a.type == "f_d" && b.type == "f_d")) { // doesnt allow the vehicle travel from a bss to another bss
+				//cout << 21 << endl;
+				continue;
+			}
+			if (b.type == "f" && v.bLevel - inst->dist(a, b) >= 0.30 * inst->Q) {
+				//cout << 31 << endl;
+				//continue;
+			}
+			if (a.type == "d" && b.type == "a") {
+				//cout << 41 << endl;
+				continue;
+			}
+			if (b.type == "d") {
+				//cout << 51 << endl;
+				continue;
+			}
+			if (a.type == "d" && b.type == "d") {
+				//cout << 61 << endl;
+				continue;
+			}
+			if (b.type == "a" && b.id_n != inst->getNodeByKey(route.front().key).id_n) {
+				//cout << 71 << endl;
+				continue;
+			}
+
+			int distKI = inst->dist(a, b);
+			vector<int> f = checkFeasibility(route, b);
+			vector<int> t = { 1, 1, 1 };
+
+			if (b.key == 12) {
+				cout << checkFeasibility(route, b).at(0) << checkFeasibility(route, b).at(1) << checkFeasibility(route, b).at(2) << endl;
+			}
+
+			if (distKI < dist && coverage.at(i) == false && f == t) {
+				// check if this node will not be isolated and lead to a infeasible solution
+				vector<vertex> route_aux = addVertexToRoute(route, b.key);
+
+				int nextNode = getNearestFeasibleNode2(route_aux);
+
+				if (nextNode != -1) {
+					dist = distKI;
+					n = inst->nodes.at(i);					
+				}
+
+				coverage.at(b.key) = false;
+			}
+		}
+	}
+	return n.key;
+}
+
+// similar of getNearestFeasibleNode, but it will not check if the node can lead to isolation
+int Algorithms::getNearestFeasibleNode2(vector<vertex> route)
+{
+	vertex v = route.back();
+	node n;
+	n.key = -1;
+	int dist = 999999999;
+	for (int i = 0; i < inst->nodes.size(); i++) {
+		node a = inst->getNodeByKey(v.key);
+		node b = inst->nodes.at(i);
+
+		if (a.ogKey != b.ogKey) { // original keys must be different
+			vector<int> f = checkFeasibility(route, b);
+			int distKI = inst->dist(a, b);
+			vector<int> t = { 1, 1, 1 };
+
+			if (distKI < dist && coverage.at(i) == false && f == t) {
+				dist = distKI;
+				n = inst->nodes.at(i);
+			}
+		}
+	}
+
+	return n.key;
+}
+
+// this version of getNearestFeasibleNode will not check ifthe vertex will get isolated, its similar to the first verion 
+int Algorithms::getNearestFeasibleNode3(vector<vertex> route)
 {
 	vertex v = route.back();
 	node n;
@@ -64,28 +159,92 @@ int Algorithms::getNearestFeasibleNode(vector<vertex> route)
 		node b = inst->nodes.at(i);
 
 		if (a.ogKey != b.ogKey) { // original keys must be different			
-			if ((a.type == "d" && b.type == "f") || (a.type == "d" && b.type == "f_d")) { // doesnt allow a route that begins in the depot and goes directly to a bss
-				continue;
-			}
 			if ((a.type == "f" && b.type == "f") || (a.type == "f_d" && b.type == "f") || (a.type == "f" && b.type == "f_d") || (a.type == "f_d" && b.type == "f_d")) { // doesnt allow the vehicle travel from a bss to another bss
+				//cout << 13 << endl;
 				continue;
 			}
-
-			vector<int> f = checkFeasibility(route, b);
-
-			//cout << "Node: " << b.key << endl;
-			//for (auto i : f) {
-			//	cout << i << " ";
-			//}
-			//cout << endl;
+			if (a.type == "d" && b.type == "a") {
+				//cout << 23 << endl;
+				continue;
+			}
+			if (a.type == "d" && (b.type == "f" || b.type == "f_d") ) {
+				//cout << 33 << endl;
+				continue;
+			}
+			if (b.type == "d") {
+				//cout << 43 << endl;
+				continue;
+			}
+			if (a.type == "d" && b.type == "d") {
+				//cout << 53 << endl;
+				continue;
+			}
+			if (b.type == "a" && b.id_n != inst->getNodeByKey(route.front().key).id_n) {
+				//cout << 63 << endl;
+				continue;
+			}
 
 			int distKI = inst->dist(a, b);
+			vector<int> f = checkFeasibility(route, b);
 			vector<int> t = { 1, 1, 1 };
-			if (distKI <= dist && coverage.at(i) == false && f == t) {
+
+			if (distKI < dist && coverage.at(i) == false && f == t) {
 				dist = distKI;
 				n = inst->nodes.at(i);
+
+			}
+		}
+	}
+	
+	return n.key;
+}
+
+// get nearest feasible station
+int Algorithms::getNearestFeasibleNode4(vector<vertex> route)
+{
+	vertex v = route.back();
+	node n;
+	n.key = -1;
+	int dist = 999999999;
+	for (int i = 0; i < inst->nodes.size(); i++) {
+		node a = inst->getNodeByKey(v.key);
+		node b = inst->nodes.at(i);
+
+		if (a.ogKey != b.ogKey) { // original keys must be different			
+			if ((a.type == "f" && b.type == "f") || (a.type == "f_d" && b.type == "f") || (a.type == "f" && b.type == "f_d") || (a.type == "f_d" && b.type == "f_d")) { // doesnt allow the vehicle travel from a bss to another bss
+				//cout << 21 << endl;
+				continue;
+			}
+			if (a.type == "d" && b.type == "a") {
+				//cout << 41 << endl;
+				continue;
+			}
+			if (b.type == "d") {
+				//cout << 51 << endl;
+				continue;
+			}
+			if (a.type == "d" && b.type == "d") {
+				//cout << 61 << endl;
+				continue;
 			}
 
+			int distKI = inst->dist(a, b);
+			vector<int> f = checkFeasibility(route, b);
+			vector<int> t = { 1, 1, 1 };
+
+			if (distKI < dist && coverage.at(i) == false && f == t) {
+				// check if this node will not be isolated and lead to a infeasible solution
+				vector<vertex> route_aux = addVertexToRoute(route, b.key);
+
+				int nextNode = getNearestFeasibleNode2(route_aux);
+
+				if (nextNode != -1) {
+					dist = distKI;
+					n = inst->nodes.at(i);
+				}
+
+				coverage.at(b.key) = false;
+			}
 		}
 	}
 	return n.key;
@@ -178,12 +337,9 @@ vector<int> Algorithms::checkFeasibility(vector<vertex> route, node c)
 
 	// calculate route variables
 	vertex a = route.back(); node an = inst->getNodeByKey(a.key);
-	node bn = c;// inst->getNodeByKey(b.key);
+	node bn = c; // inst->getNodeByKey(b.key);
 	float distanceAB = inst->dist(an, bn);
 	float travelTimeAB = inst->getTD(an, bn);
-
-	//cout << a.key << " - " << bn.key << endl;
-	//cout << "tt: " << fixed << travelTimeAB << endl;
 
 	// battery level
 	if (a.bLevel - distanceAB < 0) {
@@ -200,7 +356,10 @@ vector<int> Algorithms::checkFeasibility(vector<vertex> route, node c)
 		ret.push_back(1);
 	}
 	// arrival time
-	if (a.lTime + travelTimeAB + bn.serviceTime > bn.dueDate && a.lTime + travelTimeAB < bn.readyTime) {
+	//if (c.key == 12) {
+		//cout << a.lTime << " " << travelTimeAB << " " << bn.serviceTime << " " << bn.dueDate << endl;
+	//}
+	if (a.lTime + travelTimeAB + bn.serviceTime > bn.dueDate ){//|| a.lTime + travelTimeAB < bn.readyTime) {
 		ret.push_back(0); // if infeasible by time window criteria, 0
 	}
 	else {
@@ -249,7 +408,7 @@ vector<vertex> Algorithms::addVertexToRoute(vector<vertex> route, int key)
 
 	// if previous vertex is a depot we must calculate the left time from it
 	if (an.type == "d") {
-		route.back().lTime = bn.readyTime - travelTimeAB;
+		route.back().lTime = bn.readyTime - travelTimeAB + 1;
 		if (route.back().lTime < 0) {
 			route.back().lTime = 0;
 		}
@@ -262,6 +421,19 @@ vector<vertex> Algorithms::addVertexToRoute(vector<vertex> route, int key)
 		b.aTime = a.lTime + travelTimeAB; // arrival time
 		b.lTime = b.aTime + bn.serviceTime; // left time
 
+		// need to check if vehicle arrives earlier then the service time and calculate the wait time
+		if (bn.type == "c" && b.aTime < bn.readyTime) {
+			b.wTime = bn.readyTime - b.aTime;
+			b.lTime += b.wTime; // sum the wait time in the exit time
+
+			// vehicle will always recharge during service time
+			// recharge during service time
+			int amountRecharged = inst->getNodeByKey(b.key).serviceTime * inst->g; // service time * recharging rate
+			b.recharged = amountRecharged; //amountRecharged;
+			b.bLevel = amountRecharged;//route.back().bLevel + amountRecharged; // recharge to full capacity
+			b.recharge = true;
+		}
+
 		route.push_back(b); // add vertex to route
 	}
 	else if (bn.type == "f") {
@@ -273,6 +445,7 @@ vector<vertex> Algorithms::addVertexToRoute(vector<vertex> route, int key)
 		route.push_back(b); // add vertex to route
 	}
 
+	// set the caverage vector
 	if (bn.type != "a" || bn.type != "f") {
 		coverage.at(b.key) = true;
 	}
@@ -293,27 +466,50 @@ vector<vertex> Algorithms::addInfVertexToRoute(vector<vertex> route, int key, ve
 	float distanceAB = inst->dist(prev_n, next_n);
 	float travelTimeAB = inst->getTD(prev_n, next_n);
 
-	// if the vertex is infeasible only because of battery level, arrange previous node
-	if (f.at(0) == 0 && f.at(1) == 1 && f.at(2) == 1) {
-		//if (prev_n.type == "c") { // if previous node is a customer, recharge the battery
-			route.back().recharge = true;
+	vector<int> new_f = checkFeasibility(route, next_n);
 
-			// recharge during service time
-			int amountRecharged = prev_n.serviceTime * inst->r; // service time * recharging rate
+	route = addVertexToRoute(route, key);
 
-			route.back().recharged = route.back().bLevel + amountRecharged;
-			route.back().bLevel = inst->Q; // recharge to full capacity
-		//}
-		
-		vector<int> new_f = checkFeasibility(route, next_n);
-
-		// if the new node generates a feasible solution with the arrenged route
-		if (f.at(0) == 1 && f.at(1) == 1 && f.at(2) == 1) {
-			route = addVertexToRoute(route, key);
-		}
+	//coverage.at(key) = true;
+	// set the caverage vector
+	if (next_n.type != "a" || next_n.type != "f") {
+		coverage.at(next_n.key) = true;
+	}
+	if (next_n.type == "a") {
+		coverage.at(next_n.key) = false;
+	}
+	if (next_n.type == "f") {
+		coverage.at(next_n.key) = false;
 	}
 
+	
+
+	// recharge during service time
+	int amountRecharged = next_n.serviceTime * inst->g; // service time * recharging rate
+
+	route.back().recharged = inst->Q - route.back().bLevel; //amountRecharged;
+	route.back().recharged = amountRecharged;
+
+	route.back().bLevel = inst->Q;//route.back().bLevel + amountRecharged; // recharge to full capacity
+	route.back().bLevel = route.back().bLevel + amountRecharged; // recharge to full capacity
+
+	route.back().lTime += route.back().recharged / inst->g;
+	route.back().recharge = true;
+
+	
 	return route;
+}
+
+string Algorithms::getRow()
+{
+	string res = "";
+	res += inst->fileName + " ; ";
+	res += inst->solution.FO + " ; ";
+	for (auto i : fo_parcels) {
+		res += i;
+		res += " ";
+	}
+	return res;
 }
 
 void Algorithms::printPartialRoute(vector<vertex> r)
@@ -328,6 +524,7 @@ void Algorithms::printPartialRoute(vector<vertex> r)
 		cout << "Travel from " << na.key << " to " << nb.key << endl;
 		cout << "Vehicle leave node " << na.key << " at " << r.at(i).lTime << endl;
 		cout << "Vehicle arrives in node " << nb.key << " at " << r.at(i + 1).aTime << endl;
+		cout << "Vehicle wait " << r.at(i + 1).wTime << endl;
 		cout << "Distance travelled: " << inst->dist(na, nb) << endl;
 		cout << "Battery level in node " << nb.key << ": " << r.at(i + 1).bLevel << endl;
 		cout << "Battery is recharged in " << r.at(i + 1).recharged << endl;
@@ -367,68 +564,242 @@ int Algorithms::greed()
 		// criteria: the depot node with the minimum sum of all distances to client nodes not coverd yet
 		v.key = depotHeuristc();
 		v.bLevel = inst->Q;
-		v.vLoad = inst->C;		
+		v.vLoad = inst->C;	
+		v.lTime = 0;
+		v.aTime = 0;
 		route.push_back(v);
 		coverage.at(v.key) = true; // now node v.key appears in the route
 
 		cout << "node " << v.key << " added in the route as a depot\n";
 
-		// add nodes to the route until it ends with a "a" node
+		// add nodes to the route until it ends with an "a" node
 		while (true) {
-			nextNodeKey = chooseNextNode(route);
+			cout << route.back().key << endl;
 
-			cout << "nextNodeKey: " << nextNodeKey << endl;
+			nextNodeKey = getNearestFeasibleNode(route); //chooseNextNode(route);		
 
 			vector<int> feasibility = checkFeasibility(route, inst->getNodeByKey(nextNodeKey));
 			node n = inst->getNodeByKey(nextNodeKey);
 
-			if (n.key == -1) {
-				cout << "It is not possible to finish the current route\n";
-
-			}
-
-			vector<int> t = { 1, 1, 1 };
-			vector<int> t2 = { 0, 1, 1 };
-
-			vector<int> f = { 0, 0, 0 };
-
-			cout << nextNodeKey << " is the next node \n";
+			//cout << "nextNodeKey: " << nextNodeKey << endl;
 
 
-			if (feasibility == t) { // if node is feasible
-				route = addVertexToRoute(route, nextNodeKey);
-				if (retry == true) {
-					retry = false;
-					coverage = bu;
-					coverage.at(nextNodeKey) = true;
+			// if the node is isolated, we have to try to fix the solution
+			if (nextNodeKey == -1) {
+
+				int otherNode = getNearestFeasibleNode3(route);
+
+				if (otherNode != -1) {
+					n = inst->getNodeByKey(otherNode);
+					route = addInfVertexToRoute(route, otherNode, feasibility);
+
 				}
+				else {
+					// if the depot is isolated
+					if (inst->getNodeByKey(route.back().key).type == "d") {
+						int yetAnotherNode = getNearestFeasibleNode4(route);
+						route = addVertexToRoute(route, yetAnotherNode);
+					}
+					else {
+						cout << "It was not possible to find a viable node near " << route.back().key << endl;
 
-				cout << nextNodeKey << " is feasible\n";
-			}
-			else if(feasibility == t2){ 
-				// if node is infeasible due to battery lvls, it is still possible to add the node if we modify the previous node in the route
-				route = addInfVertexToRoute(route, nextNodeKey, feasibility);
-				if (retry == true) {
-					retry = false;
-					coverage = bu;
-					coverage.at(nextNodeKey) = true;
+
+						printPartialRoute(route);
+
+						cout << "nextNodeKey: " << nextNodeKey << endl;
+						cout << "otherNode  : " << otherNode << endl;
+						cout << "route.back().key: " << route.back().key << endl;
+
+						for (int i = 0; i < coverage.size(); i++) {
+							cout << i << " - " << coverage.at(i) << endl;
+						}
+
+						for (int i = 0; i < inst->nodes.size(); i++) {
+							cout << i << " = " << fixed << inst->dist(route.back().key, inst->nodes.at(i).key) << endl;
+						}
+						cout << endl;
+						exit(1);
+					}			
 				}
-
-				cout << nextNodeKey << " is infeasible\n";
-				
 			}
-			else { // if node is infeasible due to time windows or vehicle load criteria
-				bu = coverage; // safe a copy of the coverage vector
-				coverage.at(nextNodeKey) = true; // mark the node as added in the solution without adding it
-				retry = true; // indicates that we will retry to add a node because this one is infeasible
+			else {
+				vector<int> t = { 1, 1, 1 };
+				vector<int> t2 = { 0, 1, 1 };
 
+				vector<int> f = { 0, 0, 0 };
+
+				if (feasibility == t) { // if node is feasible
+					//cout << nextNodeKey << " is feasible\n";
+					route = addVertexToRoute(route, nextNodeKey);
+
+				}
+				else {
+					// if node is infeasible due to battery lvls, it is still possible to add the node if we modify the previous node in the route
+					//cout << nextNodeKey << " is infeasible\n";
+					route = addInfVertexToRoute(route, nextNodeKey, feasibility);
+				}
 			}
 
 			// check if the route start and end in the same depot
-			if (inst->getNodeByKey(route.front().key).id_n == inst->getNodeByKey(route.back().key).id_n && route.size() >= 2) { // if the node choosen is the arrival node of the initial depot node, the route is finished
+			if ((inst->getNodeByKey(route.front().key).id_n == inst->getNodeByKey(route.back().key).id_n || inst->getNodeByKey(route.front().key).ogKey == inst->getNodeByKey(route.back().key).ogKey) && route.size() >= 2) { // if the node choosen is the arrival node of the initial depot node, the route is finished
 				sol.push_back(route);
-				printPartialRoute(route);
-				break;			
+				//printPartialRoute(route);
+				
+				break;
+			}
+
+		}
+	}
+
+	int ev = eval(sol);
+	if (ev != 0) {
+		cout << "Solution found is not feasible.\n";
+		cout << ev << endl;
+	}
+
+	inst->solution.FO = FO(sol);
+
+	row = getRow();
+
+	cout << row << endl;
+
+	//printSol();
+
+	return 0;
+}
+
+int Algorithms::FO(vector<vector<vertex>> sol)
+{
+	auto UD0 = inst->set_UD0();
+	auto UD1 = inst->set_UD1();
+	auto C = inst->set_C();
+	auto R = inst->set_R();
+	auto V0 = inst->set_V0();
+	auto V1 = inst->set_V1();
+	auto V01 = inst->set_V01();
+
+	int fo = 0;
+
+	// depot cost
+	int depotCost = 0;
+
+	vector<int> qt(UD0.size(), 0);
+	for (auto route : sol) {
+		qt.at(route.front().key) = 1;
+	}
+
+	int numDepots = 0;
+	for (auto i : qt) {
+		if (i == 1) {
+			numDepots += 1;
+		}
+	}
+
+	depotCost = numDepots * inst->depotCost;
+
+	// bss location cost
+	int bssCost = 0;
+
+	qt.resize(inst->nodes.size(), 0);
+
+	for (auto route : sol) {
+		for (auto v : route) {
+			if (inst->getNodeByKey(v.key).type == "f") {
+				qt.at(inst->getNodeByKey(v.key).ogKey) = 1;
+			}			
+		}
+	}
+	int numBSS = 0;
+	for (auto i : qt) {
+		numBSS += i;
+	}
+	bssCost = numBSS * inst->bssCost;
+
+	// brs location cost
+	int brsCost = 0;
+
+	qt.resize(inst->nodes.size(), 0);
+
+	for (auto route : sol) {
+		for (auto v : route) {
+			if (inst->getNodeByKey(v.key).type == "c" && v.recharge == 1) {
+				qt.at(inst->getNodeByKey(v.key).ogKey) = 1;
+			}
+		}
+	}
+	int numBRS = 0;
+	for (auto i : qt) {
+		numBRS += i;
+	}
+	brsCost = numBRS * inst->brsCost;
+
+	// driving cost
+	int drivingCost = 0;
+
+	for (auto route : sol) {
+		for (int i = 0; i < route.size() - 1; i++) {
+			drivingCost += inst->dist(route.at(i).key, route.at(i + 1).key) * inst->driverWage;
+		}
+	}
+
+	// vehicle fixed cost
+	int vehicleCost = sol.size() * inst->vehicleCost;
+
+	// energy cost
+	int energyCost = 0;
+
+	for (auto route : sol) {
+		for (auto v : route) {
+			if (inst->getNodeByKey(v.key).type == "c") {
+				energyCost += v.recharged * inst->brsEnergyCost;
+			}
+			else if (inst->getNodeByKey(v.key).type == "f" || inst->getNodeByKey(v.key).type == "f_d") {
+				energyCost += v.recharged * inst->bssEnergyCost;
+			}			
+		}
+	}
+
+	// operational cost (bss)
+	int operationalCost = 0;
+
+	for (auto route : sol) {
+		for (auto v : route) {
+			if (inst->getNodeByKey(v.key).type == "f" || inst->getNodeByKey(v.key).type == "f_d") {
+				operationalCost += 1;
+			}
+		}
+	}
+	operationalCost *= inst->bssUseCost;
+
+	fo = depotCost + bssCost + brsCost + drivingCost + vehicleCost + energyCost + operationalCost;
+
+	fo_parcels = { depotCost, bssCost, brsCost, drivingCost, vehicleCost, energyCost, operationalCost };
+
+	return fo;
+}
+
+int Algorithms::eval(vector<vector<vertex>> sol)
+{
+	for (auto route : sol) {
+		for (auto v : route) {
+			node n = inst->getNodeByKey(v.key);
+
+			// checking time windows
+			if (n.type == "c") {
+				if (v.aTime + v.wTime > n.dueDate + n.serviceTime || v.aTime + v.wTime < n.readyTime) {
+					cout << "Vertex " << v.key << " arrival is " << v.aTime << " and its ready time and due date is " << n.readyTime << " and " << n.dueDate << endl;
+					return 1;
+				}
+			}
+
+			// checking battery lvl
+			if (v.bLevel < 0 || v.bLevel > inst->Q) {
+				return 2;
+			}
+
+			// checking vehicle load
+			if (v.vLoad < 0 || v.vLoad > inst->C) {
+				return 3;
 			}
 
 		}
@@ -521,6 +892,78 @@ void Algorithms::printSol()
 	}
 }
 
+void Algorithms::getSol(ostream & strm)
+{
+	strm << "Greed algorithm\n";
+	strm << inst->fileName << endl;
+	strm << inst->dir << endl;
+
+	strm << "FO: " << inst->solution.FO << endl;
+	for (auto i : fo_parcels) {
+		strm << i << " ";
+	}
+	strm << endl;
+
+	strm << "Stations\n";
+
+	vector<bool> y;
+	y.resize(inst->nodes.size(), false);
+
+	for (auto r : sol) {
+		for (auto v : r) {
+			node n = inst->getNodeByKey(v.key);
+			if ((n.type == "f" || n.type == "f_d") && v.bLevel == inst->Q) {
+				y.at(n.ogKey) = true;
+			}
+
+			if (n.type == "c" && v.recharge == true) {
+				y.at(n.ogKey) = true;
+			}
+		}
+	}
+
+	for (int i = 0; i < y.size(); i++) {
+		if (y.at(i) == true) {
+			strm << i << " ";
+		}
+	}
+	strm << endl;
+
+	strm << "Routes\n";
+
+	for (auto r : sol) {
+		for (auto v : r) {
+			strm << v.key << " ";
+		}
+		strm << endl;
+	}
+
+	strm << "Detailed routes\n";
+
+	for (auto r : sol) {
+		strm << "Route start at node " << r.front().key << endl << endl;
+		for (int i = 0; i < r.size() - 1; i++) {
+			node na, nb;
+			na = inst->getNodeByKey(r.at(i).key);
+			nb = inst->getNodeByKey(r.at(i + 1).key);
+
+			strm << "Travel from " << na.key << " to " << nb.key << endl;
+			strm << "Distance travelled: " << inst->dist(na, nb) << endl;
+			strm << "Vehicle leave node " << na.key << " at " << r.at(i).lTime << endl;
+			strm << "Vehicle arrives in node " << nb.key << " at " << r.at(i + 1).aTime << endl;
+			strm << "Vehicle wait " << r.at(i + 1).wTime << endl;
+			strm << "Battery level in node " << nb.key << ": " << r.at(i + 1).bLevel << endl;
+			strm << "Battery is recharged in " << r.at(i + 1).recharged << endl;
+			strm << "Recharge " << r.at(i + 1).recharge << endl;
+			strm << "Vahicle load in node " << nb.key << ": " << r.at(i + 1).vLoad << endl;
+
+			strm << endl;
+		}
+	}
+
+}
+
 Algorithms::~Algorithms()
 {
+
 }
