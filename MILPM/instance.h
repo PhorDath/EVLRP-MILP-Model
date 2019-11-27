@@ -12,26 +12,12 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/foreach.hpp>
 #include "Solution.h"
+#include "Usefull.h"
 //#include "MCLPModel.h"
 
 using namespace std;
 
-struct node{
-	int key;
-	string id, type;
-	int x, y, demand;
-	int readyTime, dueDate, serviceTime;
-	int ref, ref2;
-	int id_n = -1; // model's id parameter 
-	int ogKey;
-};
 
-struct edge {
-	int beg, end;
-	float value;
-};
-
-bool compKey(node a, node b);
 
 class instance
 {

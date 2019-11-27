@@ -1,13 +1,8 @@
 #pragma once
 #include <iostream>
 #include <vector>
-
+#include "Usefull.h"
 using namespace std;
-
-struct arc{
-	int beg, end;
-	double value;
-};
 
 class Solution
 {
@@ -26,9 +21,11 @@ public:
 
 	int numVehicles = 0;
 
+	vector<vector<vertex>> routes;
+
 	vector<arc> arcs;
 	vector<int> stations;
-	vector<vector<int>> routes;
+	//vector<vector<int>> routes;
 	vector<int> arrivalTime;
 	vector<int> batteryLevel;
 	vector<int> freightLeft;

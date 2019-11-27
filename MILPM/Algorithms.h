@@ -1,14 +1,9 @@
 #pragma once
 #include <fstream>
 #include "instance.h"
+#include "Usefull.h"
 
 using namespace std;
-
-struct vertex {
-	int key, bLevel, vLoad, aTime, lTime, wTime = 0;
-	bool recharge = false;
-	int recharged = 0;
-};
 
 class Algorithms
 {

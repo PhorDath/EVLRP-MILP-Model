@@ -1,6 +1,5 @@
 #include "Algorithms.h"
 
-
 // check if all customers are covered
 bool Algorithms::allCovered()
 {
@@ -658,6 +657,7 @@ int Algorithms::greed()
 	}
 
 	inst->solution.FO = FO(sol);
+	inst->solution.routes = sol;
 
 	row = getRow();
 

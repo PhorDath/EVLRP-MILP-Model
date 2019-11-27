@@ -1,19 +1,16 @@
-#include "Util.h"
+#include "Usefull.h"
 
-
-
-Util::Util()
+bool compKey(node a, node b)
 {
+	return a.key < b.key;
 }
 
-int Util::drawGraph(string dir, string fileName, string func, string arg)
+int drawGraph(string dir, string fileName, string func, string arg)
 {
 	/*
 	PyObject *pName, *pModule, *pFunc;
 	PyObject *pArgs, *pValue;
 	int i;
-
-
 
 	Py_Initialize();
 	pName = PyUnicode_DecodeFSDefault((dir + fileName).c_str());
@@ -71,9 +68,4 @@ int Util::drawGraph(string dir, string fileName, string func, string arg)
 	}
 	*/
 	return 0;
-}
-
-
-Util::~Util()
-{
 }

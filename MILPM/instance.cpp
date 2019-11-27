@@ -1,11 +1,6 @@
 #include "instance.h"
 #include "Model.h"
 
-bool compKey(node a, node b)
-{
-	return a.key < b.key;
-}
-
 instance::instance(string file)
 {
 	dir = "";

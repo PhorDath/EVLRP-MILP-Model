@@ -129,7 +129,7 @@
     <ClCompile Include="MCLPModel.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Solution.cpp" />
-    <ClCompile Include="Util.cpp" />
+    <ClCompile Include="Usefull.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algorithms.h" />
@@ -137,7 +137,7 @@
     <ClInclude Include="MCLPModel.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Solution.h" />
-    <ClInclude Include="Util.h" />
+    <ClInclude Include="Usefull.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
