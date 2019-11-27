@@ -136,7 +136,9 @@
     <ClInclude Include="instance.h" />
     <ClInclude Include="MCLPModel.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Solution.h" />
+    <ClInclude Include="test.h" />
     <ClInclude Include="Util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

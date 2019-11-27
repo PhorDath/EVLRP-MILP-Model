@@ -38,6 +38,10 @@ private:
 	vector<vertex> addVertexToRoute(vector<vertex> route, int key);
 	vector<vertex> addInfVertexToRoute(vector<vertex> route, int key, vector<int> inf);
 
+	// metaheuristics
+	int localSearch(vector<vector<vertex>> sol, int stopPolice);
+	vector<vector<vertex>> getAllRoutesByBSS(vector<vector<vertex>> sol);
+
 	void printPartialRoute(vector<vertex> r);
 
 public:
@@ -45,6 +49,7 @@ public:
 
 	Algorithms();
 	int loadInstance(string dir, string fileName, int type);
+	int test();
 	int greed();
 	int FO(vector<vector<vertex>> sol);
 	int eval(vector<vector<vertex>> sol);

@@ -512,6 +512,33 @@ string Algorithms::getRow()
 	return res;
 }
 
+int Algorithms::test()
+{
+	greed();
+	localSearch(sol, 1);
+	return 0;
+}
+
+int Algorithms::localSearch(vector<vector<vertex>> sol, int stopPolice)
+{
+	// get which nodes has a bss facility sited
+	vector<bool> facilities;
+	facilities.resize(inst->nodes.size(), false);
+	for (auto r : sol) {
+		for (auto v : r) {
+			node n = inst->getNodeByKey(v.key);
+			if (n.type == "f") {
+				facilities.at(n.ogKey) = true;
+			}
+		}
+	}
+
+
+
+
+	return 0;
+}
+
 void Algorithms::printPartialRoute(vector<vertex> r)
 {
 	cout << fixed << "Partial route \n";
