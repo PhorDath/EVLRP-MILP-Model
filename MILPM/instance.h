@@ -16,7 +16,7 @@
 
 using namespace std;
 
-struct node{
+struct node {
 	int key;
 	string id, type;
 	int x, y, demand;
