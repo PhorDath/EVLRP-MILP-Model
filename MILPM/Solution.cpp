@@ -7,6 +7,13 @@ Solution::Solution()
 
 }
 
+int Solution::set(vector<vector<vertex>> s)
+{
+	this->routes = s;
+	
+	return 0;
+}
+
 void Solution::getRoutes()
 {
 	vector<arc> initial;
@@ -48,12 +55,12 @@ void Solution::print()
 	
 	cout << endl;
 	for (int i = 0; i < routes.size(); i++) {
-		cout << "Route " << i + 1 << " begin at " << routes.at(i).at(0) << endl;
-		cout << "  The initial battery level is " << batteryLevel.at(routes.at(i).at(0)) << endl;
+		cout << "Route " << i + 1 << " begin at " << routes.at(i).at(0).key << endl;
+		cout << "  The initial battery level is " << routes.at(i).at(0).bLevel << endl;
 
 		for (int j = 1; j < routes.at(i).size(); j++) {
-			int beg = routes.at(i).at(j - 1);
-			int end = routes.at(i).at(j);
+			int beg = routes.at(i).at(j - 1).key;
+			int end = routes.at(i).at(j).key;
 			cout << "Travel from ";
 			cout << beg << " to " << end << endl;
 			cout << "Arrival in " << end << " at           : " << arrivalTime.at(end) << endl;

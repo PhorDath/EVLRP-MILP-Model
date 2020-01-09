@@ -34,6 +34,7 @@ public:
 
 public:
 	Solution();
+	int set(vector<vector<vertex>> s);
 	void getRoutes();
 	void insertArc(int beg, int end, int value);
 	void insertStation(int s);

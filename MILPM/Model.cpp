@@ -912,7 +912,13 @@ void Model::getRoutes()
 			//arc a = arcs.at(i);
 			arc a = i;
 			if (a.beg == dpt) { // if the arc begins in the current depot
-				vector<int> route = {a.beg, a.end};
+				// vector<int> route = {a.beg, a.end};
+				vertex va;
+				va.key = a.beg;
+				vertex vb;
+				vb.key = a.end;
+
+				vector<vertex> route = { va, vb };
 
 				inst->solution.routes.push_back(route); // add the inital arc in each route
 				//inst->solution.arcs.erase(inst->solution.arcs.begin() + i); // erase the arc
@@ -941,8 +947,10 @@ void Model::getRoutes()
 			for (int i = 0; i < inst->solution.routes.size(); i++) {
 				bool found = false;
 				for (int j = 0; j < inst->solution.routes.at(i).size(); j++) {
-					if (inst->solution.routes.at(i).at(j) == a.beg) { // if the current end of the route is equal to the begin of the arc
-						inst->solution.routes.at(i).push_back(a.end); // add the end of the arc in the route
+					if (inst->solution.routes.at(i).at(j).key == a.beg) { // if the current end of the route is equal to the begin of the arc
+						vertex va;
+						va.key = a.end;
+						inst->solution.routes.at(i).push_back(va); // add the end of the arc in the route
 						arcs.erase(arcs.begin() + b); // erase the arc
 						found = true;
 						break;

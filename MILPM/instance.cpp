@@ -383,7 +383,7 @@ void instance::printSolution(ostream &stream)
 	stream << "Routes : " << endl;
 	for (auto i : solution.routes) {
 		for (auto j : i) {
-			stream << j << " ";
+			stream << j.key << " ";
 		}
 		stream << endl;
 	}
@@ -406,11 +406,11 @@ void instance::printSolution(ostream &stream)
 
 	for (int i = 0; i < solution.routes.size(); i++) {
 		stream << "___________________________________________________\n";
-		stream << "Route " << i + 1 << " begin at " << solution.routes.at(i).at(0) << endl << endl;
+		stream << "Route " << i + 1 << " begin at " << solution.routes.at(i).at(0).key << endl << endl;
 
 		for (int j = 1; j < solution.routes.at(i).size(); j++) {
-			int beg = solution.routes.at(i).at(j - 1);
-			int end = solution.routes.at(i).at(j);
+			int beg = solution.routes.at(i).at(j - 1).key;
+			int end = solution.routes.at(i).at(j).key;
 			node b = getNodeByKey(beg);
 			node e = getNodeByKey(end);
 			stream << "Travel from " << beg << " to " << end << endl;
@@ -1050,7 +1050,7 @@ float instance::distEdges(int keya, int keyb)
 float instance::getTD(node a, node b)
 {
 	float d = dist(a, b);
-	return (d / (v));
+	return ceil(d / (v));
 }
 
 float instance::getS(int key) // verify

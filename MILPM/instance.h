@@ -17,8 +17,6 @@
 
 using namespace std;
 
-
-
 class instance
 {
 public:

@@ -184,6 +184,74 @@ void exp4(string dir1, string dir2, int type) {
 	csv.close();
 }
 
+void exp_greed(){
+	fstream file;
+	file.open(dir3 + "all.txt", ios::in);
+	if (file.is_open() == false) {
+		cout << "Error opening file all.txt\n";
+		cout << "On directory " << dir1 << endl;
+		exit(1);
+	}
+
+
+	string date = getDate();
+	string dirOutput = dir3;
+
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	// output file
+	fstream csv;
+	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir1 << endl;
+		return;
+	}
+
+	// header
+	csv << "model ; status ; fo ; gap ; time \n";
+
+
+	int count = 0;
+	string line;
+	while (getline(file, line)) {
+		cout << line << endl;
+		if (count == MAX) {
+			break;
+		}
+
+		Algorithms alg;
+		alg.loadInstance(dir3, "UK50_03.txt", 3);
+		alg.printInstance();
+		alg.greed();
+
+		alg.getSol(cout);
+		exit(1);
+
+		fstream output;
+		output.open(dirOutput + line + ".sol", ios::out | ios::app);
+		if (output.is_open() == false) {
+			cout << "Error creating output file " << line + ".sol\n";
+			cout << "In the directory " << dirOutput << endl;
+			exit(1);
+		}
+
+		alg.getSol(output);
+		csv << alg.inst->fileName << " ; " << alg.inst->solution.FO << endl;
+		output.close();
+
+		count++;
+	}
+
+	file.close();
+	//csv.close();
+
+	return;
+}
+
 int menuModel() {
 	//cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 	cout << "\n\n\n\n";
@@ -360,69 +428,14 @@ int main() {
 		expModels();
 	}
 	else if (op == 2) {
-		fstream file;
-		file.open(dir3 + "all.txt", ios::in);
-		if (file.is_open() == false) {
-			cout << "Error opening file all.txt\n";
-			cout << "On directory " << dir1 << endl;
-			exit(1);
-		}
-
-		
-		string date = getDate();
-		string dirOutput = dir3;
-		/*
-		boost::filesystem::create_directory(dirOutput + "output");
-		dirOutput += "output/";
-		boost::filesystem::create_directory(dirOutput + "/" + date);
-		dirOutput += date + "/";
-		
-		// output file
-		fstream csv;
-		csv.open(dirOutput + "result.csv", ios::out | ios::ate);
-		if (csv.is_open() == false) {
-			cout << "Error opening file result.csv\n";
-			cout << "On directory " << dir1 << endl;
-			return 0;
-		}
-	
-		// header
-		csv << "model ; status ; fo ; gap ; time \n";
-		*/
-
-		int count = 0;
-		string line;
-		while (getline(file, line)) {
-			cout << line << endl;
-			if (count == MAX) {
-				break;
-			}
-
-			Algorithms alg;
-			alg.loadInstance(dir3, "UK50_03.txt", 3);
-			alg.printInstance();
-			alg.greed();
-
-			alg.getSol(cout);
-			exit(1);
-			/*
-			fstream output;
-			output.open(dirOutput + line + ".sol", ios::out | ios::app);
-			if (output.is_open() == false) {
-				cout << "Error creating output file " << line + ".sol\n";
-				cout << "In the directory " << dirOutput << endl;
-				exit(1);
-			}
-
-			alg.getSol(output);			
-			csv << alg.inst->fileName << " ; " << alg.inst->solution.FO << endl;
-			output.close();
-			*/
-			count++;
-		}
-
-		file.close();
-		//csv.close();
+		Algorithms alg;
+		alg.loadInstance(dir3, "UK10_01.txt", 3);
+		alg.printInstance();
+		alg.test2();
+		//exp_greed();
 	}
+
+
+
 	return 0;
 }
