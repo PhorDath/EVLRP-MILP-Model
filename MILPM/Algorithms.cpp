@@ -197,29 +197,129 @@ solution Algorithms::addStations(solution s)
 		s.routes.at(j).front().bLevel = inst->Q;
 	}
 
-	vector<int> counter(s.routes.size(), 0); // one counter for each route
-	vector<bool> stop(s.routes.size(), false);
+	vector<int> counter(s.routes.size(), 1); // store the maximum node in each route the vehicle can travel with its battery charge
+	vector<bool> end(s.routes.size(), false); // record the routes that have already beeing fully traveled
+	vector<bool> hold(s.routes.size(), false); // record which routes are waiting to have it vehicle to refuel
 	
 	// iterate simuntaneously over all routes, computing in which node the vehicle runs out of energy 
-	int i = 1;
+
 	while (true) {
 		for (int j = 0; j < s.routes.size(); j++) { // for each route
-			if (i < s.routes.at(j).size()) { // make sure that we dont overpass the vector maximun range
-				int curr = counter.at(j);
 
-				s.routes.at(j).at(curr);
 
-				s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(curr - 1).bLevel - inst->dist(s.routes.at(j).at(curr - 1).key, s.routes.at(j).at(curr).key);
+			while (true) { // iterate over the route j
+				if (counter.at(j) < s.routes.at(j).size()) { // check if it is the routes' end
+					int curr = counter.at(j); // current node in route j
 
-				if()
 
-				counter.at(j)++;
+					// compute battery level in the current node
+					s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(curr - 1).bLevel - inst->dist(s.routes.at(j).at(curr - 1).key, s.routes.at(j).at(curr).key); 
+
+					if (s.routes.at(j).at(curr).bLevel >= 0) { // if battery is enough to travel to next node
+						counter.at(j)++; // keep going
+					}
+					else {
+						hold.at(j) = true; // indicates that the vehicle must be recharged
+						break; // go to next route
+					}
+					
+				}
+				else {
+					end.at(j) = true; // indicate the routes' end
+					break;
+				}
 			}
 		}
 
+		// check if all routes are on hold, it means that all vehicles are waiting to be recharged
+		int recharge = true;
+		for (int i = 0; i < s.routes.size(); i++) {
+			if (end.at(i) == false && hold.at(i) == false) {
+				recharge = false;
+			}
+		}
+		for (route r : s.routes) {
+			for (vertex v : r) {
+				cout << v.bLevel << " ";
+			}
+			cout << endl;
+		}
 
-		i++;
+		// all vehicles waiting to recharge we must find a good spot to them to do so
+		if (recharge == true) {
+
+			for (int j = 0; j < s.routes.size(); j++) {
+				if (hold.at(j) == true) { // if vehicle is in need of energy
+					// try to insert each bss in between the hold position and the previous one
+
+					int a = s.routes.at(j).at(counter.at(j) - 1).key; // previous position key
+					int b = s.routes.at(j).at(counter.at(j)).key; // hold position key
+
+					int minDist = INT_MAX;
+					int minMean = INT_MAX;
+
+					vector<node> R = inst->set_R(); // get all stations
+					int n;
+					for (node r : R) {
+
+						int AR = inst->getBatteryUsed(a, r.key); // inst->dist(a, r.key);
+						int RB = inst->getBatteryUsed(r.key, b); // inst->dist(r.key, b);
+						int meanAB = (AR + RB) / 2;
+
+						// get the lowest mean
+						if (meanAB < minMean) {
+							minMean = meanAB;
+						}
+						// get the lowest dist
+						if (AR < minDist) {
+							n = r.key;
+							minDist = AR;
+						}
+
+						cout << "distance from " << a << " to " << r.key << " is " << AR << endl;
+						cout << "distance from " << r.key << " to " << b << " is " << RB << endl;
+
+						
+					}
+					cout << "aqui\n";
+					cout << minDist << endl;
+
+					// if vehicle can reach the closest bss it will move there in order to recharge
+					if (s.routes.at(j).at(counter.at(j)).bLevel >= minDist) {
+						cout << "Inserting BSS " << n << " in solution\n";
+
+						vertex v;
+						v.key = n;
+						s.routes.at(j).insert(s.routes.at(j).begin() + counter.at(j) - 1, v);
+					}
+
+					cout << "aqui2\n";
+					exit(1);
+
+				}
+			}
+
+
+		}
+		exit(1);
+
+		// check if all vehicles have reached the routes' end
+		int all = false;
+		for (bool e : end) {
+			if (e == true) {
+				all = true;
+			}
+		}
+		// stop when all routes were explored until the end
+		if (all == false) {
+			break;
+		}
+
 	}
+
+	
+
+
 
 	return s;
 }

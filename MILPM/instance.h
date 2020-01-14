@@ -109,6 +109,7 @@ public:
 	float dist(int a, int b);
 	float dist(node a, node b); // distance between points
 	float distEdges(int keya, int keyb); // get the distance between two nodes on the edge list
+	float getBatteryUsed(int keya, int keyb); // get the amount of energy used to travel from a to b
 	float getTD(node a, node b); // get travel time between nodes a and b
 	float getS(int key);
 	float getCT();

@@ -1047,6 +1047,12 @@ float instance::distEdges(int keya, int keyb)
 	return -1;
 }
 
+float instance::getBatteryUsed(int keya, int keyb)
+{
+	float distAB = dist(keya, keyb);
+	return 1 * distAB;
+}
+
 float instance::getTD(node a, node b)
 {
 	float d = dist(a, b);
