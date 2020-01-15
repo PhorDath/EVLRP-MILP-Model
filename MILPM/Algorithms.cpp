@@ -200,12 +200,14 @@ solution Algorithms::addStations(solution s)
 	vector<int> counter(s.routes.size(), 1); // store the maximum node in each route the vehicle can travel with its battery charge
 	vector<bool> end(s.routes.size(), false); // record the routes that have already beeing fully traveled
 	vector<bool> hold(s.routes.size(), false); // record which routes are waiting to have it vehicle to refuel
+	vector<int> energy; // store the amount of energy the vehicle can recharge during service time
 	
 	// iterate simuntaneously over all routes, computing in which node the vehicle runs out of energy 
 
 	while (true) {
 		for (int j = 0; j < s.routes.size(); j++) { // for each route
 
+			energy.resize(s.routes.size(), 0);
 
 			while (true) { // iterate over the route j
 				if (counter.at(j) < s.routes.at(j).size()) { // check if it is the routes' end
@@ -292,6 +294,8 @@ solution Algorithms::addStations(solution s)
 						v.key = n;
 						s.routes.at(j).insert(s.routes.at(j).begin() + counter.at(j) - 1, v);
 					}
+					if()
+
 
 					cout << "aqui2\n";
 					exit(1);
