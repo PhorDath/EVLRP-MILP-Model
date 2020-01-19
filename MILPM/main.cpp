@@ -8,9 +8,9 @@
 
 using namespace std;
 
-const string dir1 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/MDEVLRPTW-BSPR/Instances/";
-const string dir2 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/SSG14/";
-const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
+const string dir1 = "E:/VictorHugo/Pos-Graduacao/UFV/Research/Instances/MDEVLRPTW-BSPR/Instances/";
+const string dir2 = "E:/VictorHugo/Pos-Graduacao/UFV/Research/Instances/SSG14/";
+const string dir3 = "E:/VictorHugo/Pos-Graduacao/UFV/Research/Instances/prplib/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK100_01.txt";

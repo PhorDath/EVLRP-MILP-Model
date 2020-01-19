@@ -198,6 +198,8 @@ solution Algorithms::addStations(solution s)
 	}
 
 	vector<int> counter(s.routes.size(), 1); // store the maximum node in each route the vehicle can travel with its battery charge
+	vector<int> counterP;
+
 	vector<bool> end(s.routes.size(), false); // record the routes that have already beeing fully traveled
 	vector<bool> hold(s.routes.size(), false); // record which routes are waiting to have it vehicle to refuel
 	vector<int> energy; // store the amount of energy the vehicle can recharge during service time
@@ -205,18 +207,47 @@ solution Algorithms::addStations(solution s)
 	// iterate simuntaneously over all routes, computing in which node the vehicle runs out of energy 
 
 	while (true) {
-		for (int j = 0; j < s.routes.size(); j++) { // for each route
 
-			energy.resize(s.routes.size(), 0);
+		energy.resize(s.routes.size(), 0);
+
+		counterP = counter;
+
+		for (int j = 0; j < s.routes.size(); j++) { // for each route
 
 			while (true) { // iterate over the route j
 				if (counter.at(j) < s.routes.at(j).size()) { // check if it is the routes' end
 					int curr = counter.at(j); // current node in route j
+					int prev = curr - 1;
 
+					int keyCurr = s.routes.at(j).at(curr).key;
+					int keyPrev = s.routes.at(j).at(curr - 1).key;
+
+					node currNode = inst->getNodeByKey(keyCurr);
 
 					// compute battery level in the current node
-					s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(curr - 1).bLevel - inst->dist(s.routes.at(j).at(curr - 1).key, s.routes.at(j).at(curr).key); 
+					s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(prev).bLevel - inst->dist(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key); 
 
+					// compute arrival time
+					s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).lTime + inst->getTD(keyPrev, keyCurr);
+
+					// compute waiting time
+					if (s.routes.at(j).at(curr).aTime < currNode.readyTime) {
+						s.routes.at(j).at(curr).wTime = currNode.readyTime - s.routes.at(j).at(curr).aTime;
+					}
+					else { // no waiting time
+						s.routes.at(j).at(curr).wTime = 0;
+					}
+
+					// compute de departure time 
+					s.routes.at(j).at(curr).lTime = s.routes.at(j).at(curr).aTime + s.routes.at(j).at(curr).wTime + inst->getNodeByKey(keyCurr).serviceTime;
+
+					// compute vehcile load
+					s.routes.at(j).at(curr).vLoad = s.routes.at(j).at(prev).vLoad - currNode.demand;
+
+					// compute the amount of energy that can be charged during service time
+					int n = s.routes.at(j).at(curr).key;
+					energy.at(j) += inst->getNodeByKey(n).serviceTime * inst->g;
+						 
 					if (s.routes.at(j).at(curr).bLevel >= 0) { // if battery is enough to travel to next node
 						counter.at(j)++; // keep going
 					}
@@ -250,7 +281,7 @@ solution Algorithms::addStations(solution s)
 		// all vehicles waiting to recharge we must find a good spot to them to do so
 		if (recharge == true) {
 
-			for (int j = 0; j < s.routes.size(); j++) {
+			for (int j = 0; j < s.routes.size(); j++) { // for each route
 				if (hold.at(j) == true) { // if vehicle is in need of energy
 					// try to insert each bss in between the hold position and the previous one
 
@@ -262,6 +293,7 @@ solution Algorithms::addStations(solution s)
 
 					vector<node> R = inst->set_R(); // get all stations
 					int n;
+					// search for the closest bss fromthe hold node
 					for (node r : R) {
 
 						int AR = inst->getBatteryUsed(a, r.key); // inst->dist(a, r.key);
@@ -278,28 +310,92 @@ solution Algorithms::addStations(solution s)
 							minDist = AR;
 						}
 
-						cout << "distance from " << a << " to " << r.key << " is " << AR << endl;
-						cout << "distance from " << r.key << " to " << b << " is " << RB << endl;
-
-						
 					}
-					cout << "aqui\n";
-					cout << minDist << endl;
 
-					// if vehicle can reach the closest bss it will move there in order to recharge
-					if (s.routes.at(j).at(counter.at(j)).bLevel >= minDist) {
+					if (s.routes.at(j).at(counter.at(j)).bLevel >= minDist) { // if vehicle can reach the closest bss it will move there in order to recharge
+						cout << "Option 1\n";
 						cout << "Inserting BSS " << n << " in solution\n";
 
 						vertex v;
 						v.key = n;
-						s.routes.at(j).insert(s.routes.at(j).begin() + counter.at(j) - 1, v);
+						s.routes.at(j).insert(s.routes.at(j).begin() + counter.at(j) - 1, v); // insert the closest bss in the route j
 					}
-					if()
 
+					//check if the vehicle can charge in all privious nodes in the route in order to reach bss
+					if (s.routes.at(j).at(counter.at(j)).bLevel + energy.at(j) >= minDist) {
+						cout << "option 2\n";
+						cout << "Vehicle will recharge during service time" << endl;
+						// recharge during service
 
-					cout << "aqui2\n";
+						for (int i = counterP.at(j); i < counter.at(j); i++) {
+							int key = s.routes.at(j).at(i).key;
+							cout << inst->getNodeByKey(key).serviceTime * inst->g << endl;
+							s.routes.at(j).at(i).bLevel += inst->getNodeByKey(key).serviceTime * inst->g;
+							s.routes.at(j).at(i).recharged = inst->getNodeByKey(key).serviceTime * inst->g; // indicates the amount of battery recharged on each part of the route
+							s.routes.at(j).at(i).recharge = true; // indicates that the vechilce was charged
+						}
+					}
+
+					// if there is no battery enough inthe vehicle even using service time to recharge, we will try to trace back the route to find a suitable place so the vehcile can recharge
+					if (s.routes.at(j).at(counter.at(j)).bLevel + energy.at(j) < minDist) {
+						// traceback the route
+						cout << "Option 3\n";
+
+						int i = counter.at(j);
+						while (true) {
+							cout << "i: " << i << endl;
+
+							// get nearest bss from the previous node
+							int min = INT_MAX;
+							int minMean = INT_MAX;
+
+							vector<node> R = inst->set_R(); // get all stations
+							int bss;
+							for (node r : R) {
+								int buAR = inst->getBatteryUsed(s.routes.at(j).at(i).key, r.key);
+
+								int buRB = inst->getBatteryUsed(r.key, s.routes.at(j).at(i + 1).key);
+	
+								// lowest mean
+								int mean = (buAR + buRB) / 2;
+								if (mean < min) {
+									minMean = mean;
+								}
+
+								// get the lowest dist
+								if (buAR < min) {
+									bss = r.key;
+									min = buAR;
+								}
+							}
+
+							if (s.routes.at(j).at(i).bLevel + min >= 0) { // checking of its possible to reach the nearest bss
+							
+								vertex v;
+								v.key = bss;
+								v.bLevel = inst->Q;
+
+								int prev = s.routes.at(j).at(i - 1).key;
+
+								v.recharged = inst->Q - (s.routes.at(j).at(prev).bLevel - inst->getBatteryUsed(prev, bss)); // compute the amount of energy recharged
+								v.recharge = true;
+								s.routes.at(j).insert(s.routes.at(j).begin() + i, v);
+
+								for (auto r : s.routes) {
+									for (auto v : r) {
+										cout << v.recharged << " ";
+									}
+									cout << endl;
+								}
+
+								break;
+							}
+							
+							i--;
+						}
+
+					}
 					exit(1);
-
 				}
 			}
 
@@ -320,10 +416,6 @@ solution Algorithms::addStations(solution s)
 		}
 
 	}
-
-	
-
-
 
 	return s;
 }
@@ -349,6 +441,11 @@ permutation Algorithms::randomPermutation()
 	}
 
 	return p;
+}
+
+node Algorithms::nearestBSS(int key)
+{
+	return node();
 }
 
 int Algorithms::availableRoute(solution s, int n)

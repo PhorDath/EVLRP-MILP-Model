@@ -1059,6 +1059,12 @@ float instance::getTD(node a, node b)
 	return ceil(d / (v));
 }
 
+float instance::getTD(int a, int b)
+{
+	float d = dist(a, b);
+	return ceil(d / (v));
+}
+
 float instance::getS(int key) // verify
 {
 	return nodes.at(key).serviceTime;

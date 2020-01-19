@@ -51,6 +51,7 @@ private:
 	solution addDepots(solution s);
 	solution addStations(solution s);
 	permutation randomPermutation();
+	node nearestBSS(int key);
 
 	int availableRoute(solution s, int n); // check if there is an vailable route to insert the node n
 
