@@ -341,20 +341,24 @@ solution Algorithms::addStations(solution s)
 						// traceback the route
 						cout << "Option 3\n";
 
-						int i = counter.at(j);
-						while (true) {
-							cout << "i: " << i << endl;
+						int b = counter.at(j) - 1;
+						int a = counterP.at(j);
 
-							// get nearest bss from the previous node
+						while (b > a) {
+							// tracing back
+							cout << "a: " << a << endl;
+							cout << "b: " << b << endl;
+
+							// get nearest bss from the previous b node
 							int min = INT_MAX;
 							int minMean = INT_MAX;
 
 							vector<node> R = inst->set_R(); // get all stations
-							int bss;
+							int bss = -1;
 							for (node r : R) {
-								int buAR = inst->getBatteryUsed(s.routes.at(j).at(i).key, r.key);
+								int buAR = inst->getBatteryUsed(s.routes.at(j).at(b).key, r.key);
 
-								int buRB = inst->getBatteryUsed(r.key, s.routes.at(j).at(i + 1).key);
+								int buRB = inst->getBatteryUsed(r.key, s.routes.at(j).at(b + 1).key);
 	
 								// lowest mean
 								int mean = (buAR + buRB) / 2;
@@ -369,29 +373,22 @@ solution Algorithms::addStations(solution s)
 								}
 							}
 
-							if (s.routes.at(j).at(i).bLevel + min >= 0) { // checking of its possible to reach the nearest bss
+							if (s.routes.at(j).at(b).bLevel + min >= 0) { // checking of its possible to reach the nearest bss
 							
 								vertex v;
 								v.key = bss;
 								v.bLevel = inst->Q;
 
-								int prev = s.routes.at(j).at(i - 1).key;
+								int prev = s.routes.at(j).at(b - 1).key;
 
 								v.recharged = inst->Q - (s.routes.at(j).at(prev).bLevel - inst->getBatteryUsed(prev, bss)); // compute the amount of energy recharged
 								v.recharge = true;
-								s.routes.at(j).insert(s.routes.at(j).begin() + i, v);
-
-								for (auto r : s.routes) {
-									for (auto v : r) {
-										cout << v.recharged << " ";
-									}
-									cout << endl;
-								}
+								s.routes.at(j).insert(s.routes.at(j).begin() + b, v);
 
 								break;
 							}
 							
-							i--;
+							b--;
 						}
 
 					}
