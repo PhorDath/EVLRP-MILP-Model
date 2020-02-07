@@ -36,6 +36,12 @@
     <ClCompile Include="Usefull.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="routes_rep.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="perm_rep.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="instance.h">
@@ -54,6 +60,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Usefull.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="routes_rep.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="perm_rep.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
