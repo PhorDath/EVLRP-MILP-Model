@@ -70,6 +70,7 @@ solution Algorithms::permutationToSolution(permutation p)
 	vector<bool> coverage(inst->nodes.size(), false);
 
 	solution s;
+	s.perm = p;
 
 	// adding the first vertex to the first route
 	int v = p.front(); // get the first element in the permutation
@@ -105,10 +106,119 @@ solution Algorithms::permutationToSolution(permutation p)
 			s.routes.push_back(temp); // add the new route to solution
 			weight.push_back(n.demand); // add the route's weight in the weight vector
 		}
+		/*
+		if (j == weight.size()) { // if no route can fit the next node
+			vector<vertex> temp;
+			temp.push_back(new_v); // create the new route with the first node
+			s.routes.push_back(temp); // add the new route to solution
+			weight.push_back(n.demand); // add the route's weight in the weight vector
+		}
+		*/
 	}
 
 	s = addDepots(s);
 	s = addStations(s);
+	s = procSol(s); // maybe will generate a bug where the permutation will be erased
+	
+	return s;
+}
+
+solution Algorithms::permutationToSolution(permutation p, int cn)
+{
+	vector<bool> coverage(inst->nodes.size(), false);
+
+	solution s;
+	s.perm = p;
+
+	// adding the first vertex to the first route
+	int v = p.front(); // get the first element in the permutation
+
+	vertex new_v; // create the vertex to be added
+	new_v.key = v;
+
+	s.routes.resize(1); // set the number of route to one
+	s.routes.front().push_back(new_v);
+
+	p.erase(p.begin()); // remove the first element that were already added
+
+	vector<int> weight; // this vector will store the amount of freight required to in the route
+	weight.push_back(inst->getNodeByKey(v).demand);
+
+	//
+	for (auto i : p) { // iterate sequentially over the permutation adding the customers to a route
+		node n = inst->getNodeByKey(i);
+		new_v.key = n.key;
+
+		// search which route can receive the next permutation node
+		int j = 0;
+		for (j = 0; j < weight.size(); j++) {
+			if (n.demand + weight.at(j) <= inst->C) { // we put the node in the first route that fits it
+				s.routes.at(j).push_back(new_v); // insert node
+				weight.at(j) += n.demand; // update the total freight weight in the route
+				break;
+			}
+		}
+		if (j == weight.size()) { // if no route can fit the next node
+			vector<vertex> temp;
+			temp.push_back(new_v); // create the new route with the first node
+			s.routes.push_back(temp); // add the new route to solution
+			weight.push_back(n.demand); // add the route's weight in the weight vector
+		}
+	}
+
+	s = addDepots(s);
+	s = addStations(s, cn);
+	s = procSol(s); // maybe will generate a bug where the permutation will be erased
+
+	return s;
+}
+
+solution Algorithms::permutationToSolutionGrasp(permutation p)
+{
+	vector<bool> coverage(inst->nodes.size(), false);
+
+	solution s;
+	s.perm = p;
+
+	// adding the first vertex to the first route
+	int v = p.front(); // get the first element in the permutation
+
+	vertex new_v; // create the vertex to be added
+	new_v.key = v;
+
+	s.routes.resize(1); // set the number of route to one
+	s.routes.front().push_back(new_v);
+
+	p.erase(p.begin()); // remove the first element that were already added
+
+	vector<int> weight; // this vector will store the amount of freight required to in the route
+	weight.push_back(inst->getNodeByKey(v).demand);
+
+	//
+	for (auto i : p) { // iterate sequentially over the permutation adding the customers to a route
+		node n = inst->getNodeByKey(i);
+		new_v.key = n.key;
+
+		// search which route can receive the next permutation node
+		int j = 0;
+		for (j = 0; j < weight.size(); j++) {
+			if (n.demand + weight.at(j) <= inst->C) { // we put the node in the first route that fits it
+				s.routes.at(j).push_back(new_v); // insert node
+				weight.at(j) += n.demand; // update the total freight weight in the route
+				break;
+			}
+		}
+		if (j == weight.size()) { // if no route can fit the next node
+			vector<vertex> temp;
+			temp.push_back(new_v); // create the new route with the first node
+			s.routes.push_back(temp); // add the new route to solution
+			weight.push_back(n.demand); // add the route's weight in the weight vector
+		}
+	}
+
+	s = addDepots(s);
+	s = addStationsGrasp(s);
+	s = procSol(s); // maybe will generate a bug where the permutation will be erased
 
 	return s;
 }
@@ -167,15 +277,229 @@ solution Algorithms::addDepots(solution s)
 		w++;
 	}
 
+	for (int i = 0; i < s.routes.size(); i++) {
+		s.routes.at(i).front().bLevel = inst->Q;
+		s.routes.at(i).front().lTime = 0;
+		s.routes.at(i).front().vLoad = inst->C;
+		s.routes.at(i).front().aTime = 0;
+		s.routes.at(i).front().wTime = 0;
+	}
 
 	return s;
 }
 
 solution Algorithms::addStations(solution s)
 {
-	// compute the amount of energy required to perform the routes
-	vector<int> sum;
+	// set all vehicles to full energy
+	for (int j = 0; j < s.routes.size(); j++) {
+		s.routes.at(j).front().bLevel = inst->Q;
+	}
 
+	vector<int> bssSequence;
+
+	for (int j = 0; j < s.routes.size(); j++) {
+
+		//int last = 1;
+		int curr = 1;
+		
+		while (curr < s.routes.at(j).size()) {
+			int prev = curr - 1;
+			node currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+			node prevNode = inst->getNodeByKey(s.routes.at(j).at(prev).key);
+
+			// computing parameters
+
+			// compute battery level in the current node
+			s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(prev).bLevel - inst->getBatteryUsed(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key);
+
+			// compute arrival time in the current node
+			s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, currNode.key);
+
+			// compute waiting time in the current node
+			if (s.routes.at(j).at(curr).aTime < currNode.readyTime) {
+				s.routes.at(j).at(curr).wTime = currNode.readyTime - s.routes.at(j).at(curr).aTime;
+			}
+			else { // no waiting time
+				s.routes.at(j).at(curr).wTime = 0;
+			}
+
+			// compute de departure time in the current node
+			s.routes.at(j).at(curr).lTime = s.routes.at(j).at(curr).aTime + s.routes.at(j).at(curr).wTime + inst->getNodeByKey(currNode.key).serviceTime;
+
+			// compute vehcile load in the current node
+			s.routes.at(j).at(curr).vLoad = s.routes.at(j).at(prev).vLoad - currNode.demand;
+			
+			// if not enough battery we have to insert a bss in the route
+			if (s.routes.at(j).at(curr).bLevel < 0) {
+
+				int minBU = 0; // minimum battery usage
+				int meanBU = 0;
+
+				
+
+				while (s.routes.at(j).at(curr).bLevel - minBU < 0) {
+					int put = false;
+					curr--;
+					minBU = INT_MAX;
+
+					currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+					int bss;
+					// search for the closes bss
+					if (currNode.type != "f") {
+						vector<node> R = inst->set_R(); // get all stations
+
+						// search for the closest bss from the stop node
+						for (node r : R) {
+
+							int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key); // inst->dist(r.key, b);
+
+							// get the lowest dist
+							if (BU < minBU && r.key != s.routes.at(j).at(curr).key) {
+								bss = r.key;
+								minBU = BU;
+							}
+						}
+					}
+					else {
+						vector<node> R = inst->set_R(); // get all stations
+
+						//
+						int curr__ = curr - 1;
+						bssSequence.clear();
+						while (inst->getNodeByKey(s.routes.at(j).at(curr__).key).type == "f") {
+							bssSequence.push_back(s.routes.at(j).at(curr__).key);
+							curr__--;
+						}
+
+						// remove all bss that imitially preced the current one in order to avoid loops
+						for (int key : bssSequence) {
+							for (int i = 0; i < R.size(); i++) {
+								if (R.at(i).key == key) {
+									R.erase(R.begin() + i);
+								}
+							}
+						}
+
+						if (R.size() == 0) {
+							cout << "Error! node " << s.routes.at(j).at(curr).key << " cant be reached" << endl;
+							exit(1);
+						}
+
+						// search for the closest bss from the stop node
+						for (node r : R) {
+							int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key); // inst->dist(r.key, b);
+
+							// get the lowest dist
+							if (BU < minBU && r.key != s.routes.at(j).at(curr).key) {
+								bss = r.key;
+								minBU = BU;
+							}
+						}
+					}
+
+
+					// compute amount of energy the vehcile can recharge during service time in the current routes segment
+					int curr_ = curr;
+					int energy = 0;
+					while (true) {
+
+						node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+
+						if (n.type == "f" || n.type == "d") {
+							break;
+						}
+
+						energy += inst->g * n.serviceTime;
+						curr_--;
+					}
+
+					int cEnergy = (s.routes.at(j).at(curr).bLevel + energy);
+
+					if (s.routes.at(j).at(curr).bLevel - minBU >= 0) { // if battery is enough to go from current node and closest bss, insert bss in the route
+						vertex v;
+						v.key = bss;
+						v.bLevel = inst->Q;
+						v.recharge = true;
+						v.vLoad = s.routes.at(j).at(prev).vLoad;
+						v.recharged = inst->Q - (s.routes.at(j).at(curr).bLevel - minBU); // compute the amount of energy recharged
+						v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss);
+						v.lTime = s.routes.at(j).at(curr).aTime + currNode.serviceTime + inst->ct;
+
+						s.routes.at(j).insert(s.routes.at(j).begin() + curr + 1, v); // insert in the routes
+
+						curr++;
+						put = true;
+
+						// 
+						//bssSequence.push_back(v.key);
+					}
+					else if ((s.routes.at(j).at(curr).bLevel + energy) - minBU >= 0) { // considering recharge during service time
+						// recharge during service time
+						curr_ = curr;
+						energy = 0;
+						while (true) {
+
+							node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+
+							// force to recharge just enough to reach the bss
+							if (n.type == "f" || n.type == "d" || s.routes.at(j).at(curr).bLevel + energy > minBU) {
+								break;
+							}
+
+							s.routes.at(j).at(curr_).recharge = true;
+							s.routes.at(j).at(curr_).recharged = inst->g * n.serviceTime;
+							s.routes.at(j).at(curr_).bLevel += s.routes.at(j).at(curr_).recharged;
+							if (s.routes.at(j).at(curr_).bLevel > inst->Q) {
+								s.routes.at(j).at(curr_).bLevel = inst->Q;
+							}
+
+							energy += inst->g * n.serviceTime;
+							curr_--;
+						}
+
+						// insert bss vertex in the route
+						vertex v;
+						v.key = bss;
+						v.bLevel = inst->Q;
+						v.recharge = true;
+						v.vLoad = s.routes.at(j).at(prev).vLoad;
+						v.recharged = inst->Q - (s.routes.at(j).at(curr).bLevel - minBU); // compute the amount of energy recharged
+						v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss);
+						v.lTime = s.routes.at(j).at(curr).aTime + currNode.serviceTime + inst->ct;
+
+						s.routes.at(j).insert(s.routes.at(j).begin() + curr + 1, v); // insert in the routes
+
+						curr++;
+						put = true;
+
+						// 
+						//bssSequence.push_back(v.key);
+
+					}
+					else {
+						//bssSequence.clear();
+					}
+
+					if (put == true) {
+						break;
+					}
+				}
+			}
+			curr++;
+		}
+	}
+	return s;
+	/*
+	for (auto r : s.routes) {
+		for (auto v : r) {
+			cout << v.key << " ";
+		}
+		cout << endl;
+	}
+
+	vector<int> sum; // store the amount of energy required to perform the routes
+
+	// compute the amount of energy required to perform the entire route
 	for (route r : s.routes) {
 		sum.push_back(0);
 		
@@ -183,13 +507,9 @@ solution Algorithms::addStations(solution s)
 			node n1 = inst->getNodeByKey(r.at(i).key);
 			node n2 = inst->getNodeByKey(r.at(i + 1).key);
 
-			sum.back() += inst->dist(n1, n2);
+			sum.back() += inst->getBatteryUsed(n1.key, n2.key);
 		}
 
-	}
-
-	for (int i : sum) {
-		cout << i << " - " << i / inst->Q << endl;
 	}
 
 	// set all vehicles to full energy
@@ -202,75 +522,94 @@ solution Algorithms::addStations(solution s)
 
 	vector<bool> end(s.routes.size(), false); // record the routes that have already beeing fully traveled
 	vector<bool> hold(s.routes.size(), false); // record which routes are waiting to have it vehicle to refuel
-	vector<int> energy; // store the amount of energy the vehicle can recharge during service time
+	vector<int> energy; // store the amount of energy the vehicle can recharge during service time in the partial route defined by counterP and counter
 	
-	// iterate simuntaneously over all routes, computing in which node the vehicle runs out of energy 
-
+	// iterate over all routes, computing in which node the vehicle runs out of energy 
+	int it = 0;
 	while (true) {
+		cout << "it: " << it << endl;
+		it++;
+		string st;
+		getline(cin, st);
 
 		energy.resize(s.routes.size(), 0);
 
 		counterP = counter;
 
+		// compute the vehicle autonomy in each route j
+		// here we determine the node in the route where the vehicle cant reach due to its battery capacity
+		// the vector counter will count until the vehicle has any amount of negative energy, meaning that it will need to perform a recharge or a battery swap
 		for (int j = 0; j < s.routes.size(); j++) { // for each route
+			energy.at(j) = 0;
 
-			while (true) { // iterate over the route j
-				if (counter.at(j) < s.routes.at(j).size()) { // check if it is the routes' end
-					int curr = counter.at(j); // current node in route j
-					int prev = curr - 1;
+			while (counter.at(j) < s.routes.at(j).size()) { // iterate over the route j
+				if (counter.at(j) > s.routes.at(j).size()) {
+					cout << "Error\n";
+					exit(1);
+				}
 
-					int keyCurr = s.routes.at(j).at(curr).key;
-					int keyPrev = s.routes.at(j).at(curr - 1).key;
+				if(j == 0)
+					cout << "counter: " << counter.at(j) << endl;
 
-					node currNode = inst->getNodeByKey(keyCurr);
+				
+				int curr = counter.at(j); // current node in route j
+				int prev = curr - 1;
 
-					// compute battery level in the current node
-					s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(prev).bLevel - inst->dist(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key); 
+				int keyCurr = s.routes.at(j).at(curr).key;
+				int keyPrev = s.routes.at(j).at(curr - 1).key;
 
-					// compute arrival time
-					s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).lTime + inst->getTD(keyPrev, keyCurr);
+				node currNode = inst->getNodeByKey(keyCurr);
 
-					// compute waiting time
-					if (s.routes.at(j).at(curr).aTime < currNode.readyTime) {
-						s.routes.at(j).at(curr).wTime = currNode.readyTime - s.routes.at(j).at(curr).aTime;
-					}
-					else { // no waiting time
-						s.routes.at(j).at(curr).wTime = 0;
-					}
+				// compute battery level in the current node
+				s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(prev).bLevel - inst->dist(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key); 
 
-					// compute de departure time 
-					s.routes.at(j).at(curr).lTime = s.routes.at(j).at(curr).aTime + s.routes.at(j).at(curr).wTime + inst->getNodeByKey(keyCurr).serviceTime;
+				// compute arrival time in the current node
+				s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).lTime + inst->getTD(keyPrev, keyCurr);
 
-					// compute vehcile load
-					s.routes.at(j).at(curr).vLoad = s.routes.at(j).at(prev).vLoad - currNode.demand;
+				// compute waiting time in the current node
+				if (s.routes.at(j).at(curr).aTime < currNode.readyTime) {
+					s.routes.at(j).at(curr).wTime = currNode.readyTime - s.routes.at(j).at(curr).aTime;
+				}
+				else { // no waiting time
+					s.routes.at(j).at(curr).wTime = 0;
+				}
 
-					// compute the amount of energy that can be charged during service time
-					int n = s.routes.at(j).at(curr).key;
-					energy.at(j) += inst->getNodeByKey(n).serviceTime * inst->g;
+				// compute de departure time in the current node
+				s.routes.at(j).at(curr).lTime = s.routes.at(j).at(curr).aTime + s.routes.at(j).at(curr).wTime + inst->getNodeByKey(keyCurr).serviceTime;
+
+				// compute vehcile load in the current node
+				s.routes.at(j).at(curr).vLoad = s.routes.at(j).at(prev).vLoad - currNode.demand;
+
+				// compute the amount of energy that can be charged during service time
+				int n = s.routes.at(j).at(curr).key;
+				energy.at(j) += inst->getNodeByKey(n).serviceTime * inst->g;
 						 
-					if (s.routes.at(j).at(curr).bLevel >= 0) { // if battery is enough to travel to next node
-						counter.at(j)++; // keep going
-					}
-					else {
-						hold.at(j) = true; // indicates that the vehicle must be recharged
-						break; // go to next route
-					}
-					
+				if (s.routes.at(j).at(curr).bLevel >= 0) { // if battery is enough to travel to next node
+					counter.at(j)++; // keep going
 				}
 				else {
-					end.at(j) = true; // indicate the routes' end
-					break;
+					hold.at(j) = true; // indicates that the vehicle must be recharged
+					break; // go to next route
+				}
+
+				// stop criteria
+				int key = currNode.key;
+				string type = inst->getNodeByKey(key).type;
+				if (type == "a") { // counter.at(j) > s.routes.at(j).size()
+					end.at(j) = true;
+					//break;
 				}
 			}
 		}
-
-		// check if all routes are on hold, it means that all vehicles are waiting to be recharged
+	
+		// check if all vehicles are on hold, it means that all vehicles are waiting to be recharged
 		int recharge = true;
 		for (int i = 0; i < s.routes.size(); i++) {
 			if (end.at(i) == false && hold.at(i) == false) {
 				recharge = false;
 			}
 		}
+
 		for (route r : s.routes) {
 			for (vertex v : r) {
 				cout << v.bLevel << " ";
@@ -278,11 +617,17 @@ solution Algorithms::addStations(solution s)
 			cout << endl;
 		}
 
-		// all vehicles waiting to recharge we must find a good spot to them to do so
+		// if all vehicles waiting to recharge (on hold) we must find a good spot to them to do so
 		if (recharge == true) {
+			cout << "all vehicles are on hold\n";
 
 			for (int j = 0; j < s.routes.size(); j++) { // for each route
-				if (hold.at(j) == true) { // if vehicle is in need of energy
+				if (counter.at(j) > s.routes.at(j).size()) {
+					cout << "Error\n";
+					exit(1);
+				}
+
+				if (hold.at(j) == true && end.at(j) == false) { // if vehicle is in need of energy
 					// try to insert each bss in between the hold position and the previous one
 
 					int a = s.routes.at(j).at(counter.at(j) - 1).key; // previous position key
@@ -305,24 +650,26 @@ solution Algorithms::addStations(solution s)
 							minMean = meanAB;
 						}
 						// get the lowest dist
-						if (AR < minDist) {
+						if (RB < minDist) {
 							n = r.key;
-							minDist = AR;
+							minDist = RB;
 						}
 
 					}
+					// first option
+					// if vehicle can reach the closest bss it will move there in order to recharge
 
-					if (s.routes.at(j).at(counter.at(j)).bLevel >= minDist) { // if vehicle can reach the closest bss it will move there in order to recharge
+					if (s.routes.at(j).at(counter.at(j)).bLevel >= minDist) { 
 						cout << "Option 1\n";
 						cout << "Inserting BSS " << n << " in solution\n";
 
 						vertex v;
 						v.key = n;
-						s.routes.at(j).insert(s.routes.at(j).begin() + counter.at(j) - 1, v); // insert the closest bss in the route j
+						s.routes.at(j).insert(s.routes.at(j).begin() + counter.at(j) + 1, v); // insert the closest bss in the route j
 					}
-
+					// second option
 					//check if the vehicle can charge in all privious nodes in the route in order to reach bss
-					if (s.routes.at(j).at(counter.at(j)).bLevel + energy.at(j) >= minDist) {
+					else if (s.routes.at(j).at(counter.at(j)).bLevel + energy.at(j) >= minDist) {
 						cout << "option 2\n";
 						cout << "Vehicle will recharge during service time" << endl;
 						// recharge during service
@@ -335,35 +682,38 @@ solution Algorithms::addStations(solution s)
 							s.routes.at(j).at(i).recharge = true; // indicates that the vechilce was charged
 						}
 					}
-
-					// if there is no battery enough inthe vehicle even using service time to recharge, we will try to trace back the route to find a suitable place so the vehcile can recharge
-					if (s.routes.at(j).at(counter.at(j)).bLevel + energy.at(j) < minDist) {
+					// third option
+					// if there is not enough battery in the vehicle, even using service time to recharge, we will try to trace back the route to find a suitable place so the vehcile can recharge
+					else if (s.routes.at(j).at(counter.at(j)).bLevel + energy.at(j) < minDist) {
 						// traceback the route
 						cout << "Option 3\n";
 
-						int b = counter.at(j) - 1;
-						int a = counterP.at(j);
+						int endPos = counter.at(j); // -1;
+						int begPos = counterP.at(j);
 
-						while (b > a) {
+						cout << begPos << " - " << endPos << endl;
+
+						bool inserted = false; // indicates that a bss was inserted in the solution
+
+						while (endPos > begPos) {
 							// tracing back
-							cout << "a: " << a << endl;
-							cout << "b: " << b << endl;
-
-							// get nearest bss from the previous b node
+							
+							// get nearest bss from the previous node (b)
 							int min = INT_MAX;
 							int minMean = INT_MAX;
 
 							vector<node> R = inst->set_R(); // get all stations
 							int bss = -1;
+							// search the nearest bss of endPos
 							for (node r : R) {
-								int buAR = inst->getBatteryUsed(s.routes.at(j).at(b).key, r.key);
+								int buAR = inst->getBatteryUsed(s.routes.at(j).at(endPos).key, r.key);
 
-								int buRB = inst->getBatteryUsed(r.key, s.routes.at(j).at(b + 1).key);
+								int buRB = inst->getBatteryUsed(r.key, s.routes.at(j).at(endPos + 1).key);
 	
 								// lowest mean
 								int mean = (buAR + buRB) / 2;
 								if (mean < min) {
-									minMean = mean;
+									 minMean = mean;
 								}
 
 								// get the lowest dist
@@ -373,32 +723,51 @@ solution Algorithms::addStations(solution s)
 								}
 							}
 
-							if (s.routes.at(j).at(b).bLevel + min >= 0) { // checking of its possible to reach the nearest bss
-							
+							if (s.routes.at(j).at(endPos).bLevel - min >= 0) { // checking of its possible to reach the nearest bss
+								cout << "bss " << bss << " will be inserted after " << endPos << endl;
+								cout << "min: " << min << endl;
+
+								for (auto v : s.routes.at(j)) {
+									cout << v.key << " ";
+								}
+								cout << endl;
+
 								vertex v;
 								v.key = bss;
 								v.bLevel = inst->Q;
-
-								int prev = s.routes.at(j).at(b - 1).key;
-
-								v.recharged = inst->Q - (s.routes.at(j).at(prev).bLevel - inst->getBatteryUsed(prev, bss)); // compute the amount of energy recharged
 								v.recharge = true;
-								s.routes.at(j).insert(s.routes.at(j).begin() + b, v);
+
+								v.recharged = inst->Q - (s.routes.at(j).at(endPos).bLevel - inst->getBatteryUsed(endPos, bss)); // compute the amount of energy recharged
+								s.routes.at(j).insert(s.routes.at(j).begin() + endPos + 1, v); // insert in the routes
+
+								counter.at(j) = endPos + 2;
+								counterP.at(j) = endPos + 2;
+
+								inserted = true;
+
+								for (auto v : s.routes.at(j)) {
+									cout << v.key << " ";
+								}
+								cout << endl;
+
+								for (auto v : s.routes.at(j)) {
+									cout << v.bLevel << " ";
+								}
+								cout << endl;
 
 								break;
 							}
-							
-							b--;
-						}
 
+							if (inserted == true) { // stop insertion
+								break;
+							}
+							
+							endPos--;
+						}
 					}
-					exit(1);
 				}
 			}
-
-
 		}
-		exit(1);
 
 		// check if all vehicles have reached the routes' end
 		int all = false;
@@ -415,6 +784,183 @@ solution Algorithms::addStations(solution s)
 	}
 
 	return s;
+	*/
+}
+
+solution Algorithms::addStations(solution s, int n)
+{
+	if (n < 1) {
+		int ls = inst->set_R().size();
+		ls = floor(ls / 5) + 2;
+		n = ls;
+	}
+
+	// set all vehicles to full energy
+	for (int j = 0; j < s.routes.size(); j++) {
+		s.routes.at(j).front().bLevel = inst->Q;
+	}
+
+	for (int j = 0; j < s.routes.size(); j++) {
+
+		//int last = 1;
+		int curr = 1;
+
+		while (curr < s.routes.at(j).size()) {
+			int prev = curr - 1;
+			node currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+			node prevNode = inst->getNodeByKey(s.routes.at(j).at(prev).key);
+
+			// computing parameters
+
+			// compute battery level in the current node
+			s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(prev).bLevel - inst->getBatteryUsed(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key);
+
+			// compute arrival time in the current node
+			s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, currNode.key);
+
+			// compute waiting time in the current node
+			if (s.routes.at(j).at(curr).aTime < currNode.readyTime) {
+				s.routes.at(j).at(curr).wTime = currNode.readyTime - s.routes.at(j).at(curr).aTime;
+			}
+			else { // no waiting time
+				s.routes.at(j).at(curr).wTime = 0;
+			}
+
+			// compute de departure time in the current node
+			s.routes.at(j).at(curr).lTime = s.routes.at(j).at(curr).aTime + s.routes.at(j).at(curr).wTime + inst->getNodeByKey(currNode.key).serviceTime;
+
+			// compute vehcile load in the current node
+			s.routes.at(j).at(curr).vLoad = s.routes.at(j).at(prev).vLoad - currNode.demand;
+
+			// if not enough battery we have to insert a bss in the route
+			if (s.routes.at(j).at(curr).bLevel < 0) {
+
+				int minBU = 0; // minimum battery usage
+				int meanBU = 0;
+
+				while (s.routes.at(j).at(curr).bLevel - minBU < 0) {
+					int put = false;
+					curr--;
+					minBU = INT_MAX;
+
+					currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+
+					vector<node> R = inst->set_R(); // get all stations
+
+					if (n > R.size()) {
+						cout << "Error!\n";
+						cout << "Candidate list size          : " << n << endl;
+						cout << "Number of possible candidates: " << R.size() << endl;
+						return solution();
+					}
+
+					// get the candidate list
+					struct cand {
+						int key;
+						int bat;
+					};
+
+					vector<cand> candidates;
+
+					for (node r : R) {
+
+						int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key); // inst->dist(r.key, b);
+
+						cand c;
+						c.key = r.key;
+						c.bat = BU;
+
+						candidates.push_back(c);
+					}
+
+					partial_sort(candidates.begin(), candidates.begin() + n, candidates.end(), [](const cand &a, const cand &b) -> bool {return a.bat < b.bat;}); // sort the lisy by battery usage
+
+					int a = Random::get(0, n - 1);
+
+					int bss = candidates.at(a).key;
+					int minBU = candidates.at(a).bat;
+
+					if (s.routes.at(j).at(curr).bLevel - minBU >= 0) { // if battery is enough to go from current node and closest bss, insert bss in the route
+						vertex v;
+						v.key = bss;
+						v.bLevel = inst->Q;
+						v.recharge = true;
+						v.vLoad = s.routes.at(j).at(prev).vLoad;
+						v.recharged = inst->Q - (s.routes.at(j).at(curr).bLevel - minBU); // compute the amount of energy recharged
+						v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss);
+						v.lTime = s.routes.at(j).at(curr).aTime + currNode.serviceTime + inst->ct;
+
+
+						s.routes.at(j).insert(s.routes.at(j).begin() + curr + 1, v); // insert in the routes
+						curr++;
+						put = true;
+					}
+					if (put == true) {
+						break;
+					}
+				}
+			}
+			curr++;
+		}
+	}
+	return s;
+}
+
+solution Algorithms::addStationsGrasp(solution s)
+{
+	solution best = s;
+
+	int maxIt = 25;
+
+	int counter = 0;
+	while (counter < maxIt) {
+		// building
+		solution sl = s; // permutationToSolution(s.perm, -1);
+
+		// local search
+		solution best = permutationToSolution(sl.perm);
+		best = procSol(best);
+		best.perm = sl.perm;
+
+		bool improv = true;
+		while (improv == true) {
+			improv = false;
+			solution curr = best;
+
+			for (int i = 0; i < sl.perm.size() - 1; i++) {
+				for (int j = i + 1; j < sl.perm.size(); j++) {
+					permutation pl = curr.perm;
+
+					// swap nodes in the permutation
+					int aux = pl.at(j);
+					pl.at(j) = pl.at(i);
+					pl.at(i) = aux;
+
+					solution sl = permutationToSolution(pl, -1);
+					//sl = procSol(sl);
+
+					if (sl.FO < best.FO) {
+						best = sl;
+						improv = true;
+						return best;
+					}
+				}
+			}
+		}
+		sl = best;
+		// end local search
+
+		if (sl.FO < best.FO) {
+			best = sl;
+			counter = 0;
+		}
+		else {
+			counter++;
+		}
+
+	}
+
+	return addStations(s);
 }
 
 permutation Algorithms::randomPermutation()
@@ -427,8 +973,10 @@ permutation Algorithms::randomPermutation()
 	srand(time(NULL));
 
 	while (C.size() > 0) {
-		int pos = rand() % C.size(); // draws a customer to be added in the permutation
-
+		//int pos = rand() % C.size(); // draws a customer to be added in the permutation
+		int c = C.size();
+		auto pos = Random::get(0, c-1);
+		
 		p.push_back(C.at(pos).key); // add the customer node in the permutation
 
 		// erase customer from vector C
@@ -438,6 +986,59 @@ permutation Algorithms::randomPermutation()
 	}
 
 	return p;
+}
+
+route Algorithms::computeRoute(route sol)
+{
+	// fix the route
+	sol.front().bLevel = inst->Q;
+	sol.front().lTime = 0;
+	sol.front().vLoad = inst->C;
+	sol.front().wTime = 0;
+	sol.front().aTime = 0;
+
+	for (int i = 1; i < sol.size(); i++) {
+		vertex va = sol.at(i - 1);
+		vertex vb = sol.at(i);
+		node na = inst->getNodeByKey(sol.at(i - 1).key);
+		node nb = inst->getNodeByKey(sol.at(i).key);
+
+		int distAB = inst->dist(na, nb);
+		int tTimeAB = inst->getTD(na, nb);
+
+		vb.vLoad = va.vLoad - nb.demand; // vehicle load
+		vb.bLevel = va.bLevel - distAB; // battery level
+		vb.aTime = va.lTime + tTimeAB; // arrival time
+		if (vb.aTime < nb.readyTime) { // if there is a wait time
+			vb.wTime = nb.readyTime - vb.aTime; // wait time
+		}
+		else {
+			vb.wTime = 0; // wait time
+		}
+		vb.lTime = vb.aTime + vb.wTime + nb.serviceTime; // leave time
+		if (nb.type == "f") { // if node b is a bss
+			// ad the time of swap battery in the departure time
+			vb.bLevel = inst->Q;
+			vb.lTime += inst->ct;
+		}
+
+		sol.at(i) = vb;
+	}
+
+	if (sol.size() > 2) {
+		// if there is wait time on the second node in the route,
+		// we can delay the depart time in the depot and have zero wait time in the second node
+		if (sol.at(1).wTime > 0) {
+			node na = inst->getNodeByKey(sol.at(0).key);
+			node nb = inst->getNodeByKey(sol.at(1).key);
+
+			sol.at(0).lTime = nb.readyTime - inst->getTD(na, nb); // delay the departure time in the depot, wait time in node b + travel time from a to b
+			sol.at(1).aTime = sol.at(0).lTime + inst->getTD(na, nb);
+			sol.at(1).wTime = 0; // set wait time to zero
+
+		}
+	}
+	return sol;
 }
 
 node Algorithms::nearestBSS(int key)
@@ -451,10 +1052,537 @@ int Algorithms::availableRoute(solution s, int n)
 	return 0;
 }
 
-solution Algorithms::generateSolution(permutation p)
+solution Algorithms::localSearch(permutation p)
 {
-	solution s;
+
+	solution best = permutationToSolution(p);
+	best = procSol(best);
+	best.perm = p;
+
+	bool improv = true;
+	while (improv == true) {
+		improv = false;
+		solution curr = best;
+
+		for (int i = 0; i < p.size() - 1; i++) {
+			for (int j = i + 1; j < p.size(); j++) {
+				// cout << i << " - " << j << endl;
+
+				permutation pl = curr.perm;
+
+				// swap nodes in the permutation
+				int aux = pl.at(j);
+				pl.at(j) = pl.at(i);
+				pl.at(i) = aux;
+
+				solution sl = permutationToSolution(pl);
+				sl = procSol(sl);
+
+				if (sl.FO < best.FO) {
+					best = sl;
+					improv = true;
+					return best;
+				}
+			}
+		}
+	}
+
+	return best;
+}
+
+solution Algorithms::localSearch2(permutation p)
+{
+	solution best = permutationToSolution(p);
+	best = procSol(best);
+	best.perm = p;
+
+	bool improv = true;
+	while (improv == true) {
+		improv = false;
+		solution curr = best;
+
+		for (int i = 0; i < p.size() - 1; i++) {
+			for (int j = i + 1; j < p.size(); j++) {
+				permutation pl = curr.perm;
+
+				// swap nodes in the permutation
+				int aux = pl.at(j);
+				pl.at(j) = pl.at(i);
+				pl.at(i) = aux;
+
+				solution sl = permutationToSolution(pl, -1);
+				sl = procSol(sl);
+
+				if (sl.FO < best.FO) {
+					best = sl;
+					improv = true;
+					return best;
+				}
+			}
+		}
+	}
+
+	return best;
+}
+
+solution Algorithms::GA(int popSize, int eliteP, int maxGen)
+{
+	int pressure;
+	int eliteSize = ceil(popSize * (eliteP / 100.0));
+
+	// creating initial random population
+	vector<solution> pop;
+	int sum = 0;
+	for (int i = 0; i < popSize; i++) {
+		permutation p = randomPermutation();
+		solution s;
+
+		// elite
+		if (i < eliteSize) {			
+			s = localSearch(p);
+			sum += s.FO;
+		}
+		else {
+			s = permutationToSolution(p);
+			sum += s.FO;
+		}
+
+		s.perm = p;
+		pop.push_back(s);
+	}
+	int mean = sum / popSize;
+	
+	// get best solution
+	solution best;
+	best.FO = INT_MAX;
+	for (solution s : pop) {
+		if (s.FO < best.FO) {
+			best = s;
+		}
+	}
+
+	cout << "init = " << best.FO << endl;
+
+	bool improv = true;
+	int gen = 0;
+	while (gen < maxGen) { // stop criteria, max number of generations without improvments
+		improv = false;
+		// generating an offspring population
+		vector<solution> offspring = generateOffspringPop(pop, eliteSize);
+		pop = offspring;
+
+		// get best solution so far		
+		for (solution s : pop) {
+			if (s.FO < best.FO) {
+				best = s;
+				improv = true;
+				cout << "improvment!!\n";
+				cout << best.FO << endl;
+			}
+		}
+
+		if (improv == false) {
+			gen++;
+		}
+		
+	}
+
+	return best;
+}
+
+vector<solution> Algorithms::generateOffspringPop(vector<solution> pop, int eliteSize)
+{
+	vector<solution> offspring;
+	
+	// select elite
+	// the elite is the 20% fittest indivudual in the current population
+	sort(pop.begin(), pop.end(), compIndividual);
+
+	//int exeSize = (eliteSize * (eliteSize - 1)); // this is the total of possible crossovers done between elite members 
+
+	// generating exe offspring population
+	int max = ceil(pop.size() * 0.5);
+	int count = 0;
+	bool end = false;
+	for (int i = 0; i < eliteSize - 1; i++) {
+		for (int j = i + 1; j < eliteSize; j++) {
+			vector<permutation> os = crossover(pop.at(i).perm, pop.at(j).perm);
+
+			// mutation
+			int x = Random::get(0, 100); // each individual has a 50% chance of suffering a mutation
+			if (x < 50) {
+				os.at(0) = mutation(os.at(0));
+			}
+			x = Random::get(0, 100);
+			if (x < 50) {
+				os.at(1) = mutation(os.at(1));
+			}
+
+			offspring.push_back(permutationToSolution(os.at(0)));
+			count++;
+			if (count == max) {
+				end = true;
+				break;
+			}
+
+			offspring.push_back(permutationToSolution(os.at(1)));
+			count++;
+			if (count == max) {
+				end = true;
+				break;
+			}
+
+		}
+		if (end = true) {
+			break;
+		}
+	}
+	int exe = count;
+	
+	// generating exr offspring
+	max = ceil(pop.size() * 0.3) + (max - count); // the number of exr individuals is 30% of the population size plus the remaining amount of individuals from the exe that couldnt be generated
+	count = 0;
+	end = false;
+	for (int i = 0; i < eliteSize; i++) {
+		for (int j = eliteSize; j < pop.size(); j++) {
+			vector<permutation> os = crossover(pop.at(i).perm, pop.at(j).perm);
+
+			// mutation
+			int x = Random::get(0, 100); // each individual has a 50% chance of suffering a mutation
+			if (x < 50) {
+				os.at(0) = mutation(os.at(0));
+			}
+			x = Random::get(0, 100);
+			if (x < 50) {
+				os.at(1) = mutation(os.at(1));
+			}
+
+			offspring.push_back(permutationToSolution(os.at(0)));
+			count++;
+			if (count == max) {
+				end = true;
+				break;
+			}
+
+			offspring.push_back(permutationToSolution(os.at(1)));
+			count++;
+			if (count == max) {
+				end = true;
+				break;
+			}	
+		}
+		if (end = true) {
+			break;
+		}
+	}
+	int exr = count;
+
+	// generating rxr offspring
+	max = pop.size() - (exe + exr); // the number of exr individuals is 30% of the population size plus the remaining amount of individuals from the exe that couldnt be generated
+	count = 0;
+	end = false;
+	for (int i = eliteSize; i < pop.size() - 1; i++) {
+		for (int j = eliteSize + 1; j < pop.size(); j++) {
+			vector<permutation> os = crossover(pop.at(i).perm, pop.at(j).perm);
+
+			// mutation
+			int x = Random::get(0, 100); // each individual has a 50% chance of suffering a mutation
+			if (x < 50) {
+				os.at(0) = mutation(os.at(0));
+			}
+			x = Random::get(0, 100);
+			if (x < 50) {
+				os.at(1) = mutation(os.at(1));
+			}
+
+			offspring.push_back(permutationToSolution(os.at(0)));
+			count++;
+			if (count == max) {
+				end = true;
+				break;
+			}
+
+			offspring.push_back(permutationToSolution(os.at(1)));
+			count++;
+			if (count == max) {
+				end = true;
+				break;
+			}
+		}
+		if (end = true) {
+			break;
+		}
+	}
+
+	return offspring;
+}
+
+vector<permutation> Algorithms::crossover(permutation p1, permutation p2)
+{
+	int n = floor(p1.size() / 2);
+
+	permutation newP1, newP2;
+
+	for (int i = 0; i < n; i++) {
+		newP1.push_back(p1.at(i));
+	}
+	for (int i = 0; i < n; i++) {
+		newP2.push_back(p2.at(i));
+	}
+
+	// new p1
+	bool more = true;
+	for (int i = 0; i < p2.size(); i++) {
+		bool isin = false;
+		for (int j = 0; j < newP1.size(); j++) {
+			if (p2.at(i) == newP1.at(j)) {
+				isin = true;
+				break;
+			}
+		}
+		if(isin == false)
+			newP1.push_back(p2.at(i));
+	}
+	// new p2
+	more = true;
+	for (int i = 0; i < p1.size(); i++) {
+		bool isin = false;
+		for (int j = 0; j < newP2.size(); j++) {
+			if (p1.at(i) == newP2.at(j)) {
+				isin = true;
+				break;
+			}
+		}
+		if (isin == false)
+			newP2.push_back(p1.at(i));
+	}
+
+	vector<permutation> p;
+	p.push_back(newP1);
+	p.push_back(newP2);
+
+	return p;
+}
+
+permutation Algorithms::mutation(permutation p)
+{
+	// 2 swap
+	int mid = floor(p.size() / 2);
+	int end = p.size() - 1;
+
+	int n1 = Random::get(0, end);
+	int n2 = Random::get(0, end);
+	while (n2 == n1) {
+		n2 = Random::get(0, end);
+	}
+	
+	int aux = p.at(n1);
+	p.at(n1) = p.at(n2);
+	p.at(n2) = aux;
+
+	return p;
+}
+
+vector<float> Algorithms::calcFitness(vector<solution> pop)
+{
+	vector<float> fitness;
+
+	// get the individual with the lowest OF
+	solution best = pop.front();
+	for (solution s : pop) {
+		if (s.FO < best.FO) {
+			best = s;
+		}
+	}
+
+	// based on the lowest OF individual we calculate the population fitness
+	for (solution s : pop) {
+		fitness.push_back(best.FO/s.FO);
+	}
+
+	return fitness;
+}
+
+solution Algorithms::greedDD()
+{
+	permutation p;
+
+	vector<node> C = inst->set_C(); // get the set of all customers
+	sort(C.begin(), C.end(), compDD);
+
+	for (node c : C) {
+		p.push_back(c.key);
+	}
+	
+	solution s = permutationToSolution(p);
+
 	return s;
+}
+
+solution Algorithms::greedRT()
+{
+	permutation p;
+
+	vector<node> C = inst->set_C(); // get the set of all customers
+	sort(C.begin(), C.end(), compRT);
+
+	for (node c : C) {
+		p.push_back(c.key);
+	}
+
+	solution s = permutationToSolution(p);
+
+	return s;
+}
+
+solution Algorithms::sA()
+{
+	cout << "SA\n";
+
+	int t0 = 1000;
+	int maxIt = 25;
+	int tF = 50;
+	float coolingRate = 0.9;
+	
+	//permutation p = randomPermutation();
+	//solution curr = permutationToSolution(p);
+	
+	solution curr = greedDD();
+
+	// permutation p = { 8, 11, 10, 7, 9, 6, 5 };
+	// permutation p = { 8, 9, 11, 5, 10, 7, 6 };
+	// permutation p = { 11, 7, 5, 10, 8, 6, 9 }; // very bad permutation for UK 12 instance
+	// solution curr = permutationToSolution(p);
+
+	solution best = curr;
+	int temp = t0;
+
+
+	cout << "initial solution: " << best.FO << endl;
+
+	do {
+
+		bool improv = false;
+		int counter = 0;
+		cout << "temp: " << temp << endl;
+		do {
+			// select a neighbor from the current solution
+			permutation pl = curr.perm;
+			int beg = Random::get(0, int(pl.size()) - 2);
+			int end = Random::get(beg + 1, int(pl.size()) - 1);
+			pl = opt2(pl, beg, end);
+			// cout << "local search\n";
+			solution nSol = localSearch(pl);
+
+			// store the best solution so far
+			if (nSol.FO < best.FO) {
+				best = nSol;
+				counter = 0;
+				cout << "Improvment\n";
+				cout << "FO: " << best.FO << endl;
+			}
+
+			// search space exploration
+			//cout << nSol.FO << " - " << curr.FO << endl;
+			double delta = (nSol.FO - curr.FO); //
+			if (delta < 0.0) { // accept improvment solution
+				curr = nSol;
+				counter++;
+			}
+			else { // 
+				int a = -delta / temp;
+				double prob = pow(EulerConstant, a);
+				
+				double value = Random::get(0.0, 1.0);
+
+				if (value < prob) {
+					curr = nSol;
+				}
+
+				counter++;
+			}
+
+			// 
+			
+
+		} while (counter <= maxIt); // number of iterations without improvments
+		temp = temp - 100; //* coolingRate;
+
+
+	} while (temp > 100);
+
+	//this-> = best;
+
+	return best;
+}
+
+void Algorithms::getSol(ostream & strm, solution sol)
+{
+	strm << inst->fileName << endl;
+	strm << inst->dir << endl;
+
+	strm << "FO: " << sol.FO << endl;
+	for (auto i : sol.FOp) {
+		strm << i << " ";
+	}
+	strm << endl;
+
+	strm << "Stations\n";
+
+	vector<bool> y;
+	y.resize(inst->nodes.size(), false);
+
+	for (auto r : sol.routes) {
+		for (auto v : r) {
+			node n = inst->getNodeByKey(v.key);
+			if ((n.type == "f" || n.type == "f_d") && v.bLevel == inst->Q) {
+				y.at(n.ogKey) = true;
+			}
+
+			if (n.type == "c" && v.recharge == true) {
+				y.at(n.ogKey) = true;
+			}
+		}
+	}
+
+	for (int i = 0; i < y.size(); i++) {
+		if (y.at(i) == true) {
+			strm << i << " ";
+		}
+	}
+	strm << endl;
+
+	strm << "Routes\n";
+
+	for (auto r : sol.routes) {
+		for (auto v : r) {
+			strm << v.key << " ";
+		}
+		strm << endl;
+	}
+
+	strm << "Detailed routes\n";
+
+	for (auto r : sol.routes) {
+		strm << "Route start at node " << r.front().key << endl << endl;
+		for (int i = 0; i < r.size() - 1; i++) {
+			node na, nb;
+			na = inst->getNodeByKey(r.at(i).key);
+			nb = inst->getNodeByKey(r.at(i + 1).key);
+
+			strm << "Travel from " << na.key << " to " << nb.key << endl;
+			strm << "Distance travelled: " << inst->dist(na, nb) << endl;
+			strm << "Vehicle leave node " << na.key << " at " << r.at(i).lTime << endl;
+			strm << "Vehicle arrives in node " << nb.key << " at " << r.at(i + 1).aTime << endl;
+			strm << "Vehicle wait " << r.at(i + 1).wTime << endl;
+			strm << "Battery level in node " << nb.key << ": " << r.at(i + 1).bLevel << endl;
+			strm << "Battery is recharged in " << r.at(i + 1).recharged << endl;
+			strm << "Recharge " << r.at(i + 1).recharge << endl;
+			strm << "Vahicle load in node " << nb.key << ": " << r.at(i + 1).vLoad << endl;
+
+			strm << endl;
+		}
+	}
 }
 
 // check if all customers are covered
@@ -1584,6 +2712,96 @@ int Algorithms::test2()
 	return 0;
 }
 
+int Algorithms::test3()
+{
+
+	permutation p1 = randomPermutation();
+	permutation p2 = randomPermutation();
+
+	for (auto i : p1) {
+		cout << i << " ";
+	}
+	cout << endl;
+
+	for (auto i : p2) {
+		cout << i << " ";
+	}
+	cout << endl;
+
+	vector<permutation> p = crossover(p1, p2);
+
+	for (auto i : p.at(0)) {
+		cout << i << " ";
+	}
+	cout << endl;
+	
+	for (auto i : p.at(1)) {
+		cout << i << " ";
+	}
+	cout << endl;
+
+	return 0;
+}
+
+int Algorithms::test4()
+{
+
+	solution s = sA();
+
+	for (auto r : s.routes) {
+		for (auto v : r) {
+			cout << v.key << " ";
+		}
+		cout << endl;
+	}
+
+	cout << "FO: " << s.FO << endl;
+	for (auto i : s.inf) {
+		cout << i << " ";
+	}
+	cout << endl;
+
+	return 0;
+}
+
+int Algorithms::test5()
+{
+	permutation p;// = randomPermutation();
+
+	//p = { 11, 10, 6, 5, 7, 9, 8 };
+	p = { 5, 11, 10, 8, 6, 7, 9 };
+
+	solution s1 = permutationToSolution(p);
+
+	cout << "FO: " << s1.FO << endl;
+	for (auto r : s1.routes) {
+		for (auto v : r) {
+			cout << v.key << " ";
+		}
+		cout << endl;
+	}
+	for (auto i : s1.inf) {
+		cout << i << " ";
+	}
+	cout << endl;
+
+	solution s2 = permutationToSolutionGrasp(p);
+
+	cout << "FO: " << s2.FO << endl;
+	for (auto r : s2.routes) {
+		for (auto v : r) {
+			cout << v.key << " ";
+		}
+		cout << endl;
+	}
+	for (auto i : s2.inf) {
+		cout << i << " ";
+	}
+	cout << endl;
+
+	return 0;
+}
+
 Algorithms::Algorithms()
 {
 }
@@ -1719,6 +2937,21 @@ solution Algorithms::greed()
 	s = procSol(s);
 
 	return s;
+}
+
+permutation Algorithms::opt2(permutation p, int beg, int end)
+{
+	while (beg <= end) {
+		int aux = p.at(beg);
+		p.at(beg) = p.at(end);
+		p.at(end) = aux;
+		beg++;
+		end--;
+	}
+
+	//solution s = permutationToSolution(p);
+
+	return p;
 }
 
 solution Algorithms::greed2()
@@ -2166,6 +3399,7 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 
 			// checking vehicle load
 			if (v.vLoad < 0 || v.vLoad > inst->C) {
+				// cout << v.key << endl;
 				ret.insert("vehicle_load");
 			}
 		}
@@ -2512,7 +3746,73 @@ void Algorithms::getSol(solution sol, ostream & strm)
 	}
 }
 
+void Algorithms::getSol2(solution sol, ostream & strm)
+{
+	for (auto r : sol.routes) {
+		for (auto v : r) {
+			strm << v.key << " ";
+		}
+		strm << endl;
+	}
+
+	strm << fixed;
+	for (int i = 0; i < sol.routes.size(); i++) {
+		strm << "route " << i << endl;
+		for (int j = 0; j < sol.routes.at(i).size() - 1; j++) {
+			vertex v = sol.routes.at(i).at(j);
+			strm << "node           : " << v.key << endl;
+			strm << "battery level  : " << v.bLevel << endl;
+			strm << "arrival time   : " << v.aTime << endl;
+			strm << "waiting time   : " << v.wTime << endl;
+			strm << "service time   : " << inst->getNodeByKey(v.key).serviceTime << endl;
+			strm << "departure time : " << v.lTime << endl;
+			strm << "vehicle load   : " << v.vLoad << endl;			
+			strm << "recharge       : " << v.recharge << endl;
+			strm << "recharged      : " << v.recharged << endl;
+			strm << endl;
+
+			vertex w = sol.routes.at(i).at(j + 1);
+
+			strm << "arc from    " << v.key << " to " << w.key << endl;
+			strm << "distance    " << inst->dist(v.key, w.key) << endl;
+			strm << "time        " << inst->getTD(v.key, w.key) << endl;
+			strm << "battery req " << inst->getBatteryUsed(v.key, w.key) << endl;
+			strm << endl;
+		}
+
+		vertex v = sol.routes.at(i).back();
+		strm << "node           : " << v.key << endl;
+		strm << "battery level  : " << v.bLevel << endl;
+		strm << "arrival time   : " << v.aTime << endl;
+		strm << "waiting time   : " << v.wTime << endl;
+		strm << "service time   : " << inst->getNodeByKey(v.key).serviceTime << endl;
+		strm << "departure time : " << v.lTime << endl;
+		strm << "vehicle load   : " << v.vLoad << endl;
+		strm << "recharge       : " << v.recharge << endl;
+		strm << "recharged      : " << v.recharged << endl;
+		strm << endl;
+
+		strm << endl;
+	}
+
+}
+
 Algorithms::~Algorithms()
 {
 
+}
+
+bool compIndividual(solution a, solution b)
+{
+	return a.FO < b.FO;
+}
+
+bool compRT(node a, node b)
+{
+	return a.readyTime < b.readyTime;
+}
+
+bool compDD(node a, node b)
+{
+	return a.dueDate < b.dueDate;
 }

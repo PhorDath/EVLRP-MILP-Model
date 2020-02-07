@@ -8,9 +8,9 @@
 
 using namespace std;
 
-const string dir1 = "E:/VictorHugo/Pos-Graduacao/UFV/Research/Instances/MDEVLRPTW-BSPR/Instances/";
-const string dir2 = "E:/VictorHugo/Pos-Graduacao/UFV/Research/Instances/SSG14/";
-const string dir3 = "E:/VictorHugo/Pos-Graduacao/UFV/Research/Instances/prplib/";
+const string dir1 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/MDEVLRPTW-BSPR/Instances/";
+const string dir2 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/SSG14/";
+const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK100_01.txt";
@@ -254,6 +254,74 @@ void exp_greed(){
 	return;
 }
 
+void exp_SA() {
+
+	fstream file;
+	file.open(dir3 + "all.txt", ios::in);
+	if (file.is_open() == false) {
+		cout << "Error opening file all.txt\n";
+		cout << "On directory " << dir1 << endl;
+		exit(1);
+	}
+
+
+	string date = getDate();
+	string dirOutput = dir3;
+
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	// output file
+	fstream csv;
+	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir1 << endl;
+		return;
+	}
+
+	// header
+	csv << "model ; status ; fo ; gap ; time \n";
+
+	int count = 0;
+	string line;
+	while (getline(file, line)) {
+		cout << line << endl;
+		if (count == MAX) {
+			break;
+		}
+
+		Algorithms alg;
+		alg.loadInstance(dir3, line, 3);
+		alg.printInstance();
+		//alg.sA();
+		solution s = alg.sA();
+		
+		fstream output;
+		output.open(dirOutput + line + ".sol", ios::out | ios::app);
+		if (output.is_open() == false) {
+			cout << "Error creating output file " << line + ".sol\n";
+			cout << "In the directory " << dirOutput << endl;
+			exit(1);
+		}
+
+		
+		alg.getSol(output, s);
+
+		csv << alg.inst->fileName << " ; " << s.FO << endl;
+		output.close();
+
+		count++;
+	}
+
+	file.close();
+	//csv.close();
+
+	return;
+}
+
 int menuModel() {
 	//cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 	cout << "\n\n\n\n";
@@ -430,11 +498,11 @@ int main() {
 		expModels();
 	}
 	else if (op == 2) {
-		Algorithms alg;
-		alg.loadInstance(dir3, "UK10_01.txt", 3);
-		alg.printInstance();
-		alg.test2();
-		//exp_greed();
+		//Algorithms alg;
+		//alg.loadInstance(dir3, "UK10_12.txt", 3);
+		//alg.printInstance();
+		//alg.test4();
+		exp_SA();
 	}
 
 

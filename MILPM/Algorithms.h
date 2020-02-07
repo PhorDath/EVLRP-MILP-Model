@@ -7,8 +7,12 @@
 #include <time.h>       /* time */
 #include "instance.h"
 #include "Usefull.h"
+#include "effolkronium/random.hpp"
 
 using namespace std;
+using Random = effolkronium::random_static;
+
+const double EulerConstant = exp(1.0);
 
 class NoImprovementExcp : public exception {
 
@@ -36,7 +40,12 @@ struct solution {
 	vector<int> FOp;
 	vector<string> inf;
 	vector<vector<vertex>> routes;
+	permutation perm;
 };
+
+bool compIndividual(solution a, solution b);
+bool compRT(node a, node b);
+bool compDD(node a, node b);
 
 class Algorithms
 {
@@ -48,15 +57,39 @@ private:
 	string row = "";
 
 	solution permutationToSolution(permutation p);
+	solution permutationToSolution(permutation p, int cn); // cn is the cendidate`s list`s size
+	solution permutationToSolutionGrasp(permutation p);
 	solution addDepots(solution s);
-	solution addStations(solution s);
+	solution addStations(solution s); // add stations to the solution by a greedy criteria (closest ) 
+	solution addStations(solution s, int n); // add stations to the solution. it uses a greedy criteria and a candidate list
+	solution addStationsGrasp(solution s); // grasp
+	
 	permutation randomPermutation();
+	route computeRoute(route sol);
+
 	node nearestBSS(int key);
 
 	int availableRoute(solution s, int n); // check if there is an vailable route to insert the node n
 
+	solution localSearch(permutation p);
+	solution localSearch2(permutation p);
+	//solution greed();
+	permutation opt2(permutation p, int beg, int end);
+
 	// GA
-	solution generateSolution(permutation p);
+	solution GA(int popSize, int eliteP, int maxGen);
+	vector<solution> generateOffspringPop(vector<solution> pop, int eliteSize);
+	vector<permutation> crossover(permutation p1, permutation p2);
+	permutation mutation(permutation s);
+	vector<float> calcFitness(vector<solution> pop);
+
+	// SA
+	
+	// greed
+	solution greedDD();
+	solution greedRT();
+
+	/////////////////////////////////////////////////////////////////////////////
 
 	// greed
 	bool allCovered();
@@ -132,13 +165,21 @@ public:
 	void getSol(ostream &strm);
 	void getSol(Solution sol, ostream &strm);
 	void getSol(solution sol, ostream &strm);
+	void getSol2(solution sol, ostream &strm);
 	string getRow();
 
 	int test();
 	int test2();
+	int test3();
+	int test4();
+	int test5();
 	solution greed();
 	solution greed2();
 	solution VNS(solution init);
+
+	//
+	solution sA();
+	void getSol(ostream &strm, solution sol);
 
 	solution createOptimialSolution1();
 

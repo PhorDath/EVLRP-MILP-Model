@@ -450,7 +450,7 @@ node instance::getNodeByKey(int key)
 			return i;
 		}
 	}
-	// cout << "Node with key " << key << " not found\n";
+	cout << "Node with key " << key << " not found\n";
 	return nodes.at(0);
 }
 
@@ -878,7 +878,7 @@ void instance::readUKAdapt()
 	Q = vehicleRange; // battery capacity
 	ct; // battery swap time
 	r = 1; // battery consumption rate
-	g = 4; // recharging rate
+	g = 4;//4; // recharging rate
 	C; // vehicle load capacity
 	v = v/3.6; // speed
 

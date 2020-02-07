@@ -84,10 +84,10 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\phord\AppData\Local\Programs\Python\Python37\include;E:\boost\boost_1_72_0;C:\gurobi811\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\phord\AppData\Local\Programs\Python\Python37\include;D:\boost\boost_1_70_0;C:\gurobi811\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\Users\phord\AppData\Local\Programs\Python\Python37\libs;E:\boost\boost_1_72_0\stage\lib;C:\gurobi811\win64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\phord\AppData\Local\Programs\Python\Python37\libs;D:\boost\boost_1_70_0\stage\lib;C:\gurobi811\win64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gurobi_c++mdd2017.lib;gurobi81.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
