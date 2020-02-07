@@ -4,5 +4,6 @@
 class perm_rep :
 	public Algorithms
 {
+	voidalkdjaslkdj aldalk ja
 };
 
