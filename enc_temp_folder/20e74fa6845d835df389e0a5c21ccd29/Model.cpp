@@ -626,7 +626,6 @@ void Model::model()
 	inst->print3(cout);
 
 	GRBEnv env = GRBEnv(true);
-	env.get("version");
 	try {
 		env.start();
 	}

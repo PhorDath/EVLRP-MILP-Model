@@ -124,7 +124,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Algorithms.cpp" />
-    <ClCompile Include="Experiments.cpp" />
     <ClCompile Include="instance.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MCLPModel.cpp" />
@@ -136,7 +135,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algorithms.h" />
-    <ClInclude Include="Experiments.h" />
     <ClInclude Include="instance.h" />
     <ClInclude Include="MCLPModel.h" />
     <ClInclude Include="Model.h" />

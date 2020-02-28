@@ -42,9 +42,6 @@
     <ClCompile Include="perm_rep.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Experiments.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="instance.h">
@@ -69,9 +66,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="perm_rep.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Experiments.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

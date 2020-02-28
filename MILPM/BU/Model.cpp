@@ -365,6 +365,7 @@ void Model::model4(GRBModel & model)
 
 	fo_cost(model);
 
+
 	c2(model);
 	c3(model);
 	c4(model);
@@ -626,15 +627,8 @@ void Model::model()
 	inst->print3(cout);
 
 	GRBEnv env = GRBEnv(true);
-	env.get("version");
-	try {
-		env.start();
-	}
-	catch (GRBException e) {
-		cout << e.getMessage() << endl;
-	}
-	
-	cout << "aqui" << endl;
+	env.start();
+
 	try {
 		GRBModel model = GRBModel(env);
 		model.set(GRB_StringAttr_ModelName, "ELRP_" + fileName);
