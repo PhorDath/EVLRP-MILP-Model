@@ -1,9 +1,11 @@
 #pragma once
+#include <numeric>
 #include <gurobi_c++.h>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include "instance.h"
 #include "Usefull.h"
+#include "perm_rep.h"
 
 #define TMAX 1800
 
@@ -140,8 +142,16 @@ private:
 	int getNumVehicles(GRBModel &model);
 
 	//
-	void getSolution(GRBModel &model);
+	void getSolution_old(GRBModel &model);	
 	void getRoutes();
+
+	solution getSolution(GRBModel& model);
+	routes getRoutes2(GRBModel& model); // return the routes
+
+	vector<string> eval(GRBModel &model);
+	vector<string> eval(solution s);
+
+	void strmSol(solution sol, ostream &strm);
 
 public:
 	string	row;
@@ -163,6 +173,7 @@ public:
 	void	result	(GRBModel &model);
 	void	getRow	(GRBModel &model);
 	void	model	();
+	solution getSol(GRBModel &model);
 	void	print	();
 
 	~Model();

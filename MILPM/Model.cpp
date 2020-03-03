@@ -528,33 +528,6 @@ void Model::result(GRBModel & model)
 		inst->printSolution(cout);
 		inst->printSolution(file);
 		inst->print(file);
-
-		/*
-		vector<node> C = inst->set_C();
-		vector<node> R = inst->set_R();
-
-		vector<node> CUR = vectorUnion(C, R);
-		for (node n : CUR) {
-			GRBVar y = getY(model, n.key);
-			if (y.get(GRB_DoubleAttr_X) != 0) {
-				file << n.key << " ";
-			}
-		}
-		file << endl << "Arcs used: \n";
-		vector<node> V0 = inst->set_V0();
-		vector<node> V1 = inst->set_V1();
-
-		for (auto i : V0) {
-			for (auto j : V1) {
-				if (i.key != j.key) {
-					GRBVar xij = getX(model, i.key, j.key);
-
-					if (xij.get(GRB_DoubleAttr_X) != 0) {
-						file << "(" << i.key << ", " << j.key << ")" << endl;
-					}
-				}				
-			}
-		}*/
 		
 		file.close();
 		
@@ -572,43 +545,13 @@ void Model::result(GRBModel & model)
 	
 	//Util::drawGraph(dir, f, func, arg);
 
+	
+	
 }
 
 struct x {
 	int a, b;
 };
-
-/*
-void Model::getSolution(GRBModel & model)
-{
-	// get all xij != 0
-	auto V0 = inst->set_V0();
-	auto V1 = inst->set_V1();
-
-	for (auto i : V0) {
-		for (auto j : V1) {
-			if (i.key != j.key) {
-				GRBVar xij = getX(model, i.key, j.key);
-				if (xij.get(GRB_DoubleAttr_X) != 0) {
-
-				}
-			}
-		}
-	}
-
-	auto R = inst->set_R();
-	auto C = inst->set_C();
-	auto CUR = vectorUnion(C, R);
-
-	vector<int> y;
-	for (auto i : CUR) {
-		GRBVar yi = getY(model, i.key);
-		if (yi.get(GRB_DoubleAttr_X) != 0) {
-			y.push_back(i.key);
-		}
-	}
-}
-*/
 
 void Model::getRow(GRBModel & model)
 {
@@ -626,15 +569,13 @@ void Model::model()
 	inst->print3(cout);
 
 	GRBEnv env = GRBEnv(true);
-	env.get("version");
 	try {
 		env.start();
 	}
 	catch (GRBException e) {
 		cout << e.getMessage() << endl;
 	}
-	
-	cout << "aqui" << endl;
+
 	try {
 		GRBModel model = GRBModel(env);
 		model.set(GRB_StringAttr_ModelName, "ELRP_" + fileName);
@@ -648,7 +589,16 @@ void Model::model()
 		model.getEnv().set(GRB_DoubleParam_TimeLimit, TMAX);
 		model.optimize();
 		
-		result(model);
+		solution sol = getSolution(model);
+		
+		strmSol(sol, cout);
+
+		vector<string> i = eval(sol);
+		cout << "inf: " << endl;
+		for (string j : i) {
+			cout << j << endl;
+		}
+
 		
 	}
 	catch (GRBException e) {
@@ -659,6 +609,15 @@ void Model::model()
 		cout << e.what() << endl;
 	}
 
+}
+
+solution Model::getSol(GRBModel& model)
+{
+	solution s;
+
+	//s.routes = getRoutes2();
+
+	return s;
 }
 
 void Model::print()
@@ -812,7 +771,7 @@ int Model::getNumVehicles(GRBModel & model)
 	return vehiclesNum;
 }
 
-void Model::getSolution(GRBModel &model)
+void Model::getSolution_old(GRBModel &model)
 {
 	if(w == 0)
 		getFOParcels(model);
@@ -896,10 +855,123 @@ void Model::getSolution(GRBModel &model)
 	}
 }
 
+solution Model::getSolution(GRBModel& model)
+{
+	solution s;
+
+	if (w == 0) {
+		vector<float> cost = getFOParcels(model);
+		s.FO = accumulate(cost.begin(), cost.end(), 0);
+
+		s.FOp.push_back(s.FO);
+		s.FOp.insert(s.FOp.end(), cost.begin(), cost.end());
+		s.FOp.push_back(0);
+	}
+
+	// put used arcs in the solution
+	vector<node> V01 = inst->set_V01();
+
+	// get routes
+	s.routes = getRoutes2(model);
+
+	// get arrival time
+	for (node n : V01) {
+		GRBVar ti = getT(model, n.key);
+		double value = ti.get(GRB_DoubleAttr_X);
+
+		for (int i = 0; i < s.routes.size(); i++) {
+			for (int j = 0; j < s.routes.at(i).size(); j++) {
+				if (s.routes.at(i).at(j).key == n.key) {
+					s.routes.at(i).at(j).aTime = value;
+				}
+			}
+		}
+	}
+	
+
+	// compute departure time
+	for (int i = 0; i < s.routes.size(); i++) {
+		for (int j = 0; j < s.routes.at(i).size(); j++) {			
+			s.routes.at(i).at(j).lTime = s.routes.at(i).at(j).aTime + inst->getNodeByKey(s.routes.at(i).at(j).key).serviceTime;
+		}
+	}
+	// compute wait time
+	for (int i = 0; i < s.routes.size(); i++) {
+		for (int j = 0; j < s.routes.at(i).size(); j++) {
+			s.routes.at(i).at(j).wTime = inst->getNodeByKey(s.routes.at(i).at(j).key).readyTime - s.routes.at(i).at(j).aTime;
+			if (s.routes.at(i).at(j).wTime < 0) {
+				s.routes.at(i).at(j).wTime = 0;
+			}
+		}
+	}
+	
+	// get vehicle load
+	for (node n : V01) {
+		GRBVar di = getD(model, n.key);
+		double value = di.get(GRB_DoubleAttr_X);
+
+		for (int i = 0; i < s.routes.size(); i++) {
+			for (int j = 1; j < s.routes.at(i).size(); j++) {
+				if (s.routes.at(i).at(j).key == n.key) {
+					s.routes.at(i).at(j - 1).vLoad = value;
+				}
+			}
+		}
+	}
+	// fix the final part
+	for (int i = 0; i < s.routes.size(); i++) {
+		int pos = s.routes.at(i).size() - 2;
+		s.routes.at(i).at(pos).vLoad = s.routes.at(i).at(pos - 1).vLoad - inst->getNodeByKey(s.routes.at(i).at(pos).key).demand;
+
+		s.routes.at(i).at(pos + 1).vLoad = s.routes.at(i).at(pos).vLoad;
+	}	
+
+	// get amount of energy left, bLevel
+	for (node n : V01) {
+		GRBVar qi = getQ(model, n.key);
+		double value = qi.get(GRB_DoubleAttr_X);
+
+		for (int i = 0; i < s.routes.size(); i++) {
+			for (int j = 0; j < s.routes.at(i).size(); j++) {
+				if (s.routes.at(i).at(j).key == n.key && (n.type == "f" || n.type == "f_d")) {
+					s.routes.at(i).at(j).bLevel = inst->Q;
+				}
+				else if (s.routes.at(i).at(j).key == n.key) {
+					s.routes.at(i).at(j).bLevel = value;
+				}
+			}
+		}
+	}
+
+	
+	// Amount of energy to be charged
+	vector<node> C = inst->set_C();
+	vector<node> SK;
+	for (auto h : C) {
+		auto SKc = inst->set_SK(h.key);
+		SK.insert(SK.end(), SKc.begin(), SKc.end());
+	}
+	auto CUSKc = vectorUnion(C, SK);
+	
+	for (node n : CUSKc) {
+		GRBVar wi = getW(model, n.key);
+		double value = wi.get(GRB_DoubleAttr_X);
+
+		for (int i = 0; i < s.routes.size(); i++) {
+			for (int j = 0; j < s.routes.at(i).size(); j++) {
+				if (s.routes.at(i).at(j).key == n.key) {
+					s.routes.at(i).at(j).recharged = value;
+				}
+			}
+		}
+	}
+
+	return s;
+}
+
 void Model::getRoutes()
 {
 	vector<arc> arcs = inst->solution.arcs;
-
 
 	// get the depots
 	vector<int> depots;
@@ -968,6 +1040,286 @@ void Model::getRoutes()
 			}
 		}
 	}
+}
+
+routes Model::getRoutes2(GRBModel &model)
+{
+	routes r;
+
+	// get used arcs
+	vector<arc> arcs;
+
+	vector<node> V0 = inst->set_V0();
+	vector<node> V1 = inst->set_V1();
+	vector<node> V01 = inst->set_V01();
+	int totalV = V01.size();
+
+	for (auto i : V0) {
+		for (auto j : V1) {
+			if (i.key != j.key) {
+				GRBVar xij = getX(model, i.key, j.key);
+				float value = xij.get(GRB_DoubleAttr_X);
+				if (value < 0.1 && value > -0.1) {
+					value = 0;
+				}
+				else {
+					value = 1;
+				}
+
+				if (value != 0) {
+					arc a;
+					a.beg = i.key;
+					a.end = j.key;
+					a.value = inst->dist(i, j);
+					arcs.push_back(a);
+				}
+			}
+		}
+	}
+
+	// get the depots
+	vector<int> depots;
+	for (node i : inst->nodes) {
+		if (i.type == "d") {
+			depots.push_back(i.key);
+		}
+	}
+
+	vector<int> pos;
+	// get the inital arc of each route
+	for (int dpt : depots) { // for each depot
+		int count = 0;
+		for (arc i : arcs) { // for each arc
+		//for (int i = 0; i < arcs.size(); i++) { // for each arc
+			//arc a = arcs.at(i);
+			arc a = i;
+			if (a.beg == dpt) { // if the arc begins in the current depot
+				// vector<int> route = {a.beg, a.end};
+				vertex va;
+				va.key = a.beg;
+				vertex vb;
+				vb.key = a.end;
+
+				vector<vertex> route = { va, vb };
+
+				r.push_back(route); // add the inital arc in each route
+				//inst->solution.arcs.erase(inst->solution.arcs.begin() + i); // erase the arc
+				//arcs.erase(arcs.begin() + count); // erase the arc
+				pos.push_back(count);
+
+			}
+			count++;
+		}
+	}
+
+	sort(pos.begin(), pos.end(), greater<int>());
+	// erase all depots arcs
+	for (int i : pos) {
+		arcs.erase(arcs.begin() + i);
+	}
+
+	// get the rest of the route
+	while (arcs.size() > 0) {
+		for (int b = 0; b < arcs.size(); b++) { // for each arc
+			arc a = arcs.at(b);
+
+			//  search in the current built routes if its time to add the arc a
+			for (int i = 0; i < r.size(); i++) {
+				bool found = false;
+				for (int j = 0; j < r.at(i).size(); j++) {
+					if (r.at(i).at(j).key == a.beg) { // if the current end of the route is equal to the begin of the arc
+						vertex va;
+						va.key = a.end;
+						r.at(i).push_back(va); // add the end of the arc in the route
+						arcs.erase(arcs.begin() + b); // erase the arc
+						found = true;
+						break;
+					}
+				}
+				if (found == true) {
+					break;
+				}
+			}
+		}
+	}
+
+	return r;
+}
+
+vector<string> Model::eval(GRBModel& model)
+{
+	set<string> ret;
+	for (auto route : inst->solution.routes) {
+		// check if the current route start and finish in the same depot
+		if (inst->getNodeByKey(route.front().key).ogKey != inst->getNodeByKey(route.back().key).ogKey) {
+			ret.insert("route_beg_end");
+		}
+
+		for (auto v : route) {
+			node n = inst->getNodeByKey(v.key);
+
+			// checking time windows
+			if (n.type == "c") {
+				if (v.aTime + v.wTime > n.dueDate + n.serviceTime || v.aTime + v.wTime < n.readyTime) {
+					// cout << "Vertex " << v.key << " arrival is " << v.aTime << " and its ready time and due date is " << n.readyTime << " and " << n.dueDate << endl;
+					ret.insert("time_window");
+				}
+			}
+
+			// checking battery lvl
+			if (v.bLevel < 0 || v.bLevel > inst->Q) {
+				// cout << "Vertex " << v.key << " and " << v.bLevel << endl;
+				ret.insert("battery_level");
+			}
+
+			// checking vehicle load
+			if (v.vLoad < 0 || v.vLoad > inst->C) {
+				// cout << v.key << endl;
+				ret.insert("vehicle_load");
+			}
+		}
+	}
+
+	for (auto n : inst->nodes) {
+		// checking if all customers are being suplied
+		if (n.type == "c") {
+
+			int appeared = false;
+			for (auto r : inst->solution.routes) {
+				for (auto v : r) {
+					if (n.key == v.key) {
+						appeared = true;
+					}
+				}
+			}
+			if (appeared == false) {
+				ret.insert("customers_coverage");
+			}
+		}
+	}
+
+	vector<string> r;
+	for (string s : ret) {
+		r.push_back(s);
+	}
+
+
+	return r;
+}
+
+vector<string> Model::eval(solution s)
+{
+	set<string> ret;
+
+	routes sol = s.routes;
+
+	for (route r : sol) {
+		// check if the current route start and finish in the same depot
+		if (inst->getNodeByKey(r.front().key).ogKey != inst->getNodeByKey(r.back().key).ogKey) {
+			ret.insert("route_beg_end");
+		}
+
+		for (vertex v : r) {
+			node n = inst->getNodeByKey(v.key);
+
+			// checking time windows
+			if (n.type == "c") {
+				if (v.aTime + v.wTime > n.dueDate + n.serviceTime || v.aTime + v.wTime < n.readyTime) {
+					// cout << "Vertex " << v.key << " arrival is " << v.aTime << " and its ready time and due date is " << n.readyTime << " and " << n.dueDate << endl;
+					ret.insert("time_window");
+				}
+			}
+
+			// checking battery lvl
+			if (v.bLevel < 0 || v.bLevel > inst->Q) {
+				// cout << "Vertex " << v.key << " and " << v.bLevel << endl;
+				ret.insert("battery_level");
+			}
+
+			// checking vehicle load
+			if (v.vLoad < 0 || v.vLoad > inst->C) {
+				// cout << v.key << endl;
+				ret.insert("vehicle_load");
+			}
+		}
+	}
+
+	for (node n : inst->nodes) {
+		// checking if all customers are being suplied
+		if (n.type == "c") {
+
+			int appeared = false;
+			for (auto r : sol) {
+				for (auto v : r) {
+					if (n.key == v.key) {
+						appeared = true;
+					}
+				}
+			}
+			if (appeared == false) {
+				ret.insert("customers_coverage");
+			}
+		}
+	}
+
+	vector<string> r;
+	for (string s : ret) {
+		r.push_back(s);
+	}
+
+	return r;
+}
+
+void Model::strmSol(solution sol, ostream &strm)
+{
+	strm << "Routes: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.key << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "vLoad: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.vLoad << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "Blevel: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.bLevel << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "aTime: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.aTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "wTime: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.wTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "lTime: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.lTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
 }
 
 Model::~Model()

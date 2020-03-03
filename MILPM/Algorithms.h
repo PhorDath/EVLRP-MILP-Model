@@ -49,6 +49,7 @@ public:
 
 typedef vector<vertex> route;
 typedef vector<route> routes;
+
 struct item {
 	int key;
 	int nodeKey;
@@ -78,13 +79,7 @@ public:
 	vector<bool> coverage;
 	vector<vector<vertex>> sol; // solution vector
 	vector<int> fo_parcels;
-	string row = "";
-
-	
-
-	/////////////////////////////////////////////////////////////////////////////
-
-	
+	string row = "";	
 
 	// aux	
 	solution procSol(solution s); // processes solution
@@ -99,9 +94,6 @@ public:
 	route optRoute(route r);
 	
 	bool tcCoverage(vector<bool> coverage); // check if all customers are already beeing supplied by a route
-
-
-	
 
 	// extra	
 	void printPartialRoute(vector<vertex> r);

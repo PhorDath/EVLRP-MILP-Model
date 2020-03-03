@@ -745,78 +745,8 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 		r.push_back(s);
 	}
 
-
 	return r;
 }
-
-/*
-
-vertex a = route.back();
-node an = inst->getNodeByKey(a.key);
-
-vertex b;
-b.key = nextNodeKey;
-node bn = inst->getNodeByKey(b.key);
-
-float distanceAB = inst->dist(an, bn);
-float travelTimeAB = inst->getTD(an, bn);
-
-// if the vertex is infeasible on because of battery level, arrange previous node
-if (feasibility.at(0) == 0 && feasibility.at(1) == 1 && feasibility.at(2) == 1) {
-	if (an.type == "c") { // if previous node is a customer, recharge the battery
-		route.back().recharge = true;
-		route.back().recharged = inst->Q - route.back().bLevel;
-		route.back().bLevel = inst->Q; // recharge to full capacity
-
-		route = addVertexToRoute(route, nextNodeKey);
-	}
-}
-else {
-
-}
-
-if (bn.type == "c" || bn.type == "a") {
-	// battery level
-	b.recharged = inst->Q - b.bLevel; // store the amount of battery recharged
-	b.bLevel = inst->Q; // recharge the battery to full capacity
-	b.recharge = true; // indicates that a battery was recharged in the customer
-
-	// vehicle load
-	b.vLoad = a.vLoad - bn.demand;
-
-	// arrival time
-	b.aTime = a.aTime + travelTimeAB;
-
-	// add vertex to route
-	route.push_back(b);
-}
-else if (bn.type == "r") {
-	// battery level
-	b.bLevel = inst->Q;
-
-	// vehicle load
-	b.vLoad = a.vLoad - bn.demand; // the demand on stations node is zero
-
-	// arrival time
-	b.aTime = a.aTime + travelTimeAB;
-
-	// add vertex to route
-	route.push_back(b);
-}
-// else if (bn.type == "a") {
-
-
-// if the predecessor is a bss, add the operation time of changing the battery
-if (an.type == "r") {
-	b.aTime += inst->ct;
-}
-// if battery was recharged in the previous customer node, add the recharging time in the arrival time
-if (an.type == "c" && a.recharge == true) {
-	//b.aTime ==
-}
-
-
-*/
 
 void Algorithms::printInstance()
 {
