@@ -284,7 +284,8 @@ void Algorithms::debugSol(vector<vector<vertex>> s)
 	cout << "feasibility " << eval(s) << ": \n";
 	for (auto i : fullEval(s)) {
 		cout << i << " ";
-	}
+	} 
+
 	cout << endl;
 }
 
