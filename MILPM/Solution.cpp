@@ -1,6 +1,89 @@
 #include "Solution.h"
 
+void strmSol(solution sol, ostream& strm)
+{
+	strm << "FO: " << sol.FO << endl;
+	strm << endl;
 
+	strm << "FOp: ";
+	for (float f : sol.FOp) {
+		strm << f << " ";
+	}
+	strm << endl;
+	strm << endl;
+
+	strm << "Inf: ";
+	for (string s : sol.inf) {
+		strm << s << " ";
+	}
+	strm << endl;
+	strm << endl;
+
+	strm << "Routes: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.key << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "vLoad: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.vLoad << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "Blevel: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.bLevel << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "aTime: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.aTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "wTime: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.wTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "lTime: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.lTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "recharged: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.recharged << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "recharge: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.recharge << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+}
 
 Solution::Solution()
 {

@@ -4,6 +4,59 @@
 #include "Usefull.h"
 using namespace std;
 
+typedef vector<vertex> route;
+typedef vector<route> routes;
+
+struct item {
+	int key;
+	int nodeKey;
+};
+typedef vector<int> permutation;
+
+struct solution {
+	int FO;
+	vector<int> FOp;
+	vector<string> inf;
+	vector<vector<vertex>> routes;
+	permutation perm;
+
+	int time;
+	int FOINIT;
+	int status;
+};
+
+void strmSol(solution sol, ostream& strm);
+
+class Solution
+{
+public:
+	string generator;
+	string instance;
+
+	int FO;
+	vector<int> FOp;
+	vector<string> inf;
+	vector<vector<vertex>> routes;
+	permutation perm;
+	int time;
+	int FOINIT;
+	int status;
+	
+	int numVehicles = 0;
+	vector<arc> arcs;
+
+
+public:
+	Solution();
+	int set(vector<vector<vertex>> s);
+	void getRoutes();
+	void insertArc(int beg, int end, int value);
+	void insertStation(int s);
+	void print();
+	~Solution();
+};
+
+/*
 class Solution
 {
 public:
@@ -41,4 +94,5 @@ public:
 	void print();
 	~Solution();
 };
+*/
 

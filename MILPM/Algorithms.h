@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <iterator>
+#include "Solution.h"
 #include "instance.h"
 #include "Usefull.h"
 #include "effolkronium/random.hpp"
@@ -47,6 +48,7 @@ public:
 	}
 };
 
+/*
 typedef vector<vertex> route;
 typedef vector<route> routes;
 
@@ -67,7 +69,7 @@ struct solution {
 	int FOINIT;
 	int status;
 };
-
+*/
 bool compIndividual(solution a, solution b);
 bool compRT(node a, node b);
 bool compDD(node a, node b);
