@@ -16,6 +16,133 @@ string getDate() {
 	return temp;
 }
 
+void exp_model(string dir1)
+{
+	fstream all;
+	all.open(dir1 + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	// prepare the output directory
+	string date = getDate();
+	string dirOutput = dir1;
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	// csv file
+	fstream csv;
+	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir1 << endl;
+		return;
+	}
+
+	// header
+	csv << "model;status;fo;gap;time\n";
+
+	csv.close();
+
+	int count = 0;
+	string line;
+	while (getline(all, line)) {
+		cout << line << endl;
+
+		// csv file
+		fstream csv;
+		csv.open(dirOutput + "result.csv", ios::out | ios::app);
+		if (csv.is_open() == false) {
+			cout << "Error opening file result.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		Model model(dir1, line, 0, 3, dirOutput);
+		solution s = model.getSolution();
+
+		/*
+		fstream output;
+		output.open(dirOutput + line + ".sol", ios::out | ios::app);
+		if (output.is_open() == false) {
+			cout << "Error creating output file " << line + ".sol\n";
+			cout << "In the directory " << dirOutput << endl;
+			exit(1);
+		}*/
+
+		csv << model.row;
+		csv.close();
+
+		count++;
+	}
+
+	all.close();
+
+	return;
+}
+
+void exp_sa(string dir1)
+{
+	fstream all;
+	all.open(dir1 + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	// prepare the output directory
+	string date = getDate();
+	string dirOutput = dir1;
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	// csv file
+	fstream csv;
+	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir1 << endl;
+		return;
+	}
+
+	// header
+	csv << "model;status;fo;fo_init;time\n";
+
+	csv.close();
+
+	int count = 0;
+	string line;
+	while (getline(all, line)) {
+		cout << line << endl;
+
+		// csv file
+		fstream csv;
+		csv.open(dirOutput + "result.csv", ios::out | ios::app);
+		if (csv.is_open() == false) {
+			cout << "Error opening file result.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		perm_rep alg;
+		alg.loadInstance(dir1, line, 3);
+		alg.setOutputDir(dirOutput);
+		solution s = alg.sA(1000, 100, 100, 50, 300);
+
+		csv << alg.row;
+		csv.close();
+
+		count++;
+	}
+
+	all.close();
+
+	return;
+}
+
 void exp1(string dir1, string dir2) {
 	fstream file;
 	file.open(dir1 + "all.txt", ios::in);
@@ -166,9 +293,9 @@ void exp4(string dir1, string dir2, int type) {
 	csv.close();
 }
 
-void exp_greed() {
+void exp_greed(string dir1, string dir2, int type) {
 	fstream file;
-	file.open(dir3 + "all.txt", ios::in);
+	file.open(dir1 + "all.txt", ios::in);
 	if (file.is_open() == false) {
 		cout << "Error opening file all.txt\n";
 		cout << "On directory " << dir1 << endl;
@@ -177,8 +304,7 @@ void exp_greed() {
 
 
 	string date = getDate();
-	string dirOutput = dir3;
-
+	string dirOutput = dir1;
 	boost::filesystem::create_directory(dirOutput + "output");
 	dirOutput += "output/";
 	boost::filesystem::create_directory(dirOutput + "/" + date);
@@ -206,7 +332,7 @@ void exp_greed() {
 		}
 
 		routes_rep alg;
-		alg.loadInstance(dir3, "UK50_03.txt", 3);
+		alg.loadInstance(dir1, "UK50_03.txt", 3);
 		alg.printInstance();
 		// alg.greed();
 
@@ -234,20 +360,18 @@ void exp_greed() {
 	return;
 }
 
-void exp_SA() {
+void exp_SA(string dir1, string dir2, int type) {
 
 	fstream file;
-	file.open(dir3 + "all.txt", ios::in);
+	file.open(dir1 + "all.txt", ios::in);
 	if (file.is_open() == false) {
 		cout << "Error opening file all.txt\n";
 		cout << "On directory " << dir1 << endl;
 		exit(1);
 	}
 
-
 	string date = getDate();
-	string dirOutput = dir3;
-
+	string dirOutput = dir1;
 	boost::filesystem::create_directory(dirOutput + "output");
 	dirOutput += "output/";
 	boost::filesystem::create_directory(dirOutput + "/" + date);
@@ -274,7 +398,7 @@ void exp_SA() {
 		}
 
 		perm_rep alg;
-		alg.loadInstance(dir3, line, 3);
+		alg.loadInstance(dir1, line, 3);
 		alg.printInstance();
 		//alg.sA();
 		solution s = alg.sA(1000, 100, 100, 30, 300);
@@ -341,7 +465,7 @@ int menuModel() {
 	return op;
 }
 
-string menuInstance() {
+string menuInstance(string curDir) {
 	string fileName = "";
 
 	vector<string> allFiles;
@@ -383,103 +507,4 @@ string menuInstance() {
 	}
 
 	return fileName;
-}
-
-void instanceTypeMenu() {
-	cout << "Which instances would you like to set? \n";
-	cout << "  1 - Paz\n";
-	cout << "  2 - Max\n";
-	cout << "  3 - UK\n";
-	cout << "  4 - UK adapted \n";
-	int op;
-	cin >> op;
-	while (op < 1 && op > 3) {
-		cout << "Invalid option, try again: ";
-		cin >> op;
-	}
-	if (op == 1) {
-		curDir = dir1;
-		t = 0;
-	}
-	else if (op == 2) {
-		curDir = dir2;
-		t = 1;
-	}
-	else if (op == 3) {
-		curDir = dir3;
-		t = 2;
-	}
-	else if (op == 4) {
-		curDir = dir3;
-		t = 3;
-	}
-	cout << endl;
-}
-
-void expModels() {
-	char again = 'y';
-
-	while (again == 'y') {
-		int op = menuModel();
-		instanceTypeMenu();
-
-		string file;
-		if (op < 7 || op >9)
-			if (op != 11)
-				file = menuInstance();
-
-		if (op == 0) {
-			Model m(curDir, file, 0);
-		}
-		else if (op >= 1 && op <= 6) {
-			Model m(curDir, file, op, t);
-			//Model m(curDir, file, op);
-		}
-		else if (op >= 7 && op <= 9 || op == 11) {
-			string date = getDate();
-			string dirOutput = curDir;
-
-			// directory management
-			/*
-			if (!boost::filesystem::create_directory(dirOutput + "output")) {
-				cout << "Error creating folder \"output\"" << endl;
-				cout << "Output folder for this experiments will be created in the directory: " + dirOutput << endl;
-			}
-			else {
-				dirOutput += "output/";
-			}*/
-
-			boost::filesystem::create_directory(dirOutput + "output");
-			dirOutput += "output/";
-			boost::filesystem::create_directory(dirOutput + "/" + date);
-			dirOutput += date + "/";
-
-			if (op == 7) {
-				exp1(curDir, dirOutput);
-			}
-			else if (op == 8) {
-				exp2(curDir, dirOutput);
-			}
-			else if (op == 9) {
-				exp3(curDir, dirOutput, 1);
-			}
-			else if (op == 11) {
-				exp4(curDir, dirOutput, t);
-			}
-		}
-		else if (op == 10) {
-			Model m(curDir, file, 0, t);
-		}
-		else if (op == 12) {
-			//MCLPModel m(curDir, file);
-		}
-
-
-		cout << "\nWhould you like to run more experiments? (y/n) \n";
-		cin >> again;
-		if (again == 'y') {
-			//system("cls");
-		}
-
-	}
 }

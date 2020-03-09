@@ -4,6 +4,8 @@
 class perm_rep : public Algorithms
 {
 private:
+	string dirOutput;
+
 	solution permutationToSolution(permutation p);
 	solution permutationToSolution(permutation p, int cn); // cn is the cendidate`s list`s size
 	solution permutationToSolutionGrasp(permutation p);
@@ -26,7 +28,6 @@ private:
 	permutation opt2(permutation p, int beg, int end);
 
 	// GA
-	solution GA(int popSize, int eliteP, int maxGen);
 	vector<solution> generateOffspringPop(vector<solution> pop, int eliteSize);
 	vector<permutation> crossover(permutation p1, permutation p2);
 	permutation mutation(permutation s);
@@ -35,13 +36,21 @@ private:
 	// SA
 	// solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
 
+	// GRASP
+	// this GRASP algorithm is responsible to improve the addDepot method
+	solution GRASP(solution s);
+
 	// greed
 	solution greedDD();
 	solution greedRT();
 
 public:
-	solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
 
+	solution GA(int popSize, int eliteP, int maxGen);
+	solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
+	void setOutputDir(string dir);
+
+	int test1();
 	int test2();
 	int test3();
 	int test4();

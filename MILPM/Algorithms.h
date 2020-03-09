@@ -79,7 +79,7 @@ public:
 	vector<bool> coverage;
 	vector<vector<vertex>> sol; // solution vector
 	vector<int> fo_parcels;
-	string row = "";	
+	string row = "";
 
 	// aux	
 	solution procSol(solution s); // processes solution
@@ -87,6 +87,7 @@ public:
 	int FO(vector<vector<vertex>> sol);
 	int routeFO(route r);
 	vector<int> FOComplete(vector<vector<vertex>> sol);
+	vector<int> FOComplete_old(vector<vector<vertex>> sol);
 	int FOP(vector<vector<vertex>> sol);
 	int eval(vector<vector<vertex>> sol);
 	vector<string> fullEval(vector<vector<vertex>> sol);
@@ -98,6 +99,7 @@ public:
 	// extra	
 	void printPartialRoute(vector<vertex> r);
 	void debugSol(vector<vector<vertex>> s);
+	void strmSol(solution sol, ostream& strm);
 
 public:
 	instance *inst;
@@ -112,7 +114,7 @@ public:
 	void getSol(Solution sol, ostream &strm);
 	void getSol(solution sol, ostream &strm);
 	void getSol2(solution sol, ostream &strm);
-	string getRow();
+	string getRow(solution s);
 
 	//
 	

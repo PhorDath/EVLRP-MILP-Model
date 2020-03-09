@@ -95,20 +95,10 @@ solution perm_rep::permutationToSolution(permutation p)
 
 	s = addDepots(s);
 	try {
-		double n = inst->set_R().size();
-		if (n >= 2) {
-			n = floor(n * 0.1) + 2;
-		}
-		else if (n == 1) {
-			n = 1;
-		}
-		else if (n == 0) {
-			// throw an error?
-		}
-
-		//cout << n << endl;
 
 		s = addStations(s);
+
+		//s = GRASP(s);
 	}
 	catch (IsolatedNode &e) {
 		cout << e.what() << endl;
@@ -329,7 +319,7 @@ solution perm_rep::addStations(solution s)
 
 			// checking due date
 			if (s.routes.at(j).at(curr).aTime > currNode.dueDate) {
-				// if the current node is reached after the due date, we will remove this node from the route and push it to the next
+				// if the current node is reached after the due date, we will remove this node from the route and push it to the next one
 
 				vertex v = s.routes.at(j).at(curr); // store the node key that will be removed				
 				s.routes.at(j).erase(s.routes.at(j).begin() + curr); // remove the node from the route
@@ -376,12 +366,10 @@ solution perm_rep::addStations(solution s)
 					s.routes.push_back(r);
 					curr--;
 				}
-
-
 			}
 			// checking battery level
 			else if (s.routes.at(j).at(curr).bLevel < 0) {
-				// if not enough battery we have to insert a bss in the route
+				// if not enough battery, we have to insert a bss in the route
 
 				int minBU = 0; // minimum battery usage
 				int meanBU = 0;
@@ -409,7 +397,9 @@ solution perm_rep::addStations(solution s)
 							}
 						}
 					}
-					else {
+					// if the current node is a bss we have to watch out for a possible loop of bss
+					// so we have to make sure it wont happen 
+					else if (currNode.type == "f") {
 						vector<node> R = inst->set_R(); // get all stations
 						vector<node> R2 = inst->set_R(); // get all stations
 
@@ -460,7 +450,6 @@ solution perm_rep::addStations(solution s)
 								r.push_back(bss);
 
 								s.routes.push_back(r); // bug?
-
 							}
 
 							// we also remove all the previous chain of bss
@@ -486,7 +475,7 @@ solution perm_rep::addStations(solution s)
 						}
 					}
 
-					// compute amount of energy the vehcile can recharge during service time in the current routes segment
+					// compute the amount of energy the vehcile can recharge during service time in the current routes segment
 					int curr_ = curr;
 					int energy = 0;
 					while (true) {
@@ -574,302 +563,6 @@ solution perm_rep::addStations(solution s)
 		}
 	}
 	return s;
-	/*
-	for (auto r : s.routes) {
-		for (auto v : r) {
-			cout << v.key << " ";
-		}
-		cout << endl;
-	}
-
-	vector<int> sum; // store the amount of energy required to perform the routes
-
-	// compute the amount of energy required to perform the entire route
-	for (route r : s.routes) {
-		sum.push_back(0);
-
-		for (int i = 0; i < r.size() - 1; i++) {
-			node n1 = inst->getNodeByKey(r.at(i).key);
-			node n2 = inst->getNodeByKey(r.at(i + 1).key);
-
-			sum.back() += inst->getBatteryUsed(n1.key, n2.key);
-		}
-
-	}
-
-	// set all vehicles to full energy
-	for (int j = 0; j < s.routes.size(); j++) {
-		s.routes.at(j).front().bLevel = inst->Q;
-	}
-
-	vector<int> counter(s.routes.size(), 1); // store the maximum node in each route the vehicle can travel with its battery charge
-	vector<int> counterP;
-
-	vector<bool> end(s.routes.size(), false); // record the routes that have already beeing fully traveled
-	vector<bool> hold(s.routes.size(), false); // record which routes are waiting to have it vehicle to refuel
-	vector<int> energy; // store the amount of energy the vehicle can recharge during service time in the partial route defined by counterP and counter
-
-	// iterate over all routes, computing in which node the vehicle runs out of energy
-	int it = 0;
-	while (true) {
-		cout << "it: " << it << endl;
-		it++;
-		string st;
-		getline(cin, st);
-
-		energy.resize(s.routes.size(), 0);
-
-		counterP = counter;
-
-		// compute the vehicle autonomy in each route j
-		// here we determine the node in the route where the vehicle cant reach due to its battery capacity
-		// the vector counter will count until the vehicle has any amount of negative energy, meaning that it will need to perform a recharge or a battery swap
-		for (int j = 0; j < s.routes.size(); j++) { // for each route
-			energy.at(j) = 0;
-
-			while (counter.at(j) < s.routes.at(j).size()) { // iterate over the route j
-				if (counter.at(j) > s.routes.at(j).size()) {
-					cout << "Error\n";
-					exit(1);
-				}
-
-				if(j == 0)
-					cout << "counter: " << counter.at(j) << endl;
-
-
-				int curr = counter.at(j); // current node in route j
-				int prev = curr - 1;
-
-				int keyCurr = s.routes.at(j).at(curr).key;
-				int keyPrev = s.routes.at(j).at(curr - 1).key;
-
-				node currNode = inst->getNodeByKey(keyCurr);
-
-				// compute battery level in the current node
-				s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(prev).bLevel - inst->dist(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key);
-
-				// compute arrival time in the current node
-				s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).lTime + inst->getTD(keyPrev, keyCurr);
-
-				// compute waiting time in the current node
-				if (s.routes.at(j).at(curr).aTime < currNode.readyTime) {
-					s.routes.at(j).at(curr).wTime = currNode.readyTime - s.routes.at(j).at(curr).aTime;
-				}
-				else { // no waiting time
-					s.routes.at(j).at(curr).wTime = 0;
-				}
-
-				// compute de departure time in the current node
-				s.routes.at(j).at(curr).lTime = s.routes.at(j).at(curr).aTime + s.routes.at(j).at(curr).wTime + inst->getNodeByKey(keyCurr).serviceTime;
-
-				// compute vehcile load in the current node
-				s.routes.at(j).at(curr).vLoad = s.routes.at(j).at(prev).vLoad - currNode.demand;
-
-				// compute the amount of energy that can be charged during service time
-				int n = s.routes.at(j).at(curr).key;
-				energy.at(j) += inst->getNodeByKey(n).serviceTime * inst->g;
-
-				if (s.routes.at(j).at(curr).bLevel >= 0) { // if battery is enough to travel to next node
-					counter.at(j)++; // keep going
-				}
-				else {
-					hold.at(j) = true; // indicates that the vehicle must be recharged
-					break; // go to next route
-				}
-
-				// stop criteria
-				int key = currNode.key;
-				string type = inst->getNodeByKey(key).type;
-				if (type == "a") { // counter.at(j) > s.routes.at(j).size()
-					end.at(j) = true;
-					//break;
-				}
-			}
-		}
-
-		// check if all vehicles are on hold, it means that all vehicles are waiting to be recharged
-		int recharge = true;
-		for (int i = 0; i < s.routes.size(); i++) {
-			if (end.at(i) == false && hold.at(i) == false) {
-				recharge = false;
-			}
-		}
-
-		for (route r : s.routes) {
-			for (vertex v : r) {
-				cout << v.bLevel << " ";
-			}
-			cout << endl;
-		}
-
-		// if all vehicles waiting to recharge (on hold) we must find a good spot to them to do so
-		if (recharge == true) {
-			cout << "all vehicles are on hold\n";
-
-			for (int j = 0; j < s.routes.size(); j++) { // for each route
-				if (counter.at(j) > s.routes.at(j).size()) {
-					cout << "Error\n";
-					exit(1);
-				}
-
-				if (hold.at(j) == true && end.at(j) == false) { // if vehicle is in need of energy
-					// try to insert each bss in between the hold position and the previous one
-
-					int a = s.routes.at(j).at(counter.at(j) - 1).key; // previous position key
-					int b = s.routes.at(j).at(counter.at(j)).key; // hold position key
-
-					int minDist = INT_MAX;
-					int minMean = INT_MAX;
-
-					vector<node> R = inst->set_R(); // get all stations
-					int n;
-					// search for the closest bss fromthe hold node
-					for (node r : R) {
-
-						int AR = inst->getBatteryUsed(a, r.key); // inst->dist(a, r.key);
-						int RB = inst->getBatteryUsed(r.key, b); // inst->dist(r.key, b);
-						int meanAB = (AR + RB) / 2;
-
-						// get the lowest mean
-						if (meanAB < minMean) {
-							minMean = meanAB;
-						}
-						// get the lowest dist
-						if (RB < minDist) {
-							n = r.key;
-							minDist = RB;
-						}
-
-					}
-					// first option
-					// if vehicle can reach the closest bss it will move there in order to recharge
-
-					if (s.routes.at(j).at(counter.at(j)).bLevel >= minDist) {
-						cout << "Option 1\n";
-						cout << "Inserting BSS " << n << " in solution\n";
-
-						vertex v;
-						v.key = n;
-						s.routes.at(j).insert(s.routes.at(j).begin() + counter.at(j) + 1, v); // insert the closest bss in the route j
-					}
-					// second option
-					//check if the vehicle can charge in all privious nodes in the route in order to reach bss
-					else if (s.routes.at(j).at(counter.at(j)).bLevel + energy.at(j) >= minDist) {
-						cout << "option 2\n";
-						cout << "Vehicle will recharge during service time" << endl;
-						// recharge during service
-
-						for (int i = counterP.at(j); i < counter.at(j); i++) {
-							int key = s.routes.at(j).at(i).key;
-							cout << inst->getNodeByKey(key).serviceTime * inst->g << endl;
-							s.routes.at(j).at(i).bLevel += inst->getNodeByKey(key).serviceTime * inst->g;
-							s.routes.at(j).at(i).recharged = inst->getNodeByKey(key).serviceTime * inst->g; // indicates the amount of battery recharged on each part of the route
-							s.routes.at(j).at(i).recharge = true; // indicates that the vechilce was charged
-						}
-					}
-					// third option
-					// if there is not enough battery in the vehicle, even using service time to recharge, we will try to trace back the route to find a suitable place so the vehcile can recharge
-					else if (s.routes.at(j).at(counter.at(j)).bLevel + energy.at(j) < minDist) {
-						// traceback the route
-						cout << "Option 3\n";
-
-						int endPos = counter.at(j); // -1;
-						int begPos = counterP.at(j);
-
-						cout << begPos << " - " << endPos << endl;
-
-						bool inserted = false; // indicates that a bss was inserted in the solution
-
-						while (endPos > begPos) {
-							// tracing back
-
-							// get nearest bss from the previous node (b)
-							int min = INT_MAX;
-							int minMean = INT_MAX;
-
-							vector<node> R = inst->set_R(); // get all stations
-							int bss = -1;
-							// search the nearest bss of endPos
-							for (node r : R) {
-								int buAR = inst->getBatteryUsed(s.routes.at(j).at(endPos).key, r.key);
-
-								int buRB = inst->getBatteryUsed(r.key, s.routes.at(j).at(endPos + 1).key);
-
-								// lowest mean
-								int mean = (buAR + buRB) / 2;
-								if (mean < min) {
-									 minMean = mean;
-								}
-
-								// get the lowest dist
-								if (buAR < min) {
-									bss = r.key;
-									min = buAR;
-								}
-							}
-
-							if (s.routes.at(j).at(endPos).bLevel - min >= 0) { // checking of its possible to reach the nearest bss
-								cout << "bss " << bss << " will be inserted after " << endPos << endl;
-								cout << "min: " << min << endl;
-
-								for (auto v : s.routes.at(j)) {
-									cout << v.key << " ";
-								}
-								cout << endl;
-
-								vertex v;
-								v.key = bss;
-								v.bLevel = inst->Q;
-								v.recharge = true;
-
-								v.recharged = inst->Q - (s.routes.at(j).at(endPos).bLevel - inst->getBatteryUsed(endPos, bss)); // compute the amount of energy recharged
-								s.routes.at(j).insert(s.routes.at(j).begin() + endPos + 1, v); // insert in the routes
-
-								counter.at(j) = endPos + 2;
-								counterP.at(j) = endPos + 2;
-
-								inserted = true;
-
-								for (auto v : s.routes.at(j)) {
-									cout << v.key << " ";
-								}
-								cout << endl;
-
-								for (auto v : s.routes.at(j)) {
-									cout << v.bLevel << " ";
-								}
-								cout << endl;
-
-								break;
-							}
-
-							if (inserted == true) { // stop insertion
-								break;
-							}
-
-							endPos--;
-						}
-					}
-				}
-			}
-		}
-
-		// check if all vehicles have reached the routes' end
-		int all = false;
-		for (bool e : end) {
-			if (e == true) {
-				all = true;
-			}
-		}
-		// stop when all routes were explored until the end
-		if (all == false) {
-			break;
-		}
-
-	}
-
-	return s;
-	*/
 }
 
 solution perm_rep::addStations(solution s, int n)
@@ -997,7 +690,6 @@ solution perm_rep::addStations(solution s, int n)
 						*/
 
 						// generate a candidate list with size n
-
 						struct aux {
 							int id, BU;
 						};
@@ -1024,14 +716,11 @@ solution perm_rep::addStations(solution s, int n)
 
 						int c = Random::get(0, n);
 
-						//cout << "c: " << c << endl;
-
 						bss = cand.at(c).id;
 						minBU = cand.at(c).BU;
 					}
 					else {
 						vector<node> R = inst->set_R(); // get all stations
-						//vector<node> R2 = inst->set_R(); // get all stations
 
 						//
 						int curr__ = curr - 1;
@@ -1719,13 +1408,12 @@ solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 	solution curr = greedDD();
 	int FOINIT = curr.FO;
 
-	//permutation p = { 11, 7, 5, 10, 8, 6, 9 }; // very bad permutation for UK 12 instance
-	//permutation p = { 23, 13, 10, 17, 26, 14, 24, 22, 21, 18, 15, 16, 11, 8, 19, 20, 12, 25, 9 }; // bad permutation for uk 75 03
-
 	solution best = curr;
 	int temp = t0;
 
 	cout << "initial solution: " << best.FO << endl;
+
+	int b = best.FO;
 
 	auto t1 = std::chrono::high_resolution_clock::now();
 	long long duration;
@@ -1735,7 +1423,6 @@ solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 		int counter = 0;
 		cout << "temp: " << temp << endl;
 		do {
-			// cout << "c: " << counter << endl;
 			// select a neighbor from the current solution
 			permutation pl = curr.perm;
 			int beg = Random::get(0, int(pl.size()) - 2);
@@ -1752,7 +1439,6 @@ solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 			}
 
 			// search-space exploration
-			//cout << nSol.FO << " - " << curr.FO << endl;
 			double delta = (nSol.FO - curr.FO); //
 			if (delta < 0.0) { // accept improvment solution
 				curr = nSol;
@@ -1804,7 +1490,67 @@ solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 		best.status = -1;
 	}
 
+	best.FOINIT = b;
+
+	row = "";
+	row = getRow(best);
+
+	fstream op;
+	op.open(dirOutput + inst->fileName, ios::app);
+	if (op.is_open() == false) {
+		cout << "error creating output file\n";
+		return best;
+	}
+	else {
+		strmSol(best, op);
+
+	}
+
 	return best;
+}
+
+void perm_rep::setOutputDir(string dir)
+{
+	dirOutput = dir;
+}
+
+solution perm_rep::GRASP(solution s)
+{
+
+	double n = inst->set_R().size();
+	if (n >= 2) {
+		n = floor(n * 0.1) + 2;
+	}
+	else if (n == 1) {
+		n = 1;
+	}
+	else if (n == 0) {
+		// throw an error?
+	}
+
+	int it = 20;
+	int i = 0;
+
+	solution best = addStations(s, n);
+
+	while (i < it) {
+		
+		// generate the solution 
+		s = addStations(best, n);
+
+		// local search
+
+		if (s.FO < best.FO) {
+			best = s;
+			i = 0;
+		}
+		else {
+			i++;
+		}
+
+	}
+	
+	return s;
 }
 
 solution perm_rep::greedDD()
@@ -1837,6 +1583,33 @@ solution perm_rep::greedRT()
 	solution s = permutationToSolution(p);
 
 	return s;
+}
+
+int perm_rep::test1()
+{
+	permutation p = { 6, 8, 10, 11, 5, 9, 7 };
+
+	solution s = permutationToSolution(p);
+
+	cout << "FO : " << s.FO << endl;
+	cout << "FOp: ";
+	for (int p : s.FOp) {
+		cout << p << " ";
+	}
+	cout << endl;
+	cout << "inf: ";
+	for (string s : s.inf) {
+		cout << s << " ";
+	}
+	cout << endl;
+	for (route r : s.routes) {
+		for (auto v : r) {
+			cout << v.key << " ";
+		}
+		cout << endl;
+	}
+
+	return 1;
 }
 
 int perm_rep::test2()

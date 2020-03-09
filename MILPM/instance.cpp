@@ -256,16 +256,6 @@ void instance::print3(ostream & strm)
 		//strm << i.key << " " << i.id << " " << i.type << " " << i.x << " " << i.y << " " << i.demand << " " << i.readyTime << " " << i.dueDate << " " << i.serviceTime << " " << i.ref << " " << i.id_n << endl;
 	}
 
-	/*
-	strm << endl;
-	for (auto i : distanceMatrix) {
-		for (auto j : i) {
-			strm << j << " ";
-		}
-		strm << endl;
-	}
-	strm << endl;
-	*/
 }
 
 void instance::print(ostream &stream)
@@ -312,47 +302,6 @@ void instance::print(ostream &stream)
 	for (auto i : nodes) {
 		stream << setprecision(2) << setw(3) << i.key << setw(25) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(6) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ref << setw(6) << i.ref2 << setw(6) << i.id_n << setw(6) << i.ogKey << endl;
 	}
-	/*
-	stream << "Distances \n";
-	if (type != 2) {
-		distanceMatrix.resize(nodes.size());
-		for (int i = 0; i < nodes.size(); i++) {
-			distanceMatrix.at(i).resize(nodes.size());
-			for (int j = 0; j < nodes.size(); j++) {
-				distanceMatrix.at(i).at(j) = dist(nodes.at(i), nodes.at(j));
-			}
-		}
-	}
-	stream << fixed << setprecision(2);
-	for (vector<float> i : distanceMatrix) {
-		for (float j : i) {
-			stream << setw(10) << j;// << " ";
-		}
-		stream << endl;
-	}
-	stream << "\nTime \n";
-	for (vector<float> i : distanceMatrix) {
-		for (float j : i) {
-			stream << setw(10) << (j / v);// << " ";
-		}
-		stream << endl;
-	}
-	*/
-
-	/*
-	stream << "Set: \n";
-	stream << "UD0: \n"; printSet(set_UD0());
-	stream << "UD1: \n"; printSet(set_UD1());
-	stream << "UD: \n"; printSet(set_UD());
-	stream << "C: \n"; printSet(set_C());
-	stream << "R: \n"; printSet(set_R());
-	stream << "S: \n"; printSet(set_S());
-	stream << "V: \n"; printSet(set_V());
-	stream << "C0: \n"; printSet(set_C0());
-	stream << "V0: \n"; printSet(set_V0());
-	stream << "V1: \n"; printSet(set_V1());
-	stream << "V01: \n"; printSet(set_V01());
-	*/
 }
 
 void instance::printSet(vector<node> set)
@@ -391,7 +340,6 @@ void instance::printSolution(ostream &stream)
 	if (solution.stations.size() == 0) {
 		stream << "No stations sited" << endl;
 	}
-
 	else {
 		stream << "Stations will be sited at : ";
 		for (auto i : solution.stations) {
@@ -400,10 +348,8 @@ void instance::printSolution(ostream &stream)
 	}
 	stream << endl;
 
-	stream << "key" << setw(esp) << "id" << setw(esp) << "type" << setw(esp) << "x" << setw(esp) << "y" << setw(esp) << "dem" << setw(esp) << "rTime" << setw(esp) << "dDate" << setw(esp) << "sTime" << setw(esp) << "ref" << setw(esp) << "ref2" << setw(esp) << "id_n" << setw(esp) << "ogKey" << endl;
-
-	stream << endl;
-
+	//stream << "key" << setw(esp) << "id" << setw(esp) << "type" << setw(esp) << "x" << setw(esp) << "y" << setw(esp) << "dem" << setw(esp) << "rTime" << setw(esp) << "dDate" << setw(esp) << "sTime" << setw(esp) << "ref" << setw(esp) << "ref2" << setw(esp) << "id_n" << setw(esp) << "ogKey" << endl << endl;
+	/*
 	for (int i = 0; i < solution.routes.size(); i++) {
 		stream << "___________________________________________________\n";
 		stream << "Route " << i + 1 << " begin at " << solution.routes.at(i).at(0).key << endl << endl;
@@ -437,7 +383,7 @@ void instance::printSolution(ostream &stream)
 		}
 	}
 	stream << "___________________________________________________\n\n";
-
+	*/
 	
 
 

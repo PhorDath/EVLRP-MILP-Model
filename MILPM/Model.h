@@ -7,13 +7,15 @@
 #include "Usefull.h"
 #include "perm_rep.h"
 
-#define TMAX 1800
+#define TMAX 300
 
 using namespace std;
 
 class Model	
 {
 private:
+	solution solu;
+
 	string directory, fileName, dirOutput = "";
 	instance *inst; // data
 	int w = 6; // which model will be runned
@@ -44,6 +46,16 @@ private:
 	// objective function
 	void fo(GRBModel &model);
 	void fo_cost(GRBModel &model);
+
+	// fo parts
+	void depotCostFO(GRBModel &model);	// depot cost
+	void bssCostFO(GRBModel& model);	// bss cost
+	void vehicleFixedCostFO(GRBModel& model);	// vehicle fixed cost
+	void drivingCost(GRBModel& model);	// driving cost
+	void brsEnergyCostFO(GRBModel& model);	// energy cost in brs
+	void bssEnergyCostFO(GRBModel& model);	// energy cost in bss
+	void fo_cost_3(GRBModel& model);
+
 	void fo_cost_2(GRBModel &model);
 
 	// constraints
@@ -72,6 +84,7 @@ private:
 	void c15(GRBModel &model); // 
 	void c16(GRBModel &model); // 
 	void c16_M(GRBModel &model); // 
+	void c165_M(GRBModel& model);
 	void c17(GRBModel &model); // 
 	void c18(GRBModel &model); // 
 	void c18_M(GRBModel &model); // 
@@ -98,6 +111,8 @@ private:
 	void c33(GRBModel &model); // 
 
 	// model 3
+	void var_y_model3(GRBModel& model);
+
 	void c36(GRBModel &model); // 
 	void c36_M(GRBModel &model); // 
 	void c37(GRBModel &model); // 
@@ -112,6 +127,19 @@ private:
 
 	void c43(GRBModel &model); // 
 	void c44(GRBModel &model); // 
+
+	// test
+
+	GRBVar	getS(GRBModel& model, int key);
+	void var_f(GRBModel& model);
+	GRBVar getF(GRBModel& model, int keya, int keyb);
+	void var_s(GRBModel& model);
+
+	void r1(GRBModel &model);
+	void r2(GRBModel& model);
+	void r3(GRBModel& model);
+
+	void r4(GRBModel& model);
 
 	// model 4
 	// individual FO costs
@@ -173,8 +201,7 @@ public:
 	void	result	(GRBModel &model);
 	void	getRow	(GRBModel &model);
 	void	model	();
-	solution getSol(GRBModel &model);
-	void	print	();
+	solution	getSolution();
 
 	~Model();
 };

@@ -231,15 +231,18 @@ solution Algorithms::createOptimialSolution1()
 	return s;
 }
 
-string Algorithms::getRow()
+string Algorithms::getRow(solution s)
 {
 	string res = "";
-	res += inst->fileName + " ; ";
-	res += inst->solution.FO + " ; ";
-	for (auto i : fo_parcels) {
-		res += i;
-		res += " ";
-	}
+	res += inst->fileName + ";";
+	res += to_string(s.status) + ";";
+	res += to_string(s.FO) + ";";
+	res += to_string(s.FOINIT) + ";";
+	res += to_string(s.time) + "\n";
+	cout << res << endl;
+
+
+	cout << s.status << s.FO << " " << s.FOINIT << " " << s.time << endl;
 	return res;
 }
 
@@ -285,6 +288,91 @@ void Algorithms::debugSol(vector<vector<vertex>> s)
 	cout << endl;
 }
 
+void Algorithms::strmSol(solution sol, ostream& strm)
+{
+	strm << "FO: " << sol.FO << endl;
+	strm << endl;
+
+	strm << "FOp: ";
+	for (float f : sol.FOp) {
+		strm << f << " ";
+	}
+	strm << endl;
+	strm << endl;
+
+	strm << "Inf: ";
+	for (string s : sol.inf) {
+		strm << s << " ";
+	}
+	strm << endl;
+	strm << endl;
+
+	strm << "Routes: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.key << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "vLoad: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.vLoad << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "Blevel: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.bLevel << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "aTime: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.aTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "wTime: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.wTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "lTime: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.lTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "recharged: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.recharged << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	strm << "recharge: " << endl;
+	for (route r : sol.routes) {
+		for (vertex v : r) {
+			strm << v.recharge << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+}
+
 Algorithms::Algorithms()
 {
 }
@@ -295,8 +383,6 @@ int Algorithms::loadInstance(string dir, string fileName, int type)
 
 	return 0;
 }
-
-
 
 solution Algorithms::procSol(solution s)
 {
@@ -488,7 +574,94 @@ int Algorithms::routeFO(route r)
 	return fo;
 }
 
-vector<int> Algorithms::FOComplete(vector<vector<vertex>> sol)
+vector<int> Algorithms::FOComplete(routes sol)
+{
+	auto UD0 = inst->set_UD0();
+	auto UD1 = inst->set_UD1();
+	auto C = inst->set_C();
+	auto R = inst->set_R();
+	auto V0 = inst->set_V0();
+	auto V1 = inst->set_V1();
+	auto V01 = inst->set_V01();
+
+	int fo = 0;
+	vector<int> fo_parcels;
+
+	// depot cost
+	int depotCost = 0;
+	vector<int> qt(UD0.size(), 0);
+	for (auto route : sol) {
+		qt.at(route.front().key) = 1;
+	}
+	int numDepots = 0;
+	for (auto i : qt) {
+		if (i == 1) {
+			numDepots += 1;
+		}
+	}
+	depotCost = numDepots * (inst->depotCost / inst->numC);
+
+	// bss cost
+	int bssCost = 0;
+
+	qt.resize(inst->nodes.size(), 0);
+
+	for (auto route : sol) {
+		for (auto v : route) {
+			if (inst->getNodeByKey(v.key).type == "f") {
+				qt.at(inst->getNodeByKey(v.key).ogKey) = 1;
+			}
+		}
+	}
+	int numBSS = 0;
+	for (auto i : qt) {
+		numBSS += i;
+	}
+	bssCost = numBSS * (inst->bssCost / inst->numC);
+
+	// vehicle fixed cost
+	int vehicleCost = sol.size() * (inst->vehicleCost / inst->numC);
+	
+	// driving cost
+	int drivingCost = 0;
+
+	for (auto route : sol) {
+		for (int i = 0; i < route.size() - 1; i++) {
+			drivingCost += inst->dist(route.at(i).key, route.at(i + 1).key) * inst->driverWage;
+		}
+	}
+
+	// energy cost in brs
+	int energy = 0;
+	for (auto route : sol) {
+		for (auto v : route) {
+			energy += v.recharged;
+		}
+	}
+	int brsEnergyCost = energy * inst->brsEnergyCost;
+
+	// energy cost in bss
+	int count = 0;
+	for (auto route : sol) {
+		for (auto v : route) {
+			node n = inst->getNodeByKey(v.key);
+			if (n.type == "f" || n.type == "f_d") {
+				count++;
+			}
+		}
+	}
+	int bssEnergyCost = count * inst->Q * inst->bssEnergyCost;
+
+	fo = depotCost + bssCost + vehicleCost + drivingCost + brsEnergyCost + bssEnergyCost;
+
+	int p = FOP(sol);
+
+	fo_parcels = { fo + p, depotCost, bssCost, vehicleCost, drivingCost, brsEnergyCost, bssEnergyCost, p };
+
+	return fo_parcels;
+}
+
+vector<int> Algorithms::FOComplete_old(vector<vector<vertex>> sol)
 {
 	auto UD0 = inst->set_UD0();
 	auto UD1 = inst->set_UD1();
@@ -722,10 +895,9 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 		}
 	}
 
-	for (auto n : inst->nodes) {
-		// checking if all customers are being suplied
+	// checking if all customers are being suplied
+	for (auto n : inst->nodes) {		
 		if (n.type == "c") {
-
 			int appeared = false;
 			for (auto r : sol) {
 				for (auto v : r) {
@@ -737,6 +909,17 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 			if (appeared == false) {
 				ret.insert("customers_coverage");
 			}
+		}
+	}
+
+	// checking demand supply
+	int totalDemand = 0;
+	for (node n : inst->nodes) {
+		totalDemand += n.demand;
+	}
+	for (int i = 0; i < sol.size(); i++) {
+		for (int j = 0; j < sol.at(i).size(); j++) {
+
 		}
 	}
 

@@ -1104,11 +1104,12 @@ solution routes_rep::greed()
 		cout << ev << endl;
 	}
 	int fo = FO(sol);
-	row = getRow();
+	
 
 	solution s;
 	s.routes = sol;
 	s = procSol(s);
+	row = getRow(s);
 
 	return s;
 }
