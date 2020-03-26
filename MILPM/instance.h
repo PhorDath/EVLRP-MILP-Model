@@ -12,7 +12,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/foreach.hpp>
 #include "Solution.h"
-#include "Usefull.h"
+#include "Util.h"
 
 using namespace std;
 
@@ -45,8 +45,6 @@ public:
 	double r; // battery consumption rate
 	float g; // inverse refueling rate
 	float v; // average Velocity
-
-	Solution solution;
 
 	// used for the uk instances
 	int mDim;
@@ -133,7 +131,8 @@ public:
 	void print3(ostream & strm);
 	void print(ostream &stream);
 	void printSet(vector<node> set);
-	void printSolution(ostream &stream);
 	node getNodeByKey(int key);
 	~instance();
+
+	
 };

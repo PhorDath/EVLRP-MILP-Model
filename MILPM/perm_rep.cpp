@@ -1,10 +1,10 @@
 #include "perm_rep.h"
 
-solution perm_rep::permutationToSolution(permutation p)
+Solution perm_rep::permutationToSolution(permutation p)
 {
 	vector<bool> coverage(inst->nodes.size(), false);
 
-	solution s;
+	Solution s;
 	s.perm = p;
 
 	// adding the first vertex to the first route
@@ -109,11 +109,11 @@ solution perm_rep::permutationToSolution(permutation p)
 	return s;
 }
 
-solution perm_rep::permutationToSolution(permutation p, int cn)
+Solution perm_rep::permutationToSolution(permutation p, int cn)
 {
 	vector<bool> coverage(inst->nodes.size(), false);
 
-	solution s;
+	Solution s;
 	s.perm = p;
 
 	// adding the first vertex to the first route
@@ -159,11 +159,11 @@ solution perm_rep::permutationToSolution(permutation p, int cn)
 	return s;
 }
 
-solution perm_rep::permutationToSolutionGrasp(permutation p)
+Solution perm_rep::permutationToSolutionGrasp(permutation p)
 {
 	vector<bool> coverage(inst->nodes.size(), false);
 
-	solution s;
+	Solution s;
 	s.perm = p;
 
 	// adding the first vertex to the first route
@@ -209,7 +209,7 @@ solution perm_rep::permutationToSolutionGrasp(permutation p)
 	return s;
 }
 
-solution perm_rep::addDepots(solution s)
+Solution perm_rep::addDepots(Solution s)
 {
 	//vector<vector<int>> dm; // matrix dm (distance matrix) where dm[i][j] (i = depot and j = route)
 	// this matrix will store for each route x depot combination the sum of the distances depot -> initial node and the last node -> depot
@@ -251,7 +251,7 @@ solution perm_rep::addDepots(solution s)
 		int a = -1;
 		for (node no : UD1) {
 			if (n.id_n == no.id_n) { // search the arrival node
-				a = n.key;
+				a = no.key;
 				break;
 			}
 		}
@@ -278,7 +278,7 @@ solution perm_rep::addDepots(solution s)
 	return s;
 }
 
-solution perm_rep::addStations(solution s)
+Solution perm_rep::addStations(Solution s)
 {
 	// set all vehicles to full energy
 	for (int j = 0; j < s.routes.size(); j++) {
@@ -565,7 +565,7 @@ solution perm_rep::addStations(solution s)
 	return s;
 }
 
-solution perm_rep::addStations(solution s, int n)
+Solution perm_rep::addStations(Solution s, int n)
 {
 	// set all vehicles to full energy
 	for (int j = 0; j < s.routes.size(); j++) {
@@ -885,26 +885,26 @@ solution perm_rep::addStations(solution s, int n)
 	return s;
 }
 
-solution perm_rep::addStationsGrasp(solution s)
+Solution perm_rep::addStationsGrasp(Solution s)
 {
-	solution best = s;
+	Solution best = s;
 
 	int maxIt = 25;
 
 	int counter = 0;
 	while (counter < maxIt) {
 		// building
-		solution sl = s; // permutationToSolution(s.perm, -1);
+		Solution sl = s; // permutationToSolution(s.perm, -1);
 
 		// local search
-		solution best = permutationToSolution(sl.perm);
+		Solution best = permutationToSolution(sl.perm);
 		best = procSol(best);
 		best.perm = sl.perm;
 
 		bool improv = true;
 		while (improv == true) {
 			improv = false;
-			solution curr = best;
+			Solution curr = best;
 
 			for (int i = 0; i < sl.perm.size() - 1; i++) {
 				for (int j = i + 1; j < sl.perm.size(); j++) {
@@ -915,7 +915,7 @@ solution perm_rep::addStationsGrasp(solution s)
 					pl.at(j) = pl.at(i);
 					pl.at(i) = aux;
 
-					solution sl = permutationToSolution(pl, -1);
+					Solution sl = permutationToSolution(pl, -1);
 					//sl = procSol(sl);
 
 					if (sl.FO < best.FO) {
@@ -1025,23 +1025,23 @@ node perm_rep::nearestBSS(int key)
 	return node();
 }
 
-int perm_rep::availableRoute(solution s, int n)
+int perm_rep::availableRoute(Solution s, int n)
 {
 
 	return 0;
 }
 
-solution perm_rep::localSearch(permutation p)
+Solution perm_rep::localSearch(permutation p)
 {
 
-	solution best = permutationToSolution(p);
+	Solution best = permutationToSolution(p);
 	best = procSol(best);
 	best.perm = p;
 
 	bool improv = true;
 	while (improv == true) {
 		improv = false;
-		solution curr = best;
+		Solution curr = best;
 
 		for (int i = 0; i < p.size() - 1; i++) {
 			for (int j = i + 1; j < p.size(); j++) {
@@ -1054,7 +1054,7 @@ solution perm_rep::localSearch(permutation p)
 				pl.at(j) = pl.at(i);
 				pl.at(i) = aux;
 
-				solution sl = permutationToSolution(pl);
+				Solution sl = permutationToSolution(pl);
 				sl = procSol(sl);
 
 				if (sl.FO < best.FO) {
@@ -1069,16 +1069,16 @@ solution perm_rep::localSearch(permutation p)
 	return best;
 }
 
-solution perm_rep::localSearch2(permutation p)
+Solution perm_rep::localSearch2(permutation p)
 {
-	solution best = permutationToSolution(p);
+	Solution best = permutationToSolution(p);
 	best = procSol(best);
 	best.perm = p;
 
 	bool improv = true;
 	while (improv == true) {
 		improv = false;
-		solution curr = best;
+		Solution curr = best;
 
 		for (int i = 0; i < p.size() - 1; i++) {
 			for (int j = i + 1; j < p.size(); j++) {
@@ -1089,7 +1089,7 @@ solution perm_rep::localSearch2(permutation p)
 				pl.at(j) = pl.at(i);
 				pl.at(i) = aux;
 
-				solution sl = permutationToSolution(pl, -1);
+				Solution sl = permutationToSolution(pl, -1);
 				sl = procSol(sl);
 
 				if (sl.FO < best.FO) {
@@ -1119,17 +1119,17 @@ permutation perm_rep::opt2(permutation p, int beg, int end)
 	return p;
 }
 
-solution perm_rep::GA(int popSize, int eliteP, int maxGen)
+Solution perm_rep::GA(int popSize, int eliteP, int maxGen)
 {
 	int pressure;
 	int eliteSize = ceil(popSize * (eliteP / 100.0));
 
 	// creating initial random population
-	vector<solution> pop;
+	vector<Solution> pop;
 	int sum = 0;
 	for (int i = 0; i < popSize; i++) {
 		permutation p = randomPermutation();
-		solution s;
+		Solution s;
 
 		// elite
 		if (i < eliteSize) {
@@ -1147,9 +1147,9 @@ solution perm_rep::GA(int popSize, int eliteP, int maxGen)
 	int mean = sum / popSize;
 
 	// get best solution
-	solution best;
+	Solution best;
 	best.FO = INT_MAX;
-	for (solution s : pop) {
+	for (Solution s : pop) {
 		if (s.FO < best.FO) {
 			best = s;
 		}
@@ -1163,11 +1163,11 @@ solution perm_rep::GA(int popSize, int eliteP, int maxGen)
 		cout << "gen: " << gen << endl;
 		improv = false;
 		// generating an offspring population
-		vector<solution> offspring = generateOffspringPop(pop, eliteSize);
+		vector<Solution> offspring = generateOffspringPop(pop, eliteSize);
 		pop = offspring;
 
 		// get best solution so far		
-		for (solution s : pop) {
+		for (Solution s : pop) {
 			if (s.FO < best.FO) {
 				best = s;
 				improv = true;
@@ -1185,9 +1185,9 @@ solution perm_rep::GA(int popSize, int eliteP, int maxGen)
 	return best;
 }
 
-vector<solution> perm_rep::generateOffspringPop(vector<solution> pop, int eliteSize)
+vector<Solution> perm_rep::generateOffspringPop(vector<Solution> pop, int eliteSize)
 {
-	vector<solution> offspring;
+	vector<Solution> offspring;
 
 	// select elite
 	// the elite is the 20% fittest indivudual in the current population
@@ -1378,37 +1378,37 @@ permutation perm_rep::mutation(permutation p)
 	return p;
 }
 
-vector<float> perm_rep::calcFitness(vector<solution> pop)
+vector<float> perm_rep::calcFitness(vector<Solution> pop)
 {
 	vector<float> fitness;
 
 	// get the individual with the lowest OF
-	solution best = pop.front();
-	for (solution s : pop) {
+	Solution best = pop.front();
+	for (Solution s : pop) {
 		if (s.FO < best.FO) {
 			best = s;
 		}
 	}
 
 	// based on the lowest OF individual we calculate the population fitness
-	for (solution s : pop) {
+	for (Solution s : pop) {
 		fitness.push_back(best.FO / s.FO);
 	}
 
 	return fitness;
 }
 
-solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime)
+Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime)
 {
 	cout << "SA\n";
 
 	int t0 = initTemp;
 	int tf = finalTemp;
 
-	solution curr = greedDD();
+	Solution curr = greedDD();
 	int FOINIT = curr.FO;
 
-	solution best = curr;
+	Solution best = curr;
 	int temp = t0;
 
 	cout << "initial solution: " << best.FO << endl;
@@ -1428,7 +1428,7 @@ solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 			int beg = Random::get(0, int(pl.size()) - 2);
 			int end = Random::get(beg + 1, int(pl.size()) - 1);
 			pl = opt2(pl, beg, end);
-			solution nSol = localSearch(pl);
+			Solution nSol = localSearch(pl);
 
 			// store the best solution so far
 			if (nSol.FO < best.FO) {
@@ -1480,7 +1480,7 @@ solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 
 	auto t2 = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-	best.time = duration;
+	best.runtime = duration;
 	best.FOINIT = FOINIT;
 
 	if (best.inf.size() == 0) {
@@ -1502,8 +1502,19 @@ solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 		return best;
 	}
 	else {
-		strmSol(best, op);
+		best.strmSol(op);
 
+	}
+
+	for (route& r : best.routes) {
+		for (vertex& v : r) {
+			for (node n : inst->nodes) {
+				if (v.key == n.key) {
+					v.n = n;
+					break;
+				}
+			}
+		}
 	}
 
 	return best;
@@ -1514,7 +1525,7 @@ void perm_rep::setOutputDir(string dir)
 	dirOutput = dir;
 }
 
-solution perm_rep::GRASP(solution s)
+Solution perm_rep::GRASP(Solution s)
 {
 
 	double n = inst->set_R().size();
@@ -1531,7 +1542,7 @@ solution perm_rep::GRASP(solution s)
 	int it = 20;
 	int i = 0;
 
-	solution best = addStations(s, n);
+	Solution best = addStations(s, n);
 
 	while (i < it) {
 		
@@ -1553,7 +1564,7 @@ solution perm_rep::GRASP(solution s)
 	return s;
 }
 
-solution perm_rep::greedDD()
+Solution perm_rep::greedDD()
 {
 	permutation p;
 
@@ -1564,12 +1575,12 @@ solution perm_rep::greedDD()
 		p.push_back(c.key);
 	}
 
-	solution s = permutationToSolution(p);
+	Solution s = permutationToSolution(p);
 
 	return s;
 }
 
-solution perm_rep::greedRT()
+Solution perm_rep::greedRT()
 {
 	permutation p;
 
@@ -1580,7 +1591,7 @@ solution perm_rep::greedRT()
 		p.push_back(c.key);
 	}
 
-	solution s = permutationToSolution(p);
+	Solution s = permutationToSolution(p);
 
 	return s;
 }
@@ -1589,7 +1600,7 @@ int perm_rep::test1()
 {
 	permutation p = { 6, 8, 10, 11, 5, 9, 7 };
 
-	solution s = permutationToSolution(p);
+	Solution s = permutationToSolution(p);
 
 	cout << "FO : " << s.FO << endl;
 	cout << "FOp: ";
@@ -1622,7 +1633,7 @@ int perm_rep::test2()
 	}
 	cout << endl;
 
-	solution s = permutationToSolution(p);
+	Solution s = permutationToSolution(p);
 
 	vector<int> w(s.routes.size(), 0);
 
@@ -1678,7 +1689,7 @@ int perm_rep::test3()
 int perm_rep::test4()
 {
 
-	solution s = sA(1000, 100, 100, 50, 300);
+	Solution s = sA(1000, 100, 100, 50, 300);
 	//solution s = GA(100, 10, 50);
 
 	for (auto r : s.routes) {
@@ -1704,7 +1715,7 @@ int perm_rep::test5()
 	//p = { 11, 10, 6, 5, 7, 9, 8 };
 	p = { 5, 11, 10, 8, 6, 7, 9 };
 
-	solution s1 = permutationToSolution(p);
+	Solution s1 = permutationToSolution(p);
 
 	cout << "FO: " << s1.FO << endl;
 	for (auto r : s1.routes) {
@@ -1718,7 +1729,7 @@ int perm_rep::test5()
 	}
 	cout << endl;
 
-	solution s2 = permutationToSolutionGrasp(p);
+	Solution s2 = permutationToSolutionGrasp(p);
 
 	cout << "FO: " << s2.FO << endl;
 	for (auto r : s2.routes) {
@@ -1733,4 +1744,19 @@ int perm_rep::test5()
 	cout << endl;
 
 	return 0;
+}
+
+float perm_rep::getTravelCost(Solution s)
+{
+	float count = 0;
+
+	for (route r : s.routes) {
+		for (int i = 0; i < r.size() - 1; i++) {
+			//cout << r.at(i).key << " - " << r.at(i + 1).key << endl;
+			//cout << inst->dist(r.at(i).key, r.at(i + 1).key) << endl;
+			//cout << inst->dist(r.at(i).key, r.at(i + 1).key) * inst->driverWage << endl;
+			count += inst->dist(r.at(i).key, r.at(i + 1).key) * inst->driverWage;
+		}
+	}
+	return count;
 }

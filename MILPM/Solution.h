@@ -1,8 +1,43 @@
 #pragma once
 #include <iostream>
 #include <vector>
-#include "Usefull.h"
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+//#include "instance.h"
+#include "Util.h"
+
 using namespace std;
+using boost::property_tree::ptree;
+using boost::property_tree::write_xml;
+using boost::property_tree::xml_writer_settings;
+
+struct arc {
+	int beg, end;
+	double value;
+};
+
+struct edge {
+	int beg, end;
+	float value;
+};
+
+struct node {
+	int key;
+	string id, type;
+	int x, y, demand;
+	int readyTime, dueDate, serviceTime;
+	int ref, ref2;
+	int id_n = -1; // model's id parameter 
+	int ogKey;
+};
+
+struct vertex {
+	node n;
+
+	int key, bLevel, vLoad, aTime, lTime, wTime = 0;
+	bool recharge = false;
+	int recharged = 0;
+};
 
 typedef vector<vertex> route;
 typedef vector<route> routes;
@@ -13,86 +48,48 @@ struct item {
 };
 typedef vector<int> permutation;
 
-struct solution {
-	int FO;
-	vector<int> FOp;
-	vector<string> inf;
-	vector<vector<vertex>> routes;
-	permutation perm;
-
-	int time;
-	int FOINIT;
-	int status;
-};
-
-void strmSol(solution sol, ostream& strm);
-
 class Solution
 {
 public:
 	string generator;
 	string instance;
 
-	int FO;
-	vector<int> FOp;
+	double FO;
+	vector<float> FOp;
 	vector<string> inf;
 	vector<vector<vertex>> routes;
 	permutation perm;
-	int time;
-	int FOINIT;
+	double runtime;
+	double FOINIT;
 	int status;
-	
+	double gap;
+
 	int numVehicles = 0;
 	vector<arc> arcs;
 
 
 public:
 	Solution();
+
+	void strmSol(ostream& strm);
+	void printSol();
+	void saveXML(string file);
+	void strmFO(ostream& strm);
+
+	//
+
 	int set(vector<vector<vertex>> s);
 	void getRoutes();
 	void insertArc(int beg, int end, int value);
-	void insertStation(int s);
-	void print();
+
+	// aux
+	void debug(ostream& strm);
+
 	~Solution();
 };
 
-/*
-class Solution
-{
-public:
-	int FO = 0;
-	// individual FO costs
-	float dCost = 0; // depot cost
-	float sCost = 0; // stations cost
-	float dwCost = 0; // driver wage cost
-	float vCost = 0; // vehicle cost
-	float eCost = 0; // energy cost
-	float bssUseCost = 0;
-	float runTime = 0;
-	float gap = 0;
-	int status = 0;
-
-	int numVehicles = 0;
-
-	vector<vector<vertex>> routes;
-
-	vector<arc> arcs;
-	vector<int> stations;
-	//vector<vector<int>> routes;
-	vector<int> arrivalTime;
-	vector<int> batteryLevel;
-	vector<int> freightLeft;
-	vector<int> energyCharged;
-
-
-public:
-	Solution();
-	int set(vector<vector<vertex>> s);
-	void getRoutes();
-	void insertArc(int beg, int end, int value);
-	void insertStation(int s);
-	void print();
-	~Solution();
-};
-*/
+bool compIndividual(Solution a, Solution b);
+bool compRT(node a, node b);
+bool compDD(node a, node b);
+bool compKey(node a, node b);
 

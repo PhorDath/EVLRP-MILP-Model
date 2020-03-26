@@ -555,10 +555,10 @@ int routes_rep::chooseNextNode(route r, vector<bool> coverage) {
 
 }
 
-solution routes_rep::localSearch_2opt(solution sol)
+Solution routes_rep::localSearch_2opt(Solution sol)
 {
-	solution best = sol;
-	solution curr = sol;
+	Solution best = sol;
+	Solution curr = sol;
 
 	bool improv = true;
 	int i = 0;
@@ -589,11 +589,11 @@ solution routes_rep::localSearch_2opt(solution sol)
 	return best;
 }
 
-solution routes_rep::localSearch_2swap(solution sol)
+Solution routes_rep::localSearch_2swap(Solution sol)
 {
 
-	solution best = sol;
-	solution curr = sol;
+	Solution best = sol;
+	Solution curr = sol;
 
 	bool improv = true;
 	int i = 0;
@@ -628,9 +628,9 @@ solution routes_rep::localSearch_2swap(solution sol)
 }
 
 
-solution routes_rep::localSearch_iRouteSwap(solution sol)
+Solution routes_rep::localSearch_iRouteSwap(Solution sol)
 {
-	solution best = sol;
+	Solution best = sol;
 
 	bool improv = true;
 	int i = 0;
@@ -649,7 +649,7 @@ solution routes_rep::localSearch_iRouteSwap(solution sol)
 						for (int a = 1; a < r1End - 1; a++) {
 							for (int b = 1; b < r2End - 1; b++) {
 
-								solution s = iRouteSwap2(sol, i, j, a, b);
+								Solution s = iRouteSwap2(sol, i, j, a, b);
 								s = procSol(s);
 
 								if (s.FO < best.FO) {
@@ -669,11 +669,11 @@ solution routes_rep::localSearch_iRouteSwap(solution sol)
 	return best;
 }
 
-solution routes_rep::VNS(solution init)
+Solution routes_rep::VNS(Solution init)
 {
 	srand(time(nullptr));
 
-	solution x = init;
+	Solution x = init;
 
 	int itMax = 20;
 	int kMax = 3;
@@ -691,7 +691,7 @@ solution routes_rep::VNS(solution init)
 		k = 1;
 		while (k <= kMax) {
 
-			solution xl = shake(x, n.at(k - 1)); // shaking
+			Solution xl = shake(x, n.at(k - 1)); // shaking
 			xl = localSearch_iRouteSwap(xl); // local search
 
 			// search in the neighborhood
@@ -732,7 +732,7 @@ solution routes_rep::VNS(solution init)
 
 // shake function receives a solution and perform a shake with a given n neighboorhood structure
 // the function can generate an infeasible solution
-solution routes_rep::shake(solution s, string n)
+Solution routes_rep::shake(Solution s, string n)
 {
 	if (n == "2swap") {
 
@@ -743,13 +743,13 @@ solution routes_rep::shake(solution s, string n)
 		while (end <= beg || end == s.routes.at(route).size()) {
 			end = (rand() % s.routes.at(route).size());
 		}
-		solution new_s = swap2(s, route, beg, end);
+		Solution new_s = swap2(s, route, beg, end);
 		new_s = procSol(new_s);
 
 		return new_s;
 	}
 	else if (n == "2opt") {
-		solution new_s;
+		Solution new_s;
 
 		int r = rand() % s.routes.size();
 		int beg = (rand() % ((s.routes.at(r).size() / 2) - 1)) + 1;
@@ -774,7 +774,7 @@ solution routes_rep::shake(solution s, string n)
 		int beg = (rand() % (s.routes.at(route1).size() - 2)) + 1;
 		int end = (rand() % (s.routes.at(route2).size() - 2)) + 1;
 
-		solution new_s = iRouteSwap2(s, route1, route2, beg, end);
+		Solution new_s = iRouteSwap2(s, route1, route2, beg, end);
 		new_s = procSol(new_s);
 
 		return new_s;
@@ -783,7 +783,7 @@ solution routes_rep::shake(solution s, string n)
 	}
 }
 
-solution routes_rep::nChange(solution s, solution best, int &k)
+Solution routes_rep::nChange(Solution s, Solution best, int &k)
 {
 	try {
 		if (k == 1) { // search on first neighborhood
@@ -803,10 +803,10 @@ solution routes_rep::nChange(solution s, solution best, int &k)
 	return s;
 }
 
-solution routes_rep::search_2opt(solution sol, solution best)
+Solution routes_rep::search_2opt(Solution sol, Solution best)
 {
 	bool improv = false;
-	solution curr;
+	Solution curr;
 	//solution best = curr;
 
 	int r = curr.routes.size();
@@ -834,10 +834,10 @@ solution routes_rep::search_2opt(solution sol, solution best)
 	return best;
 }
 
-solution routes_rep::search_2swap(solution sol, solution best)
+Solution routes_rep::search_2swap(Solution sol, Solution best)
 {
 	bool improv = false;
-	solution curr;
+	Solution curr;
 	//solution best;
 
 	int r = curr.routes.size();
@@ -865,10 +865,10 @@ solution routes_rep::search_2swap(solution sol, solution best)
 	return best;
 }
 
-solution routes_rep::search_iRouteSwap(solution sol, solution best)
+Solution routes_rep::search_iRouteSwap(Solution sol, Solution best)
 {
 	bool improv = false;
-	solution curr;
+	Solution curr;
 	//solution best;
 
 	for (int r1 = 0; r1 < sol.routes.size() - 1; r1++) {
@@ -896,13 +896,13 @@ solution routes_rep::search_iRouteSwap(solution sol, solution best)
 	return best;
 }
 
-solution routes_rep::opt2(solution sol, int route, int beg, int end)
+Solution routes_rep::opt2(Solution sol, int route, int beg, int end)
 {
 	if (beg > end) {
 		throw MovementFailed();
 	}
 
-	solution newSol;
+	Solution newSol;
 	if (route > sol.routes.size()) {
 		return newSol;
 	}
@@ -920,9 +920,9 @@ solution routes_rep::opt2(solution sol, int route, int beg, int end)
 	return newSol;
 }
 
-solution routes_rep::swap2(solution sol, int r, int beg, int end)
+Solution routes_rep::swap2(Solution sol, int r, int beg, int end)
 {
-	solution newSol;
+	Solution newSol;
 	if (r > sol.routes.size()) {
 		throw MovementFailed();
 	}
@@ -940,7 +940,7 @@ solution routes_rep::swap2(solution sol, int r, int beg, int end)
 }
 
 // swap intra route
-solution routes_rep::iRouteSwap2(solution sol, int route1, int route2, int p1, int p2)
+Solution routes_rep::iRouteSwap2(Solution sol, int route1, int route2, int p1, int p2)
 {
 	if (p1 > sol.routes.at(route1).size()) {
 		throw MovementFailed();
@@ -987,7 +987,7 @@ solution routes_rep::iRouteSwap2(solution sol, int route1, int route2, int p1, i
 	return sol;
 }
 
-solution routes_rep::greed()
+Solution routes_rep::greed()
 {
 	vector<vector<vertex>> sol;
 
@@ -1106,7 +1106,7 @@ solution routes_rep::greed()
 	int fo = FO(sol);
 	
 
-	solution s;
+	Solution s;
 	s.routes = sol;
 	s = procSol(s);
 	row = getRow(s);
@@ -1116,7 +1116,7 @@ solution routes_rep::greed()
 
 
 
-solution routes_rep::greed2()
+Solution routes_rep::greed2()
 {
 	vector<bool> coverage(false, inst->nodes.size());
 
@@ -1137,14 +1137,14 @@ solution routes_rep::greed2()
 
 		}
 	}
-	return solution();
+	return Solution();
 }
 
 
 int routes_rep::test()
 {
 	cout << "Greed\n";
-	solution s1 = greed();
+	Solution s1 = greed();
 	s1 = procSol(s1);
 
 	cout << "FO: " << s1.FO << endl;
@@ -1159,7 +1159,7 @@ int routes_rep::test()
 		cout << endl;
 	}
 
-	solution s2 = createOptimialSolution1();
+	Solution s2 = createOptimialSolution1();
 	getSol(s2, cout);
 
 	/*

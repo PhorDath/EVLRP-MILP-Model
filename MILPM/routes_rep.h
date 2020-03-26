@@ -30,27 +30,27 @@ private:
 	int chooseNextNode(route r, vector<bool> coverage);
 
 	// metaheuristics
-	solution shake(solution s, string n);
-	solution nChange(solution s, solution best, int &k);
+	Solution shake(Solution s, string n);
+	Solution nChange(Solution s, Solution best, int &k);
 
 	// searches
-	solution search_2opt(solution sol, solution best);
-	solution search_2swap(solution sol, solution best);
-	solution search_iRouteSwap(solution sol, solution best);
+	Solution search_2opt(Solution sol, Solution best);
+	Solution search_2swap(Solution sol, Solution best);
+	Solution search_iRouteSwap(Solution sol, Solution best);
 
 	// local searches
-	solution localSearch_2opt(solution sol);
-	solution localSearch_2swap(solution sol);
-	solution localSearch_iRouteSwap(solution sol);
+	Solution localSearch_2opt(Solution sol);
+	Solution localSearch_2swap(Solution sol);
+	Solution localSearch_iRouteSwap(Solution sol);
 
 	// neighborhoods
-	solution opt2(solution sol, int route, int beg, int end);
-	solution swap2(solution sol, int route, int beg, int end);
-	solution iRouteSwap2(solution sol, int route1, int route2, int p1, int p2);
+	Solution opt2(Solution sol, int route, int beg, int end);
+	Solution swap2(Solution sol, int route, int beg, int end);
+	Solution iRouteSwap2(Solution sol, int route1, int route2, int p1, int p2);
 
-	solution greed();
-	solution greed2();
-	solution VNS(solution init);
+	Solution greed();
+	Solution greed2();
+	Solution VNS(Solution init);
 
 public:
 	int test();

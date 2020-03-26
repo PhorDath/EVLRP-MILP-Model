@@ -1,9 +1,4 @@
-#include "Usefull.h"
-
-bool compKey(node a, node b)
-{
-	return a.key < b.key;
-}
+#include "Util.h"
 
 int drawGraph(string dir, string fileName, string func, string arg)
 {

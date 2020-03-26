@@ -4,17 +4,19 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include "instance.h"
-#include "Usefull.h"
+#include "Util.h"
 #include "perm_rep.h"
 
-#define TMAX 300
+#define TMAX 1800
 
 using namespace std;
 
 class Model	
 {
 private:
-	solution solu;
+	Solution solu;
+	Solution init;
+	bool initProv = false;
 
 	string directory, fileName, dirOutput = "";
 	instance *inst; // data
@@ -35,6 +37,7 @@ private:
 	void var_x(GRBModel &model);
 	void var_y_model1(GRBModel &model);
 	void var_y_model2(GRBModel &model);
+	void var_y_model4(GRBModel& model);
 	void var_t(GRBModel &model);
 	void var_d(GRBModel &model);
 	void var_q(GRBModel &model);
@@ -42,6 +45,7 @@ private:
 	void var_w_model2(GRBModel &model);
 	void var_w_model3(GRBModel &model);
 	void var_z(GRBModel &model);
+	void var_v(GRBModel& model);
 
 	// objective function
 	void fo(GRBModel &model);
@@ -51,7 +55,7 @@ private:
 	void depotCostFO(GRBModel &model);	// depot cost
 	void bssCostFO(GRBModel& model);	// bss cost
 	void vehicleFixedCostFO(GRBModel& model);	// vehicle fixed cost
-	void drivingCost(GRBModel& model);	// driving cost
+	void drivingCostFO(GRBModel& model);	// driving cost
 	void brsEnergyCostFO(GRBModel& model);	// energy cost in brs
 	void bssEnergyCostFO(GRBModel& model);	// energy cost in bss
 	void fo_cost_3(GRBModel& model);
@@ -98,10 +102,12 @@ private:
 
 	// model 2
 	void c27(GRBModel &model); // 
+	void c27_model4(GRBModel& model);
 	void c28(GRBModel &model); // 
 	void c28_M(GRBModel &model); // 
 	void c29(GRBModel &model); // 
 	void c29_M(GRBModel &model); // 
+	void c29_M_model4(GRBModel& model);
 	void c30(GRBModel &model); // 
 	void c30_M(GRBModel &model); // 
 	void c31(GRBModel &model); // 
@@ -115,8 +121,10 @@ private:
 
 	void c36(GRBModel &model); // 
 	void c36_M(GRBModel &model); // 
+	void c36_M_model4(GRBModel& model);
 	void c37(GRBModel &model); // 
 	void c37_M(GRBModel &model); // 
+	void c37_M_model4(GRBModel& model);
 	void c38(GRBModel &model); // 
 	void c38_M(GRBModel &model); // 
 	void c39(GRBModel &model); // 
@@ -142,17 +150,11 @@ private:
 	void r4(GRBModel& model);
 
 	// model 4
-	// individual FO costs
-	/*
-	float dCost = 0; // depot cost
-	float sCost = 0; // stations cost
-	float dwCost = 0; // driver wage cost
-	float vCost = 0; // vehicle cost
-	float eCost = 0; // energy cost
-	*/
 
 	void c45(GRBModel &model); // determine which depots where opened
+
 	void c46(GRBModel &model); // stations limit
+	void c47(GRBModel& model);
 
 
 	// extra functions
@@ -164,22 +166,37 @@ private:
 	GRBVar	getU	(GRBModel &model, int key);
 	GRBVar	getW	(GRBModel &model, int key);
 	GRBVar	getZ	(GRBModel &model, int key);
+	GRBVar	getV	(GRBModel &model, int key);
 	vector<node> vectorUnion	(vector<node> a, vector<node> b); // union between two vectors of nodes, the vectors are trated as sets
 	vector<node> vectorSub		(vector<node> a, vector<node> b);
 	vector<float> getFOParcels(GRBModel &model);
 	int getNumVehicles(GRBModel &model);
 
 	//
-	void getSolution_old(GRBModel &model);	
-	void getRoutes();
+	//void getRoutes();
 
-	solution getSolution(GRBModel& model);
+	Solution getSolution(GRBModel& model);
 	routes getRoutes2(GRBModel& model); // return the routes
 
-	vector<string> eval(GRBModel &model);
-	vector<string> eval(solution s);
+	//vector<string> eval(GRBModel &model);
+	vector<string> eval(Solution s);
 
-	void strmSol(solution sol, ostream &strm);
+	void model1_indC(GRBModel& model);
+	void model1_bigM(GRBModel& model);
+	void model2_indC(GRBModel& model);
+	void model2_bigM(GRBModel& model);
+	void model3_indC(GRBModel& model);
+	void model3_bigM(GRBModel& model);
+	void model4(GRBModel& model);
+	void setup(GRBModel& model);
+	void result(GRBModel& model);
+	Solution model();
+	Solution model(Solution s);
+	void setInitialSolution(GRBModel& model, Solution s);
+
+	// aux 
+	int getArcs(GRBModel& model);
+	float getTravelCost(GRBModel& model);
 
 public:
 	string	row;
@@ -190,18 +207,13 @@ public:
 			Model	(string dir, string fileName, int w, int t);
 			Model	(string dir, string fileName, int w, string dirOutput);
 			Model	(string dir, string fileName, int w, int t, string dirOutput);
-	void	model1_indC	(GRBModel &model);
-	void	model1_bigM	(GRBModel &model);
-	void	model2_indC(GRBModel &model);
-	void	model2_bigM(GRBModel &model);
-	void	model3_indC(GRBModel &model);
-	void	model3_bigM(GRBModel &model);
-	void	model4	(GRBModel &model);
-	void	setup	(GRBModel &model);
-	void	result	(GRBModel &model);
-	void	getRow	(GRBModel &model);
-	void	model	();
-	solution	getSolution();
-
+	
+	void		getRow		(GRBModel &model);	
+	Solution	getSolution	();
+	Solution	optmize();
+	Solution	optmize(int model);
+	void		setIS(Solution s);
+	Solution	analyze(Solution s);
+	void		printInst();
 	~Model();
 };

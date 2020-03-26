@@ -16,32 +16,47 @@ const string file3 = "UK100_01.txt";
 
 int main() {
 
-	exp_sa(dir3);
-
-	return 0;
-	//Model model(dir3, "UK10_01.txt", 0, 3);
+	//exp_model(dir3);
+	//exp_sa(dir3);
 
 	//return 0;
+	int op = 1;
+	if (op == 1) {
+		perm_rep alg;
+		alg.loadInstance(dir3, "UK10_11.txt", 3);
+		Solution init = alg.sA(1000, 100, 100, 50, 300);
 
-	perm_rep alg;
-	alg.loadInstance(dir3, "UK10_02.txt", 3);
+		init.debug(cout);
 
-	solution s = alg.sA(1000, 100, 100, 50, 300);
-	cout << "FO: " << s.FO << endl;
-	cout << "FOp: ";
-	for (int p : s.FOp) {
-		cout << p << " ";
-	}
-	cout << endl;
-	for (auto r : s.routes) {
-		for (auto v : r) {
-			cout << v.key << " ";
-		}
+		Model model(dir3, "UK10_11.txt", 0, 3);
+		model.setIS(init);
+		model.optmize(0);
+		Solution s1 = model.getSolution();
+		
+		s1.debug(cout);
 		cout << endl;
+		
+		cout << "----------------------------------------------------\n";
+
+		perm_rep a;
+		a.loadInstance(dir3, "UK10_11.txt", 3);
+		Solution s2 = a.procSol(s1);
+		s2.debug(cout);
+		cout << endl;
+		
+
+		return 0;
+	}	
+	if (op == 2) {
+		perm_rep alg;
+		alg.loadInstance(dir3, "UK10_11.txt", 3);
+		//alg.printInstance();
+
+		Solution s2 = alg.sA(1000, 100, 100, 50, 300);
+		s2.debug(cout);
+		s2.saveXML("test.xml");
+
+		//return 0;
 	}
 
-
-
-
-	return 0;
 }

@@ -61,16 +61,8 @@ void exp_model(string dir1)
 		}
 
 		Model model(dir1, line, 0, 3, dirOutput);
-		solution s = model.getSolution();
-
-		/*
-		fstream output;
-		output.open(dirOutput + line + ".sol", ios::out | ios::app);
-		if (output.is_open() == false) {
-			cout << "Error creating output file " << line + ".sol\n";
-			cout << "In the directory " << dirOutput << endl;
-			exit(1);
-		}*/
+		model.optmize();
+		Solution s = model.getSolution();
 
 		csv << model.row;
 		csv.close();
@@ -130,7 +122,7 @@ void exp_sa(string dir1)
 		perm_rep alg;
 		alg.loadInstance(dir1, line, 3);
 		alg.setOutputDir(dirOutput);
-		solution s = alg.sA(1000, 100, 100, 50, 300);
+		Solution s = alg.sA(1000, 100, 100, 50, 300);
 
 		csv << alg.row;
 		csv.close();
@@ -294,70 +286,6 @@ void exp4(string dir1, string dir2, int type) {
 }
 
 void exp_greed(string dir1, string dir2, int type) {
-	fstream file;
-	file.open(dir1 + "all.txt", ios::in);
-	if (file.is_open() == false) {
-		cout << "Error opening file all.txt\n";
-		cout << "On directory " << dir1 << endl;
-		exit(1);
-	}
-
-
-	string date = getDate();
-	string dirOutput = dir1;
-	boost::filesystem::create_directory(dirOutput + "output");
-	dirOutput += "output/";
-	boost::filesystem::create_directory(dirOutput + "/" + date);
-	dirOutput += date + "/";
-
-	// output file
-	fstream csv;
-	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
-	if (csv.is_open() == false) {
-		cout << "Error opening file result.csv\n";
-		cout << "On directory " << dir1 << endl;
-		return;
-	}
-
-	// header
-	csv << "model ; status ; fo ; gap ; time \n";
-
-
-	int count = 0;
-	string line;
-	while (getline(file, line)) {
-		cout << line << endl;
-		if (count == MAX) {
-			break;
-		}
-
-		routes_rep alg;
-		alg.loadInstance(dir1, "UK50_03.txt", 3);
-		alg.printInstance();
-		// alg.greed();
-
-		alg.getSol(cout);
-		exit(1);
-
-		fstream output;
-		output.open(dirOutput + line + ".sol", ios::out | ios::app);
-		if (output.is_open() == false) {
-			cout << "Error creating output file " << line + ".sol\n";
-			cout << "In the directory " << dirOutput << endl;
-			exit(1);
-		}
-
-		alg.getSol(output);
-		csv << alg.inst->fileName << " ; " << alg.inst->solution.FO << endl;
-		output.close();
-
-		count++;
-	}
-
-	file.close();
-	//csv.close();
-
-	return;
 }
 
 void exp_SA(string dir1, string dir2, int type) {
@@ -401,7 +329,7 @@ void exp_SA(string dir1, string dir2, int type) {
 		alg.loadInstance(dir1, line, 3);
 		alg.printInstance();
 		//alg.sA();
-		solution s = alg.sA(1000, 100, 100, 30, 300);
+		Solution s = alg.sA(1000, 100, 100, 30, 300);
 
 		fstream output;
 		output.open(dirOutput + line + ".sol", ios::out | ios::app);
@@ -413,7 +341,7 @@ void exp_SA(string dir1, string dir2, int type) {
 
 
 		// alg.getSol(output, s);
-		alg.getSol2(output, s);
+		//alg.getSol2(output, s);
 		output << endl << "#" << endl << endl;
 		alg.getSol(output, s);
 
@@ -429,7 +357,7 @@ void exp_SA(string dir1, string dir2, int type) {
 		}
 		str2 += (to_string(s.FOp.at(i)));
 
-		csv << alg.inst->fileName << ";" << to_string(s.status) << ";" << str << ";" << s.FO << ";" << str2 << ";" << s.FOINIT << ";" << to_string(double(s.FO) / double(s.FOINIT)) << ";" << to_string(s.time) << endl;
+		csv << alg.inst->fileName << ";" << to_string(s.status) << ";" << str << ";" << s.FO << ";" << str2 << ";" << s.FOINIT << ";" << to_string(double(s.FO) / double(s.FOINIT)) << ";" << to_string(s.runtime) << endl;
 		output.close();
 
 		count++;

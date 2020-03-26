@@ -114,6 +114,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\phord\AppData\Local\Programs\Python\Python37\include;D:\boost\boost_1_72_0;C:\gurobi901\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -121,6 +122,9 @@
       <AdditionalLibraryDirectories>C:\Users\phord\AppData\Local\Programs\Python\Python37\libs;D:\boost\boost_1_72_0\stage\lib;C:\gurobi901\win64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gurobi_c++md2019.lib;gurobi90.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Algorithms.cpp" />
@@ -132,7 +136,7 @@
     <ClCompile Include="perm_rep.cpp" />
     <ClCompile Include="routes_rep.cpp" />
     <ClCompile Include="Solution.cpp" />
-    <ClCompile Include="Usefull.cpp" />
+    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algorithms.h" />
@@ -143,7 +147,7 @@
     <ClInclude Include="perm_rep.h" />
     <ClInclude Include="routes_rep.h" />
     <ClInclude Include="Solution.h" />
-    <ClInclude Include="Usefull.h" />
+    <ClInclude Include="Util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
