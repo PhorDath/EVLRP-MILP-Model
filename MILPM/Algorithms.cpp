@@ -226,6 +226,7 @@ Solution Algorithms::procSol(Solution s)
 	s.FOp = FOComplete(s.routes);
 	s.FO = s.FOp.front();
 	s.inf = fullEval(s.routes);
+	//s.inf = fullEval(s);
 
 	return s;
 }
@@ -766,6 +767,88 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 		}
 	}
 
+	// checking vertex sequence, if there are two repeated consecutive vertexes
+	bool a = false;
+	for (route r : sol) {
+		for (int i = 0; i < r.size() - 1; i++) {
+			if(r.at(i).key == r.at(i + 1).key) {
+				ret.insert("vertex_sequence");
+				a = true;
+				break;
+			}
+		}
+		if (a == true) {
+			break;
+		}
+	}
+
+	vector<string> r;
+	for (string s : ret) {
+		r.push_back(s);
+	}
+
+	return r;
+}
+
+vector<string> Algorithms::fullEval(Solution s)
+{
+	set<string> ret;
+	for (route r : s.routes) {
+		// check if the current route start and finish in the same depot
+		if (r.front().n.ogKey != r.back().n.ogKey) {
+			ret.insert("route_beg_end");
+		}
+
+		for (int i = 1; i < r.size(); i++) {
+			// checking time windows
+			vertex v1 = r.at(i);
+			vertex v2 = r.at(i + 1);
+			if (v2.aTime != v1.aTime + v1.n.serviceTime + inst->getTD(v1.key, v2.key)) {
+				ret.insert("time_window");
+			}
+			
+			// checking battery lvl
+			if (v1.bLevel < 0 || v1.bLevel > inst->Q) {
+				// cout << "Vertex " << v.key << " and " << v.bLevel << endl;
+				ret.insert("battery_level");
+			}
+
+			// checking vehicle load
+			if (v1.vLoad < 0 || v1.vLoad > inst->C) {
+				// cout << v.key << endl;
+				ret.insert("vehicle_load");
+			}
+		}
+	}
+
+	// checking if all customers are being suplied
+	for (auto n : inst->nodes) {
+		if (n.type == "c") {
+			int appeared = false;
+			for (auto r : sol) {
+				for (auto v : r) {
+					if (n.key == v.key) {
+						appeared = true;
+					}
+				}
+			}
+			if (appeared == false) {
+				ret.insert("customers_coverage");
+			}
+		}
+	}
+
+	// checking demand supply
+	int totalDemand = 0;
+	for (node n : inst->nodes) {
+		totalDemand += n.demand;
+	}
+	for (int i = 0; i < sol.size(); i++) {
+		for (int j = 0; j < sol.at(i).size(); j++) {
+
+		}
+	}
+
 	vector<string> r;
 	for (string s : ret) {
 		r.push_back(s);
@@ -779,146 +862,6 @@ void Algorithms::printInstance()
 	inst->print(cout);
 }
 
-/*
-void Algorithms::getSol(ostream & strm)
-{
-	strm << inst->fileName << endl;
-	strm << inst->dir << endl;
-
-	strm << "FO: " << inst->solution.FO << endl;
-	for (auto i : fo_parcels) {
-		strm << i << " ";
-	}
-	strm << endl;
-
-	strm << "Stations\n";
-
-	vector<bool> y;
-	y.resize(inst->nodes.size(), false);
-
-	for (auto r : sol) {
-		for (auto v : r) {
-			node n = inst->getNodeByKey(v.key);
-			if ((n.type == "f" || n.type == "f_d") && v.bLevel == inst->Q) {
-				y.at(n.ogKey) = true;
-			}
-
-			if (n.type == "c" && v.recharge == true) {
-				y.at(n.ogKey) = true;
-			}
-		}
-	}
-
-	for (int i = 0; i < y.size(); i++) {
-		if (y.at(i) == true) {
-			strm << i << " ";
-		}
-	}
-	strm << endl;
-
-	strm << "Routes\n";
-
-	for (auto r : sol) {
-		for (auto v : r) {
-			strm << v.key << " ";
-		}
-		strm << endl;
-	}
-
-	strm << "Detailed routes\n";
-
-	for (auto r : sol) {
-		strm << "Route start at node " << r.front().key << endl << endl;
-		for (int i = 0; i < r.size() - 1; i++) {
-			node na, nb;
-			na = inst->getNodeByKey(r.at(i).key);
-			nb = inst->getNodeByKey(r.at(i + 1).key);
-
-			strm << "Travel from " << na.key << " to " << nb.key << endl;
-			strm << "Distance travelled: " << inst->dist(na, nb) << endl;
-			strm << "Vehicle leave node " << na.key << " at " << r.at(i).lTime << endl;
-			strm << "Vehicle arrives in node " << nb.key << " at " << r.at(i + 1).aTime << endl;
-			strm << "Vehicle wait " << r.at(i + 1).wTime << endl;
-			strm << "Battery level in node " << nb.key << ": " << r.at(i + 1).bLevel << endl;
-			strm << "Battery is recharged in " << r.at(i + 1).recharged << endl;
-			strm << "Recharge " << r.at(i + 1).recharge << endl;
-			strm << "Vahicle load in node " << nb.key << ": " << r.at(i + 1).vLoad << endl;
-
-			strm << endl;
-		}
-	}
-
-}*/
-/*
-void Algorithms::getSol(Solution sol, ostream & strm)
-{
-	strm << inst->fileName << endl;
-	strm << inst->dir << endl;
-
-	strm << "FO: " << sol.FO << endl;
-	for (int i : fo_parcels) {
-		strm << i << " ";
-	}
-	strm << endl;
-
-	strm << "Stations\n";
-
-	vector<bool> y;
-	y.resize(inst->nodes.size(), false);
-
-	for (auto r : sol.routes) {
-		for (auto v : r) {
-			node n = inst->getNodeByKey(v.key);
-			if ((n.type == "f" || n.type == "f_d") && v.bLevel == inst->Q) {
-				y.at(n.ogKey) = true;
-			}
-
-			if (n.type == "c" && v.recharge == true) {
-				y.at(n.ogKey) = true;
-			}
-		}
-	}
-
-	for (int i = 0; i < y.size(); i++) {
-		if (y.at(i) == true) {
-			strm << i << " ";
-		}
-	}
-	strm << endl;
-
-	strm << "Routes\n";
-
-	for (auto r : sol.routes) {
-		for (auto v : r) {
-			strm << v.key << " ";
-		}
-		strm << endl;
-	}
-
-	strm << "Detailed routes\n";
-
-	for (auto r : sol.routes) {
-		strm << "Route start at node " << r.front().key << endl << endl;
-		for (int i = 0; i < r.size() - 1; i++) {
-			node na, nb;
-			na = inst->getNodeByKey(r.at(i).key);
-			nb = inst->getNodeByKey(r.at(i + 1).key);
-
-			strm << "Travel from " << na.key << " to " << nb.key << endl;
-			strm << "Distance travelled: " << inst->dist(na, nb) << endl;
-			strm << "Vehicle leave node " << na.key << " at " << r.at(i).lTime << endl;
-			strm << "Vehicle arrives in node " << nb.key << " at " << r.at(i + 1).aTime << endl;
-			strm << "Vehicle wait " << r.at(i + 1).wTime << endl;
-			strm << "Battery level in node " << nb.key << ": " << r.at(i + 1).bLevel << endl;
-			strm << "Battery is recharged in " << r.at(i + 1).recharged << endl;
-			strm << "Recharge " << r.at(i + 1).recharge << endl;
-			strm << "Vahicle load in node " << nb.key << ": " << r.at(i + 1).vLoad << endl;
-
-			strm << endl;
-		}
-	}
-}
-*/
 void Algorithms::getSol(Solution sol, ostream & strm)
 {
 	strm << inst->fileName << endl;

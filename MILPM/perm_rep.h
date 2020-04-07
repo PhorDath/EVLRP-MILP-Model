@@ -11,6 +11,8 @@ private:
 	Solution permutationToSolutionGrasp(permutation p);
 	Solution addDepots(Solution s);
 	Solution addStations(Solution s); // add stations to the solution by a greedy criteria (closest ) 
+	Solution addStations_model(Solution s); // add stations to the solution by a greedy criteria (closest ) 
+
 	Solution addStations2(Solution s); // add stations to the solution by a greedy criteria (closest ) 
 	Solution addStations(Solution s, int n); // add stations to the solution. it uses a greedy criteria and a candidate list
 	Solution addStationsGrasp(Solution s); // grasp
@@ -27,13 +29,13 @@ private:
 	//solution greed();
 	permutation opt2(permutation p, int beg, int end);
 
-	// GA
+	//GA
 	vector<Solution> generateOffspringPop(vector<Solution> pop, int eliteSize);
 	vector<permutation> crossover(permutation p1, permutation p2);
 	permutation mutation(permutation s);
 	vector<float> calcFitness(vector<Solution> pop);
 
-	// SA
+	//SA
 	// solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
 
 	// GRASP
@@ -48,6 +50,7 @@ public:
 
 	Solution GA(int popSize, int eliteP, int maxGen);
 	Solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
+	Solution testPermutation(permutation p);
 	void setOutputDir(string dir);
 
 	int test1();

@@ -574,6 +574,7 @@ Solution Model::model()
 
 		if (initProv == true) {
 			setInitialSolution(model, init);
+			model.write("attr.attr");
 		}
 
 		model.write("lp.lp");
@@ -596,8 +597,31 @@ Solution Model::model()
 		
 
 
-		cout << "Number of arcs: " << getArcs(model) << endl;
-		cout << "Travel cost: " << int(getTravelCost(model)) << endl;
+		//cout << "Number of arcs: " << getArcs(model) << endl;
+		//cout << "Travel cost: " << int(getTravelCost(model)) << endl;
+
+		// get nodes
+		for (route& r : solu.routes) {
+			for (vertex& v : r) {
+				for (node n : inst->nodes) {
+					if (v.key == n.key) {
+						v.n = n;
+						break;
+					}
+				}
+			}
+		}
+		// get arcs
+		for (route& r : solu.routes) {
+			for (int i = 0; i < r.size() - 1; i++) {
+				arc a;
+				a.beg = r.at(i).key;
+				a.end = r.at(i + 1).key;
+				a.value = inst->dist(a.beg, a.end);
+				a.value2 = inst->getTD(a.beg, a.end);
+				solu.arcs.push_back(a);
+			}
+		}
 
 		return solu;
 	}
@@ -693,27 +717,51 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 	// set sited stations to 1
 	for (route r : s.routes) {
 		for (int j = 0; j < r.size(); j++) {
-			if (r.at(j).n.type == "c" || r.at(j).n.type == "c_d" || r.at(j).n.type == "f" || r.at(j).n.type == "f_d") {
+			if (r.at(j).n.type == "c" ||r.at(j).n.type == "f") {
 				GRBVar yi = getY(model, r.at(j).key);
 				yi.set(GRB_DoubleAttr_Start, 1);
-			}			
+			}
+			else if (r.at(j).n.type == "c_d" || r.at(j).n.type == "f_d") {
+				GRBVar yi = getY(model, r.at(j).n.ref2);
+				yi.set(GRB_DoubleAttr_Start, 1);
+			}
 		}
 	}
 	count++;
 	// set variable t
 	for (route r : s.routes) {
 		for (vertex v : r) {
-			GRBVar ti = getT(model, v.key);
-			ti.set(GRB_DoubleAttr_Start, v.aTime);			
+			GRBVar *ti = &getT(model, v.key);
+			ti->set(GRB_DoubleAttr_Start, v.aTime + v.wTime);
 		}
+		// dealing with the last vertex in the route
+		vertex v = r.back();
+		node n = inst->getNodeByKey(v.key);
+		if (v.aTime < n.dueDate) {
+			GRBVar* ti = &getT(model, r.back().key);
+			ti->set(GRB_DoubleAttr_Start, n.dueDate);
+		}
+
 	}
 	count++;
 	// set variable d
 	for (route r : s.routes) {
-		for (vertex v : r) {
-			GRBVar di = getD(model, v.key);
+		
+		vertex v = r.front();
+		GRBVar di = getD(model, v.key);
+		di.set(GRB_DoubleAttr_Start, v.vLoad);
+
+		for (int i = 0; i < r.size() - 1; i++) {
+		//for (vertex v : r) {
+			v = r.at(i);
+			vertex v2 = r.at(i + 1);
+			di = getD(model, v2.key);
 			di.set(GRB_DoubleAttr_Start, v.vLoad);
 		}
+
+		v = r.back();
+		di = getD(model, v.key);
+		di.set(GRB_DoubleAttr_Start, 0);
 	}
 	count++;
 	// set variable q
@@ -727,25 +775,35 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 	// set variable u
 	for (node i : V1) {
 		GRBVar ui = getU(model, i.key);
-
-		int rt = 1;
 		for (route r : s.routes) {
+			node n = inst->getNodeByKey(r.front().key);
 			for (vertex v : r) {
 				if (i.key == v.key) {
-					ui.set(GRB_DoubleAttr_Start, rt);
+					ui.set(GRB_DoubleAttr_Start, n.id_n);
 				}
 				
 			}
-			rt++;
 		}
 	}
 	count++;
 	// set variable q
 	for (route r : s.routes) {
-		for (vertex v : r) {
+		//for (vertex v : r) {
+		for(int i = 0; i < r.size() - 1; i++){
+			vertex v = r.at(i);
 			GRBVar qi = getQ(model, v.key);
 			qi.set(GRB_DoubleAttr_Start, v.bLevel);
 		}
+		vertex v = r.back();
+		if (v.bLevel < 0) {
+			GRBVar qi = getQ(model, v.key);
+			qi.set(GRB_DoubleAttr_Start, v.bLevel);
+		}
+		else {
+			GRBVar qi = getQ(model, v.key);
+			qi.set(GRB_DoubleAttr_Start, 0);
+		}
+
 	}
 	count++;
 	// set variable w
@@ -2067,7 +2125,12 @@ void Model::c9_M(GRBModel & model)
 				varName = "x(" + to_string(i.key) + "," + to_string(j.key) + ")";
 				GRBVar xij = model.getVarByName(varName);
 
-				GRBLinExpr c = ti + (inst->getTD(i, j) + i.serviceTime) * xij; // verify getS
+				if (i.key == 5 && j.key == 15) {
+					cout << "";
+				}
+
+				float td = inst->getTD(i, j);
+				GRBLinExpr c = ti + (td + i.serviceTime) * xij; // verify getS
 
 				model.addConstr(tj >= c - M * (1 - xij), "c9_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
 			}

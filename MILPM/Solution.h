@@ -13,7 +13,7 @@ using boost::property_tree::xml_writer_settings;
 
 struct arc {
 	int beg, end;
-	double value;
+	double value, value2;
 };
 
 struct edge {
@@ -66,6 +66,8 @@ public:
 
 	int numVehicles = 0;
 	vector<arc> arcs;
+
+	arc getArc(int a, int b);
 
 
 public:

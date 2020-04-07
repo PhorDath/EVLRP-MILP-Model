@@ -67,6 +67,7 @@ public:
 	int FOP(vector<vector<vertex>> sol);
 	int eval(vector<vector<vertex>> sol);
 	vector<string> fullEval(vector<vector<vertex>> sol);
+	vector<string> fullEval(Solution s);
 	vector<vertex> fixRoute(vector<vertex> sol);
 	route optRoute(route r);
 	

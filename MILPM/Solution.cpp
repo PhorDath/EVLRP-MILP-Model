@@ -1,5 +1,15 @@
 #include "Solution.h"
 
+arc Solution::getArc(int a, int b)
+{
+	for (arc ac : arcs) {
+		if (ac.beg == a && ac.end == b) {
+			return ac;
+		}
+	}
+	throw "arc_not_found";
+}
+
 Solution::Solution()
 {
 
@@ -189,14 +199,6 @@ void Solution::insertArc(int beg, int end, int value)
 void Solution::debug(ostream& strm)
 {
 	strm << fixed << setprecision(2);
-	strm << "Routes: \n";
-	for (route r : routes) {
-		for (vertex v : r) {
-			strm << v.key << " ";
-		}
-		strm << endl;
-	}
-	strm << endl;
 	strm << "Objective function    : " << FOp.front() << endl;
 	strm << "	Depot siting cost  : " << FOp.at(1) << endl;
 	strm << "	BSS siting cost    : " << FOp.at(2) << endl;
@@ -206,15 +208,160 @@ void Solution::debug(ostream& strm)
 	strm << "	BSS energy cost    : " << FOp.at(6) << endl;
 	strm << "	Punishment         : " << FOp.at(7) << endl;
 	strm << endl;
-	int arcs = 0;
-	for (route r : routes) {
-		arcs += r.size() - 1;
-	}
 	strm << "Infeasibility: \n";
 	for (string i : inf) {
 		strm << "\t" << i << endl;
 	}
-	strm << "Number of arcs used   : " << arcs << endl;
+	strm << "Permutation: ";
+	for (int i : perm) {
+		strm << i << " ";
+	}
+	strm << endl;
+	strm << "Routes: \n";
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.key << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+	
+	strm << "Distances: \n";
+	for (route r : routes) {
+		for (int i = 0; i < r.size() - 1; i++) {
+			try {
+				strm << getArc(r.at(i).key, r.at(i + 1).key).value << " ";
+			}
+			catch (string s) {
+				if (s == "arc_not_found") {
+					cout << s << endl;
+				}
+			}
+			catch (exception e) {
+				cout << e.what() << endl;
+			}
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Travelling time: \n";
+	for (route r : routes) {
+		for (int i = 0; i < r.size() - 1; i++) {
+			try {
+				strm << getArc(r.at(i).key, r.at(i + 1).key).value2 << " ";
+			}
+			catch (string s) {
+				if (s == "arc_not_found") {
+					cout << s << endl;
+				}
+			}
+			catch (exception e) {
+				cout << e.what() << endl;
+			}
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Due date: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.n.dueDate << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Arrival time: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.aTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Ready time: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.n.readyTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Waiting time: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.wTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Service time: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.n.serviceTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Departure time: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.lTime << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Battery level: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.bLevel << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Vehicle load: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.vLoad << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Demands: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.n.demand << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Recharge: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.recharge << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
+
+	strm << "Recharged: " << endl;
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.recharged << " ";
+		}
+		strm << endl;
+	}
+	strm << endl;
 }
 
 Solution::~Solution()

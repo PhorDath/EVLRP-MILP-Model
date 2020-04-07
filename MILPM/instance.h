@@ -127,6 +127,8 @@ public:
 	float getS(int key);
 	float getCT();
 
+	vector<node> vectorUnion(vector<node> a, vector<node> b);
+
 	void print2(ostream & strm);
 	void print3(ostream & strm);
 	void print(ostream &stream);

@@ -302,6 +302,15 @@ void instance::print(ostream &stream)
 	for (auto i : nodes) {
 		stream << setprecision(2) << setw(3) << i.key << setw(25) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(6) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ref << setw(6) << i.ref2 << setw(6) << i.id_n << setw(6) << i.ogKey << endl;
 	}
+	stream << "Arcs: " << endl;
+	stream << fixed << setprecision(2);
+	for (node i : nodes) {
+		for (node j : nodes) {
+			stream << i.key << " --> " << j.key << ":  " << dist(i, j) << " - " << getTD(i, j) << endl;
+		}
+	}
+	stream << endl;
+
 }
 
 void instance::printSet(vector<node> set)
@@ -897,6 +906,9 @@ float instance::dist(node a, node b)
 	if (type == 0 || type == 1)
 		return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
 	else if (type == 2) {
+		if (a.key == 5 && b.key == 15) {
+			cout << "";
+		}
 		return distanceMatrix.at(a.ogKey).at(b.ogKey);
 		//return distEdges(na.ogKey, nb.ogKey);
 	}
@@ -940,6 +952,25 @@ float instance::getS(int key) // verify
 float instance::getCT()
 {
 	return ct;
+}
+
+vector<node> instance::vectorUnion(vector<node> a, vector<node> b)
+{
+	bool isin;
+	for (auto i : b) {
+		isin = false;
+		for (auto j : a) {
+			if (i.key == j.key) {
+				isin = true;
+				break;
+			}
+		}
+		if (isin == false) {
+			a.push_back(i);
+		}
+	}
+
+	return a;
 }
 
 void instance::readSSG14()
