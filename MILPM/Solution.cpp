@@ -206,7 +206,8 @@ void Solution::debug(ostream& strm)
 	strm << "	Driving cost       : " << FOp.at(4) << endl;
 	strm << "	BRS energy cost    : " << FOp.at(5) << endl;
 	strm << "	BSS energy cost    : " << FOp.at(6) << endl;
-	strm << "	Punishment         : " << FOp.at(7) << endl;
+	strm << "	BSS use cost       : " << FOp.at(7) << endl;
+	strm << "	Punishment         : " << FOp.at(8) << endl;
 	strm << endl;
 	strm << "Infeasibility: \n";
 	for (string i : inf) {
@@ -214,7 +215,7 @@ void Solution::debug(ostream& strm)
 	}
 	strm << "Permutation: ";
 	for (int i : perm) {
-		strm << i << " ";
+		strm << i << ", ";
 	}
 	strm << endl;
 	strm << "Routes: \n";

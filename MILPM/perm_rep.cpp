@@ -95,12 +95,16 @@ Solution perm_rep::permutationToSolution(permutation p)
 
 	s = addDepots(s);
 	try {
-	//	s = addStations_model(s);
-		s = addStations(s);
+		s = addStations_model(s);
+		//s = addStations(s);
 		//s = GRASP(s);
 	}
 	catch (IsolatedNode &e) {
 		cout << e.what() << endl;
+	}
+	catch (exception e) {
+		cout << e.what() << endl;
+		throw PermutationInf(s.perm);
 	}
 
 	s = procSol(s);
@@ -297,18 +301,20 @@ Solution perm_rep::addStations(Solution s)
 			vertex &cVertex = s.routes.at(j).at(curr);
 			vertex pVertex = s.routes.at(j).at(prev);
 
-			float bUsed = inst->getBatteryUsed(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key);
-			float TD = inst->getTD(prevNode.key, currNode.key);
-
 			// computing parameters
 
 			// compute battery level in the current node
+			float bUsed = inst->getBatteryUsed(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key);
+
 			cVertex.bLevel = pVertex.bLevel + pVertex.recharged - bUsed;
+
 			cVertex.recharged = 0;
 			cVertex.recharge = false;
 
-			// compute arrival time in the current node			
+			// compute arrival time in the current node
+			float TD = inst->getTD(prevNode.key, currNode.key);
 			cVertex.aTime = pVertex.lTime + TD;
+			//s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).aTime + prevNode.serviceTime + inst->getTD(prevNode.key, currNode.key);
 
 			// compute waiting time in the current node
 			if (cVertex.aTime < currNode.readyTime) {
@@ -322,19 +328,17 @@ Solution perm_rep::addStations(Solution s)
 			cVertex.lTime = cVertex.aTime + cVertex.wTime + currNode.serviceTime;
 
 			// compute vehcile load in the current node
-			cVertex.vLoad = cVertex.vLoad - currNode.demand;
+			cVertex.vLoad = pVertex.vLoad - currNode.demand;
 
-			//s.routes.at(j).at(curr) = cVertex;
-
-			// checking due date
-			if (cVertex.aTime > currNode.dueDate) {
+			// checking due date and vehicle load
+			if (s.routes.at(j).at(curr).aTime > currNode.dueDate || s.routes.at(j).at(curr).vLoad < 0) { ////////////////////////////////////////////////
 				// if the current node is reached after the due date, we will remove this node from the route and push it to the next one
 
 				vertex v = s.routes.at(j).at(curr); // store the node key that will be removed				
 				s.routes.at(j).erase(s.routes.at(j).begin() + curr); // remove the node from the route
 
 				// checking if we are in the last route
-				if (j < s.routes.size() - 1) {
+				if (j < s.routes.size() - 1) { // not last route
 					int rSize = s.routes.at(j + 1).size();
 					s.routes.at(j + 1).insert(s.routes.at(j + 1).begin() + rSize - 1, v); // insert just before the last node
 					curr--;
@@ -560,45 +564,71 @@ Solution perm_rep::addStations(Solution s)
 						put = true;
 
 					}
-					else if ((s.routes.at(j).at(curr).bLevel + energy) - minBU >= 0) { // considering recharge during service time
+					else if ((s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged + energy) - minBU >= 0) { // considering recharge during service time
 						// recharge during service time
 						curr_ = curr;
 						energy = 0;
+						auto a = inst->getBatteryUsed(s.routes.at(j).at(curr).key, bss);
+						// find the last customers before the lastest depot or customer
 						while (true) {
-
 							node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+							energy += inst->g * n.serviceTime;
 
 							// force to recharge just enough to reach the bss
 							if (n.type == "f" || n.type == "d" || s.routes.at(j).at(curr).bLevel + energy > minBU) {
 								break;
 							}
 
-							s.routes.at(j).at(curr_).recharge = true;
-							s.routes.at(j).at(curr_).recharged = inst->g * n.serviceTime;
-							s.routes.at(j).at(curr_).bLevel += s.routes.at(j).at(curr_).recharged;
-							if (s.routes.at(j).at(curr_).bLevel > inst->Q) {
-								s.routes.at(j).at(curr_).bLevel = inst->Q;
-							}
-
-							energy += inst->g * n.serviceTime;
 							curr_--;
 						}
+						// recompute battery parameters
+						int accumulated = 0;
+						// compute first node
+						node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+
+						s.routes.at(j).at(curr_).recharge = true;
+						s.routes.at(j).at(curr_).recharged = inst->g * n.serviceTime;
+						accumulated += s.routes.at(j).at(curr_).recharged;
+						// in the case of the battery level after partial recharging became overcharged
+						if (s.routes.at(j).at(curr_).bLevel + s.routes.at(j).at(curr_).recharged > inst->Q) {
+							s.routes.at(j).at(curr_).recharged = inst->Q - s.routes.at(j).at(curr_).bLevel;
+						}
+
+						// compute the rest
+						for (int i = curr_ + 1; i <= curr; i++) {
+							node n = inst->getNodeByKey(s.routes.at(j).at(i).key);
+
+							s.routes.at(j).at(i).bLevel += s.routes.at(j).at(i - 1).recharged;
+							
+							s.routes.at(j).at(i).recharge = true;
+							s.routes.at(j).at(i).recharged = inst->g * n.serviceTime;
+
+							accumulated += s.routes.at(j).at(i).recharged;
+							s.routes.at(j).at(i).bLevel += accumulated;
+
+							// in the case of the battery level after partial recharging became overcharged
+							if (s.routes.at(j).at(i).bLevel + s.routes.at(j).at(i).recharged > inst->Q) {
+								s.routes.at(j).at(i).recharged = inst->Q - s.routes.at(j).at(i).bLevel;
+							}
+
+						}
+
+						prevNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 
 						// insert bss vertex in the route
 						vertex v;
 						v.key = bss;
 
-						v.vLoad = s.routes.at(j).at(prev).vLoad; // compute vehicle load
-
-						prevNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
-						v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss); // compute arrival time
-
-						v.lTime = s.routes.at(j).at(curr).aTime + currNode.serviceTime + inst->ct; // compute departure time
+						v.vLoad = s.routes.at(j).at(prev).vLoad; // compute vehicle load						
 						
-						v.bLevel = s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - inst->getBatteryUsed(s.routes.at(j).at(curr).key, s.routes.at(j).at(curr + 1).key); // compute battery level
+						v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss); // compute arrival time
+						
+						v.lTime = v.aTime + inst->ct; // compute departure time			
+
+						auto bUsed = inst->getBatteryUsed(s.routes.at(j).at(prev).key, v.key);
+						v.bLevel = s.routes.at(j).at(prev).bLevel + s.routes.at(j).at(curr).recharged - bUsed; // compute battery level
 		
-						int bLevel = s.routes.at(j).at(curr + 1).bLevel;
-						v.recharged = inst->Q - bLevel; // compute the amount of energy recharged
+						v.recharged = inst->Q - v.bLevel; // compute the amount of energy recharged
 
 						v.recharge = true;
 
@@ -639,37 +669,47 @@ Solution perm_rep::addStations_model(Solution s)
 			node currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 			node prevNode = inst->getNodeByKey(s.routes.at(j).at(prev).key);
 
+			vertex& cVertex = s.routes.at(j).at(curr);
+			vertex pVertex = s.routes.at(j).at(prev);
+
 			// computing parameters
 
 			// compute battery level in the current node
-			s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(prev).bLevel - inst->getBatteryUsed(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key);
+			float bUsed = inst->getBatteryUsed(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key);
+
+			cVertex.bLevel = pVertex.bLevel + pVertex.recharged - bUsed;
+
+			cVertex.recharged = 0;
+			cVertex.recharge = false;
 
 			// compute arrival time in the current node
-			s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, currNode.key);
+			float TD = inst->getTD(prevNode.key, currNode.key);
+			cVertex.aTime = pVertex.lTime + TD;
+			//s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).aTime + prevNode.serviceTime + inst->getTD(prevNode.key, currNode.key);
 
 			// compute waiting time in the current node
-			if (s.routes.at(j).at(curr).aTime < currNode.readyTime) {
-				s.routes.at(j).at(curr).wTime = currNode.readyTime - s.routes.at(j).at(curr).aTime;
+			if (cVertex.aTime < currNode.readyTime) {
+				cVertex.wTime = currNode.readyTime - cVertex.aTime;
 			}
 			else { // no waiting time
-				s.routes.at(j).at(curr).wTime = 0;
+				cVertex.wTime = 0;
 			}
 
 			// compute de departure time in the current node
-			s.routes.at(j).at(curr).lTime = s.routes.at(j).at(curr).aTime + s.routes.at(j).at(curr).wTime + inst->getNodeByKey(currNode.key).serviceTime;
+			cVertex.lTime = cVertex.aTime + cVertex.wTime + currNode.serviceTime;
 
 			// compute vehcile load in the current node
-			s.routes.at(j).at(curr).vLoad = s.routes.at(j).at(prev).vLoad - currNode.demand;
+			cVertex.vLoad = pVertex.vLoad - currNode.demand;
 
-			// checking due date
-			if (s.routes.at(j).at(curr).aTime > currNode.dueDate) {
+			// checking due date and vehicle load
+			if (s.routes.at(j).at(curr).aTime > currNode.dueDate || s.routes.at(j).at(curr).vLoad < 0) { ////////////////////////////////////////////////
 				// if the current node is reached after the due date, we will remove this node from the route and push it to the next one
 
 				vertex v = s.routes.at(j).at(curr); // store the node key that will be removed				
 				s.routes.at(j).erase(s.routes.at(j).begin() + curr); // remove the node from the route
 
 				// checking if we are in the last route
-				if (j < s.routes.size() - 1) {
+				if (j < s.routes.size() - 1) { // not last route
 					int rSize = s.routes.at(j + 1).size();
 					s.routes.at(j + 1).insert(s.routes.at(j + 1).begin() + rSize - 1, v); // insert just before the last node
 					curr--;
@@ -710,6 +750,17 @@ Solution perm_rep::addStations_model(Solution s)
 					s.routes.push_back(r);
 					curr--;
 				}
+
+				// remove any bss sited in order to this node to be reached
+				currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+				while (currNode.type == "f" || currNode.type == "f_d") {
+					s.routes.at(j).erase(s.routes.at(j).begin() + curr);
+
+					curr--;
+
+					currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+				}
+
 			}
 			// checking battery level
 			else if (s.routes.at(j).at(curr).bLevel < 0) {
@@ -718,6 +769,7 @@ Solution perm_rep::addStations_model(Solution s)
 				int minBU = 0; // minimum battery usage
 				int meanBU = 0;
 
+				// try to put a bss 
 				while (s.routes.at(j).at(curr).bLevel - minBU < 0) {
 					int put = false;
 					curr--;
@@ -725,51 +777,85 @@ Solution perm_rep::addStations_model(Solution s)
 
 					currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 					int bss;
-					// search for the closes bss
-					if (currNode.type != "f" || currNode.type != "f_d") {
+
+					// special case
+					// if the route is traced back to the depot due to a node 
+					if (currNode.type == "d") {
 						vector<node> R = inst->set_R(); // get all stations
 
-
-						// search for the closest bss from the stop node
 						vector<node> SK;
-						for (node r : R) {
-							vector<node> SKr = inst->set_SK(r.key);
+						for (auto h : R) {
+							auto SKr = inst->set_SK(h.key);
 							SK.insert(SK.end(), SKr.begin(), SKr.end());
 						}
-
 						vector<node> RUSKr = inst->vectorUnion(R, SK);
-						for (node r : RUSKr) {
-							int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key); // inst->dist(r.key, b);
 
-							// search the bss in the solution, it will prevent to add duplicated bss
+						// search for the closest bss from the stop node
+						for (node r : RUSKr) {
+
+							int BU1 = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key);
+							int BU2 = inst->getBatteryUsed(r.key, s.routes.at(j).at(curr + 1).key);
+
+							// search if the node is already in the solution
 							bool found = false;
 							for (route rt : s.routes) {
-								for (vertex vt : rt) {
-									if (vt.key == r.key) {
+								for (vertex v : rt) {
+									if (v.key == r.key) {
 										found = true;
 										break;
 									}
 								}
 							}
+
 							// get the lowest dist
+							if (BU2 < minBU && BU1 < s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged && found == false) {
+								bss = r.key;
+								minBU = BU2;
+							}
+						}
+					}
+					// search for the closest bss
+					else if (currNode.type != "f") {
+						vector<node> R = inst->set_R(); // get all stations
+						vector<node> SK;
+						for (auto h : R) {
+							auto SKr = inst->set_SK(h.key);
+							SK.insert(SK.end(), SKr.begin(), SKr.end());
+						}
+						vector<node> RUSKr = inst->vectorUnion(R, SK);
+
+						// search for the closest bss from the stop node
+						for (node r : RUSKr) {
+							int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key); // inst->dist(r.key, b);
+
+							// get the lowest dist
+							// search if the node is already in the solution
+							bool found = false;
+							for (route rt : s.routes) {
+								for (vertex v : rt) {
+									if (v.key == r.key) {
+										found = true;
+										break;
+									}
+								}
+							}
+
 							if (BU < minBU && r.key != s.routes.at(j).at(curr).key && found == false) {
 								bss = r.key;
 								minBU = BU;
 							}
-
 						}
-						cout << endl;
 					}
 					// if the current node is a bss we have to watch out for a possible loop of bss
 					// so we have to make sure it wont happen 
-					else if (currNode.type == "f" || currNode.type == "f_d") {
+					else if (currNode.type == "f") {
 						vector<node> R = inst->set_R(); // get all stations
 						vector<node> R2 = inst->set_R(); // get all stations
 
 						//
 						int curr__ = curr - 1;
 						bssSequence.clear();
-						while (inst->getNodeByKey(s.routes.at(j).at(curr__).key).type == "f" || inst->getNodeByKey(s.routes.at(j).at(curr__).key).type == "f_d") {
+						while (inst->getNodeByKey(s.routes.at(j).at(curr__).key).type == "f") {
 							bssSequence.push_back(s.routes.at(j).at(curr__).key);
 							curr__--;
 						}
@@ -817,7 +903,7 @@ Solution perm_rep::addStations_model(Solution s)
 
 							// we also remove all the previous chain of bss
 							node n = inst->getNodeByKey(s.routes.at(j).at(curr).key);
-							while (n.type == "f" || n.type == "f_d") {
+							while (n.type == "f") {
 								s.routes.at(j).erase(s.routes.at(j).begin() + curr);
 								curr--;
 								n = inst->getNodeByKey(s.routes.at(j).at(curr).key);
@@ -826,22 +912,23 @@ Solution perm_rep::addStations_model(Solution s)
 							// throw IsolatedNode(s.routes.at(j).at(curr + 1).key, j, s.perm);							
 						}
 
-						// search for the closest bss from the stop node
+						/////////////
 						vector<node> SK;
-						for (node r : R) {
-							vector<node> SKr = inst->set_SK(r.key);
+						for (auto h : R) {
+							auto SKr = inst->set_SK(h.key);
 							SK.insert(SK.end(), SKr.begin(), SKr.end());
 						}
-
 						vector<node> RUSKr = inst->vectorUnion(R, SK);
+
+						// search for the closest bss from the stop node
 						for (node r : RUSKr) {
 							int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key); // inst->dist(r.key, b);
 
-							// search the bss in the solution, it will prevent to add duplicated bss
+							// search if the node is already in the solution
 							bool found = false;
 							for (route rt : s.routes) {
-								for (vertex vt : rt) {
-									if (vt.key == r.key) {
+								for (vertex v : rt) {
+									if (v.key == r.key) {
 										found = true;
 										break;
 									}
@@ -863,7 +950,7 @@ Solution perm_rep::addStations_model(Solution s)
 
 						node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
 
-						if (n.type == "f" || n.type == "f_d" || n.type == "d") {
+						if (n.type == "f" || n.type == "d") {
 							break;
 						}
 
@@ -873,7 +960,7 @@ Solution perm_rep::addStations_model(Solution s)
 
 					int cEnergy = (s.routes.at(j).at(curr).bLevel + energy);
 
-					if (s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - minBU >= 0 - minBU >= 0) { // if battery is enough to go from current node and closest bss, insert bss in the route
+					if (s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - minBU >= 0) { // if battery is enough to go from current node and closest bss, insert bss in the route
 						vertex v;
 						v.key = bss;
 
@@ -881,50 +968,93 @@ Solution perm_rep::addStations_model(Solution s)
 
 						currNode = inst->getNodeByKey(s.routes.at(j).at(curr + 1).key);
 
-						s.routes.at(j).at(curr + 1).bLevel = inst->Q;
+						s.routes.at(j).at(curr + 1).vLoad = s.routes.at(j).at(curr).vLoad; // compute vehicle load
+
+						prevNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+						s.routes.at(j).at(curr + 1).aTime = s.routes.at(j).at(curr).lTime + inst->getTD(prevNode.key, bss); // compute arrival time
+						s.routes.at(j).at(curr + 1).lTime = s.routes.at(j).at(curr + 1).aTime + currNode.serviceTime + inst->ct; // compute departure time
+
+						// s.routes.at(j).at(curr + 1).bLevel = inst->Q;
+						auto BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, s.routes.at(j).at(curr + 1).key);
+						s.routes.at(j).at(curr + 1).bLevel = s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - BU; // compute battery level
+						// inst->getBatteryUsed(s.routes.at(j).at(curr).key, s.routes.at(j).at(curr + 1).key) = minBU
+
+						int bLevel = s.routes.at(j).at(curr + 1).bLevel;
+						s.routes.at(j).at(curr + 1).recharged = inst->Q - bLevel; // compute the amount of energy recharged
+						// inst->Q - 
 						s.routes.at(j).at(curr + 1).recharge = true;
-						s.routes.at(j).at(curr + 1).vLoad = s.routes.at(j).at(curr).vLoad;
-						s.routes.at(j).at(curr + 1).recharged = inst->Q - (s.routes.at(j).at(curr).bLevel - minBU); // compute the amount of energy recharged
-						s.routes.at(j).at(curr + 1).aTime = s.routes.at(j).at(curr).lTime + inst->getTD(currNode.key, bss);
-						s.routes.at(j).at(curr + 1).lTime = s.routes.at(j).at(curr + 1).aTime + currNode.serviceTime + inst->ct;
 
 						curr++;
 						put = true;
 
 					}
-					else if ((s.routes.at(j).at(curr).bLevel + energy) - minBU >= 0) { // considering recharge during service time
+					else if ((s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged + energy) - minBU >= 0) { // considering recharge during service time
 						// recharge during service time
 						curr_ = curr;
 						energy = 0;
+						auto a = inst->getBatteryUsed(s.routes.at(j).at(curr).key, bss);
+						// find the last customers before the lastest depot or customer
 						while (true) {
-
 							node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+							energy += inst->g * n.serviceTime;
 
 							// force to recharge just enough to reach the bss
-							if (n.type == "f" || n.type == "f_d" || n.type == "d" || s.routes.at(j).at(curr).bLevel + energy > minBU) {
+							if (n.type == "f" || n.type == "d" || s.routes.at(j).at(curr).bLevel + energy > minBU) {
 								break;
 							}
 
-							s.routes.at(j).at(curr_).recharge = true;
-							s.routes.at(j).at(curr_).recharged = inst->g * n.serviceTime;
-							s.routes.at(j).at(curr_).bLevel += s.routes.at(j).at(curr_).recharged;
-							if (s.routes.at(j).at(curr_).bLevel > inst->Q) {
-								s.routes.at(j).at(curr_).bLevel = inst->Q;
-							}
-
-							energy += inst->g * n.serviceTime;
 							curr_--;
 						}
+						// recompute battery parameters
+						int accumulated = 0;
+						// compute first node
+						node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+
+						s.routes.at(j).at(curr_).recharge = true;
+						s.routes.at(j).at(curr_).recharged = inst->g * n.serviceTime;
+						accumulated += s.routes.at(j).at(curr_).recharged;
+						// in the case of the battery level after partial recharging became overcharged
+						if (s.routes.at(j).at(curr_).bLevel + s.routes.at(j).at(curr_).recharged > inst->Q) {
+							s.routes.at(j).at(curr_).recharged = inst->Q - s.routes.at(j).at(curr_).bLevel;
+						}
+
+						// compute the rest
+						for (int i = curr_ + 1; i <= curr; i++) {
+							node n = inst->getNodeByKey(s.routes.at(j).at(i).key);
+
+							s.routes.at(j).at(i).bLevel += s.routes.at(j).at(i - 1).recharged;
+
+							s.routes.at(j).at(i).recharge = true;
+							s.routes.at(j).at(i).recharged = inst->g * n.serviceTime;
+
+							accumulated += s.routes.at(j).at(i).recharged;
+							s.routes.at(j).at(i).bLevel += accumulated;
+
+							// in the case of the battery level after partial recharging became overcharged
+							if (s.routes.at(j).at(i).bLevel + s.routes.at(j).at(i).recharged > inst->Q) {
+								s.routes.at(j).at(i).recharged = inst->Q - s.routes.at(j).at(i).bLevel;
+							}
+
+						}
+
+						prevNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 
 						// insert bss vertex in the route
 						vertex v;
 						v.key = bss;
-						v.bLevel = inst->Q;
+
+						v.vLoad = s.routes.at(j).at(prev).vLoad; // compute vehicle load						
+
+						v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss); // compute arrival time
+
+						v.lTime = v.aTime + inst->ct; // compute departure time			
+
+						auto bUsed = inst->getBatteryUsed(s.routes.at(j).at(prev).key, v.key);
+						v.bLevel = s.routes.at(j).at(prev).bLevel + s.routes.at(j).at(curr).recharged - bUsed; // compute battery level
+
+						v.recharged = inst->Q - v.bLevel; // compute the amount of energy recharged
+
 						v.recharge = true;
-						v.vLoad = s.routes.at(j).at(prev).vLoad;
-						v.recharged = inst->Q - (s.routes.at(j).at(curr).bLevel - minBU); // compute the amount of energy recharged
-						v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss);
-						v.lTime = s.routes.at(j).at(curr).aTime + currNode.serviceTime + inst->ct;
 
 						s.routes.at(j).insert(s.routes.at(j).begin() + curr + 1, v); // insert in the routes
 
@@ -1421,15 +1551,26 @@ Solution perm_rep::localSearch(permutation p)
 				pl.at(j) = pl.at(i);
 				pl.at(i) = aux;
 
-				Solution sl = permutationToSolution(pl);
-				sl = procSol(sl);
+				try {
+					Solution sl = permutationToSolution(pl);
+					sl = procSol(sl);
 
 
-				if (sl.FO < best.FO) {
-					best = sl;
-					improv = true;
-					return best;
+					if (sl.FO < best.FO) {
+						best = sl;
+						improv = true;
+						return best;
+					}
 				}
+				catch (PermutationInf e) {
+					cout << e.what() << endl;
+					continue;
+				}
+				catch (exception e) {
+					cout << e.what() << endl;
+					continue;
+				}
+				
 			}
 		}
 	}
@@ -1797,6 +1938,11 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 			int end = Random::get(beg + 1, int(pl.size()) - 1);
 			pl = opt2(pl, beg, end);
 			Solution nSol = localSearch(pl);
+
+			for (int i : nSol.perm) {
+				cout << i << " ";
+			}
+			cout << endl;
 
 			// store the best solution so far
 			if (nSol.FO < best.FO && nSol.inf.size() == 0) {

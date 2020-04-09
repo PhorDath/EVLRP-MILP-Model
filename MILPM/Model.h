@@ -7,7 +7,7 @@
 #include "Util.h"
 #include "perm_rep.h"
 
-#define TMAX 300
+#define TMAX 1800
 
 using namespace std;
 
@@ -58,6 +58,7 @@ private:
 	void drivingCostFO(GRBModel& model);	// driving cost
 	void brsEnergyCostFO(GRBModel& model);	// energy cost in brs
 	void bssEnergyCostFO(GRBModel& model);	// energy cost in bss
+	void bssUseCostFO(GRBModel& model);
 	void fo_cost_3(GRBModel& model);
 
 	void fo_cost_2(GRBModel &model);
@@ -155,6 +156,8 @@ private:
 
 	void c46(GRBModel &model); // stations limit
 	void c47(GRBModel& model);
+
+	void c48(GRBModel& model);
 
 
 	// extra functions

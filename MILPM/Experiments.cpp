@@ -42,7 +42,7 @@ void exp_model(string dir1)
 	}
 
 	// header
-	csv << "model;status;fo;gap;time\n";
+	csv << "model,status,fo,gap,time\n";
 
 	csv.close();
 
@@ -101,7 +101,7 @@ void exp_sa(string dir1)
 	}
 
 	// header
-	csv << "model;status;fo;fo_init;time\n";
+	csv << "model,status,fo,fo_init,time\n";
 
 	csv.close();
 

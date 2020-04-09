@@ -155,10 +155,10 @@ Solution Algorithms::createOptimialSolution1()
 string Algorithms::getRow(Solution s)
 {
 	string res = "";
-	res += inst->fileName + ";";
-	res += to_string(s.status) + ";";
-	res += to_string(s.FO) + ";";
-	res += to_string(s.FOINIT) + ";";
+	res += inst->fileName + ",";
+	res += to_string(s.status) + ",";
+	res += to_string(s.FO) + ",";
+	res += to_string(s.FOINIT) + ",";
 	res += to_string(s.runtime) + "\n";
 	cout << res << endl;
 
@@ -477,7 +477,8 @@ vector<float> Algorithms::FOComplete(routes sol)
 	float energy = 0;
 	for (auto route : sol) {
 		for (auto v : route) {
-			if (v.n.type == "c" || v.n.type == "c_d") {
+			node n = inst->getNodeByKey(v.key);
+			if (n.type == "c" || n.type == "c_d") {
 				energy += v.recharged;
 			}				
 		}
@@ -488,19 +489,32 @@ vector<float> Algorithms::FOComplete(routes sol)
 	energy = 0;
 	for (auto route : sol) {
 		for (auto v : route) {
-			if (v.n.type == "f" || v.n.type == "f_d") {
+			node n = inst->getNodeByKey(v.key);
+			if (n.type == "f" || n.type == "f_d") {
 				energy += v.recharged;
 			}				
 		}
 	}
 	float bssEnergyCost = energy * inst->bssEnergyCost;
 
-	fo = depotCost + bssCost + vehicleCost + drivingCost + brsEnergyCost + bssEnergyCost;
+	energy = 0;
+	// bss use cost
+	for (auto route : sol) {
+		for (auto v : route) {
+			node n = inst->getNodeByKey(v.key);
+			if (n.type == "f" || n.type == "f_d") {
+				energy += 1;
+			}
+		}
+	}
+	float bssUseCost = energy * 50;
+
+	fo = depotCost + bssCost + vehicleCost + drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
 
 	//int p = FOP(sol);
 	float p = 0;
 
-	fo_parcels = { fo + p, depotCost, bssCost, vehicleCost, drivingCost, brsEnergyCost, bssEnergyCost, p };
+	fo_parcels = { fo + p, depotCost, bssCost, vehicleCost, drivingCost, brsEnergyCost, bssEnergyCost, bssUseCost, p };
 
 	return fo_parcels;
 }

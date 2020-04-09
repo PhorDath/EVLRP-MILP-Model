@@ -302,6 +302,7 @@ void instance::print(ostream &stream)
 	for (auto i : nodes) {
 		stream << setprecision(2) << setw(3) << i.key << setw(25) << i.id << setw(6) << i.type << setw(6) << i.x << setw(6) << i.y << setw(6) << i.demand << setw(6) << i.readyTime << setw(6) << i.dueDate << setw(6) << i.serviceTime << setw(6) << i.ref << setw(6) << i.ref2 << setw(6) << i.id_n << setw(6) << i.ogKey << endl;
 	}
+	return;
 	stream << "Arcs: " << endl;
 	stream << fixed << setprecision(2);
 	for (node i : nodes) {

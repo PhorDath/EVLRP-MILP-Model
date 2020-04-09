@@ -370,6 +370,7 @@ void Model::model4(GRBModel & model)
 	drivingCostFO(model);	// driving cost
 	brsEnergyCostFO(model);	// energy cost in brs
 	bssEnergyCostFO(model);	// energy cost in bss
+	bssUseCostFO(model);
 	fo_cost_3(model);
 
 	//fo_cost(model);
@@ -406,9 +407,10 @@ void Model::model4(GRBModel & model)
 
 	c45(model); // 29
 
-	c46(model);
-	c47(model);
+	//c46(model);
+	//c47(model);
 
+	c48(model);
 	//
 
 	//r3(model);
@@ -535,7 +537,8 @@ void Model::result(GRBModel & model)
 		// get row for csv file
 		getRow(model);
 
-		s.strmSol(file);
+		//s.strmSol(file);
+		s.debug(file);
 
 		file.close();
 	}
@@ -544,10 +547,10 @@ void Model::result(GRBModel & model)
 void Model::getRow(GRBModel & model)
 {
 	string res = "";
-	res += model.get(GRB_StringAttr_ModelName) + ";";
-	res += to_string(model.get(GRB_IntAttr_Status)) + ";";
-	res += to_string(model.get(GRB_DoubleAttr_ObjVal)) + ";"; 
-	res += to_string(model.get(GRB_DoubleAttr_MIPGap) * 100) + ";";
+	res += model.get(GRB_StringAttr_ModelName) + ",";
+	res += to_string(model.get(GRB_IntAttr_Status)) + ",";
+	res += to_string(model.get(GRB_DoubleAttr_ObjVal)) + ","; 
+	res += to_string(model.get(GRB_DoubleAttr_MIPGap) * 100) + ",";
 	res += to_string(model.get(GRB_DoubleAttr_Runtime)) + "\n";
 
 	row = res;
@@ -580,48 +583,12 @@ Solution Model::model()
 		model.write("lp.lp");
 		model.getEnv().set(GRB_DoubleParam_TimeLimit, TMAX);
 		model.optimize();
+
 		
-		/*
-		// get solution 
-		Solution s = getSolution(model);		
-		s.inf = eval(s);
-		solu = s;
-		
-		// get row for csv file
-		getRow(model);
-		*/
+
 		// save solution	
 		result(model);
 		model.write("sol.sol");
-
-		
-
-
-		//cout << "Number of arcs: " << getArcs(model) << endl;
-		//cout << "Travel cost: " << int(getTravelCost(model)) << endl;
-
-		// get nodes
-		for (route& r : solu.routes) {
-			for (vertex& v : r) {
-				for (node n : inst->nodes) {
-					if (v.key == n.key) {
-						v.n = n;
-						break;
-					}
-				}
-			}
-		}
-		// get arcs
-		for (route& r : solu.routes) {
-			for (int i = 0; i < r.size() - 1; i++) {
-				arc a;
-				a.beg = r.at(i).key;
-				a.end = r.at(i + 1).key;
-				a.value = inst->dist(a.beg, a.end);
-				a.value2 = inst->getTD(a.beg, a.end);
-				solu.arcs.push_back(a);
-			}
-		}
 
 		return solu;
 	}
@@ -689,7 +656,13 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 	vector<node> C = inst->set_C();
 	vector<node> CUR = vectorUnion(C, R);
 
-	count++;
+	vector<node> SK;
+	for (auto h : R) {
+		auto SKr = inst->set_SK(h.key);
+		SK.insert(SK.end(), SKr.begin(), SKr.end());
+	}
+	vector<node> RUSKr = vectorUnion(R, SK);
+
 	// set variable x
 	// set all to 0
 	for (node i : V0) {
@@ -707,7 +680,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 			xij.set(GRB_DoubleAttr_Start, 1);
 		}
 	}
-	count++;
+
 	// set variable y
 	for (node i : CUR) {
 		GRBVar yi = getY(model, i.key); //string varName = "y(" + to_string(i.key) + ")";
@@ -727,7 +700,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 			}
 		}
 	}
-	count++;
+
 	// set variable t
 	for (route r : s.routes) {
 		for (vertex v : r) {
@@ -743,7 +716,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 		}
 
 	}
-	count++;
+
 	// set variable d
 	for (route r : s.routes) {
 		
@@ -763,7 +736,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 		di = getD(model, v.key);
 		di.set(GRB_DoubleAttr_Start, 0);
 	}
-	count++;
+
 	// set variable q
 	for (route r : s.routes) {
 		for (vertex v : r) {
@@ -771,7 +744,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 			qi.set(GRB_DoubleAttr_Start, v.bLevel);
 		}
 	}
-	count++;
+
 	// set variable u
 	for (node i : V1) {
 		GRBVar ui = getU(model, i.key);
@@ -785,7 +758,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 			}
 		}
 	}
-	count++;
+
 	// set variable q
 	for (route r : s.routes) {
 		//for (vertex v : r) {
@@ -805,7 +778,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 		}
 
 	}
-	count++;
+
 	// set variable w
 	for (route r : s.routes) {
 		for (vertex v : r) {
@@ -815,8 +788,12 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 			}
 		}
 	}
-	count++;
+
 	// set variable v
+	for (node n : RUSKr) {
+		GRBVar vi = getV(model, n.key);
+		vi.set(GRB_DoubleAttr_Start, 0);
+	}
 	for (route r : s.routes) {
 		for (vertex v : r) {
 			if (v.n.type == "f" || v.n.type == "f_d") {
@@ -825,7 +802,21 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 			}
 		}
 	}
-	count++;
+	
+	/*
+	GRBVar p1 = model.getVarByName("depotCost");
+	p1.set(GRB_DoubleAttr_Start, s.FOp.at(1));
+	GRBVar p2 = model.getVarByName("bssCost");
+	p2.set(GRB_DoubleAttr_Start, s.FOp.at(2));
+	GRBVar p3 = model.getVarByName("vehicleFixedCost");
+	p3.set(GRB_DoubleAttr_Start, s.FOp.at(3));
+	GRBVar p4 = model.getVarByName("drivingCost");
+	p4.set(GRB_DoubleAttr_Start, s.FOp.at(4));
+	GRBVar p5 = model.getVarByName("brsEnergyCost");
+	p5.set(GRB_DoubleAttr_Start, s.FOp.at(5));
+	GRBVar p6 = model.getVarByName("bssEnergyCost");
+	p6.set(GRB_DoubleAttr_Start, s.FOp.at(6));
+	*/
 	model.update();
 }
 
@@ -1077,8 +1068,9 @@ Solution Model::getSolution(GRBModel& model)
 	s.FOp.push_back(p1.get(GRB_DoubleAttr_X));
 	p1 = model.getVarByName("bssEnergyCost");
 	s.FOp.push_back(p1.get(GRB_DoubleAttr_X));
+	p1 = model.getVarByName("bssUseCost");
+	s.FOp.push_back(p1.get(GRB_DoubleAttr_X));
 	s.FOp.push_back(0);
-
 
 	// put used arcs in the solution
 	vector<node> V01 = inst->set_V01();
@@ -1114,28 +1106,7 @@ Solution Model::getSolution(GRBModel& model)
 			}
 		}
 	}
-	/*
-	// get vehicle load
-	for (node n : V01) {
-		GRBVar di = getD(model, n.key);
-		double value = di.get(GRB_DoubleAttr_X);
 
-		for (int i = 0; i < s.routes.size(); i++) {
-			for (int j = 1; j < s.routes.at(i).size(); j++) {
-				if (s.routes.at(i).at(j).key == n.key) {
-					s.routes.at(i).at(j - 1).vLoad = value;
-				}
-			}
-		}
-	}
-	// fix the final part
-	for (int i = 0; i < s.routes.size(); i++) {
-		int pos = s.routes.at(i).size() - 2;
-		s.routes.at(i).at(pos).vLoad = s.routes.at(i).at(pos - 1).vLoad - inst->getNodeByKey(s.routes.at(i).at(pos).key).demand;
-
-		s.routes.at(i).at(pos + 1).vLoad = s.routes.at(i).at(pos).vLoad;
-	}	
-	*/
 	// get vehicle load
 	for (node n : V01) {
 		GRBVar di = getD(model, n.key);
@@ -1159,8 +1130,8 @@ Solution Model::getSolution(GRBModel& model)
 			for (int j = 0; j < s.routes.at(i).size(); j++) {
 				
 				
-				if (s.routes.at(i).at(j).key == n.key && (n.type == "f" || n.type == "f_d")) {
-					s.routes.at(i).at(j).bLevel = inst->Q;
+				if (s.routes.at(i).at(j).key == n.key && (n.type == "f" || n.type == "f_d")){
+					s.routes.at(i).at(j).bLevel = value; //inst->Q;
 				}
 				else if (s.routes.at(i).at(j).key == n.key) {
 					s.routes.at(i).at(j).bLevel = value;
@@ -1215,82 +1186,32 @@ Solution Model::getSolution(GRBModel& model)
 		}
 	}
 
-	return s;
-}
-/*
-void Model::getRoutes()
-{
-	Solution s;
-	vector<arc> arcs = s.arcs;
-
-	// get the depots
-	vector<int> depots;
-	for (node i : inst->nodes) {
-		if (i.type == "d") {
-			depots.push_back(i.key);
-		}
-	}
-
-	vector<int> pos;
-	// get the inital arc of each route
-	for (int dpt : depots) { // for each depot
-		int count = 0;
-		for (arc i : arcs) { // for each arc
-		//for (int i = 0; i < arcs.size(); i++) { // for each arc
-			//arc a = arcs.at(i);
-			arc a = i;
-			if (a.beg == dpt) { // if the arc begins in the current depot
-				// vector<int> route = {a.beg, a.end};
-				vertex va;
-				va.key = a.beg;
-				vertex vb;
-				vb.key = a.end;
-
-				vector<vertex> route = { va, vb };
-				s.routes.push_back(route); // add the inital arc in each route
-				//inst->solution.arcs.erase(inst->solution.arcs.begin() + i); // erase the arc
-				//arcs.erase(arcs.begin() + count); // erase the arc
-				pos.push_back(count);
-				
-			}
-			count++;
-		}
-	}
-
-	sort(pos.begin(), pos.end(), greater<int>());
-	// erase all depots arcs
-	for (int i : pos) {
-		arcs.erase(arcs.begin() + i);
-	}
-
-	// get the rest of the route
-	while (arcs.size() > 0) {
-		for (int b = 0; b < arcs.size(); b++) { // for each arc
-
-
-			arc a = arcs.at(b);
-			
-			//  search in the current built routes if its time to add the arc a
-			for (int i = 0; i < inst->solution.routes.size(); i++) {
-				bool found = false;
-				for (int j = 0; j < inst->solution.routes.at(i).size(); j++) {
-					if (inst->solution.routes.at(i).at(j).key == a.beg) { // if the current end of the route is equal to the begin of the arc
-						vertex va;
-						va.key = a.end;
-						inst->solution.routes.at(i).push_back(va); // add the end of the arc in the route
-						arcs.erase(arcs.begin() + b); // erase the arc
-						found = true;
-						break;
-					}
-				}
-				if (found == true) {
+	// get nodes
+	for (route& r : s.routes) {
+		for (vertex& v : r) {
+			for (node n : inst->nodes) {
+				if (v.key == n.key) {
+					v.n = n;
 					break;
 				}
 			}
 		}
 	}
+	// get arcs
+	for (route& r : s.routes) {
+		for (int i = 0; i < r.size() - 1; i++) {
+			arc a;
+			a.beg = r.at(i).key;
+			a.end = r.at(i + 1).key;
+			a.value = inst->dist(a.beg, a.end);
+			a.value2 = inst->getTD(a.beg, a.end);
+			s.arcs.push_back(a);
+		}
+	}
+
+	return s;
 }
-*/
+
 routes Model::getRoutes2(GRBModel &model)
 {
 	routes r;
@@ -1822,19 +1743,54 @@ void Model::bssEnergyCostFO(GRBModel& model)
 	GRBVar v = model.addVar(0, GRB_INFINITY, 1, GRB_CONTINUOUS, "bssEnergyCost");
 
 	vector<node> R = inst->set_R();
+	vector<node> SK;
+	for (auto h : R) {
+		auto SKr = inst->set_SK(h.key);
+		SK.insert(SK.end(), SKr.begin(), SKr.end());
+	}
+	vector<node> RUSKr = vectorUnion(R, SK);
+
 	// vector<node> C = inst->set_C();
 	// vector<node> CUR = vectorUnion(C, R);
 
 	GRBLinExpr e = 0;
 	
 	GRBLinExpr sum = 0;
-	for (node i : R) {		
+	for (node i : RUSKr) {
 		GRBVar vi = getV(model, i.key);
 		e += inst->bssEnergyCost * vi;
 		
 	}
 
 	model.addConstr(v == e, "bssEnergyCostR");
+	model.update();
+}
+
+void Model::bssUseCostFO(GRBModel& model)
+{
+	GRBVar v = model.addVar(0, GRB_INFINITY, 1, GRB_CONTINUOUS, "bssUseCost");
+
+	vector<node> V0 = inst->set_V0();
+	
+	vector<node> R = inst->set_R();
+	vector<node> SK;
+	for (auto h : R) {
+		auto SKr = inst->set_SK(h.key);
+		SK.insert(SK.end(), SKr.begin(), SKr.end());
+	}
+	vector<node> RUSKr = vectorUnion(R, SK);
+
+	GRBLinExpr e = 0;
+	for (node i : V0) {
+		for (node j : RUSKr) {
+			if (i.key != j.key) {
+				GRBVar xij = getX(model, i.key, j.key);
+				e += xij;
+			}			
+		}
+	}
+
+	model.addConstr(v == (e * 50), "bssUseCostR");
 	model.update();
 }
 
@@ -1846,8 +1802,9 @@ void Model::fo_cost_3(GRBModel& model)
 	GRBVar p4 = model.getVarByName("drivingCost");
 	GRBVar p5 = model.getVarByName("brsEnergyCost");
 	GRBVar p6 = model.getVarByName("bssEnergyCost");
+	GRBVar p7 = model.getVarByName("bssUseCost");
 
-	model.setObjective(p1 + p2 + p3 + p4 + p5 + p6, GRB_MINIMIZE);
+	model.setObjective(p1 + p2 + p3 + p4 + p5 + p6 + p7, GRB_MINIMIZE);
 	model.update();
 }
 
@@ -3334,7 +3291,7 @@ void Model::c46(GRBModel & model)
 		GRBVar vi = getV(model, i.key);
 		GRBVar qi = getQ(model, i.key);
 		GRBVar yi = getY(model, i.key);
-		model.addQConstr(vi == inst->Q * yi - qi * yi);
+		model.addQConstr(vi == inst->Q * yi - qi * yi, "c46(" + to_string(i.key) + ")");
 	}
 	model.update();
 }
@@ -3349,9 +3306,41 @@ void Model::c47(GRBModel& model)
 			GRBVar vh = getV(model, i.key);
 			GRBVar qi = getQ(model, i.key);
 			GRBVar yi = getY(model, i.key);
-			model.addQConstr(vh == inst->Q * yi - qi * yi);
+			model.addQConstr(vh == inst->Q * yi - qi * yi, "c47(" + to_string(i.key) + "," + to_string(h.key) + ")");
 		}		
 	}
+	model.update();
+}
+
+void Model::c48(GRBModel& model)
+{
+	vector<node> V1 = inst->set_V1();
+
+	vector<node> R = inst->set_R();
+	vector<node> SK;
+	for (auto h : R) {
+		auto SKr = inst->set_SK(h.key);
+		SK.insert(SK.end(), SKr.begin(), SKr.end());
+	}
+	vector<node> RUSKr = vectorUnion(R, SK);
+
+	GRBLinExpr e = 0;
+	for (node i : RUSKr) {
+		
+		GRBVar vi = getV(model, i.key);
+		GRBVar qi = getQ(model, i.key);
+
+		GRBLinExpr e = 0;
+		for (node j : V1) {
+			if (i.key != j.key) {
+				GRBVar xij = getX(model, i.key, j.key);
+
+				e += xij;			
+			}
+		}
+		model.addQConstr(vi == inst->Q * e - qi * e, "c48(" + to_string(i.key) + ")");
+	}
+
 	model.update();
 }
 

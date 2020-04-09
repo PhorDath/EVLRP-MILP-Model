@@ -48,6 +48,27 @@ public:
 	}
 };
 
+class PermutationInf : public exception {
+
+private:
+	permutation p;
+	string msg;
+
+public:
+	PermutationInf(const vector<int> perm) {
+		p = perm;
+		msg = "permutation ";
+		for (int i : p) {
+			msg += (to_string(i) + " ");
+		}
+		msg += " is infeasible\n";
+	}
+
+	const char* what() const throw () {
+		return msg.c_str();
+	}
+};
+
 class Algorithms
 {
 public:
