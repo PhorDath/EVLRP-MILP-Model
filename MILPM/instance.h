@@ -1,4 +1,8 @@
 #pragma once
+
+#ifndef INSTANCE_H
+#define INSTANCE_H
+
 #include <string>
 #include <vector>
 #include <fstream>
@@ -97,6 +101,7 @@ public:
 	//float dist(node a, node b);
 
 public:
+	instance();
 	instance(string file);
 	instance(string dir, string file);
 	instance(string dir, string file, int type);
@@ -138,3 +143,5 @@ public:
 
 	
 };
+
+#endif

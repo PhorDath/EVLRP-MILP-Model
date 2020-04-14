@@ -1,5 +1,9 @@
 #pragma once
+#include <BRKGA.h>
+#include <MTRand.h>
 #include "Algorithms.h"
+
+typedef pair<double, unsigned> ValueKeyPair;
 
 class perm_rep : public Algorithms
 {
@@ -42,6 +46,10 @@ private:
 	// this GRASP algorithm is responsible to improve the addDepot method
 	Solution GRASP(Solution s);
 
+	// BGKGA
+	
+	vector<ValueKeyPair> v;
+
 	// greed
 	Solution greedDD();
 	Solution greedRT();
@@ -50,7 +58,9 @@ public:
 
 	Solution GA(int popSize, int eliteP, int maxGen);
 	Solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
+	Solution BRKGA_();
 	Solution testPermutation(permutation p);
+	float decode(vector<double> chromosome);
 	void setOutputDir(string dir);
 
 	int test1();

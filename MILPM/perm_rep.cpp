@@ -95,8 +95,8 @@ Solution perm_rep::permutationToSolution(permutation p)
 
 	s = addDepots(s);
 	try {
-		s = addStations_model(s);
-		//s = addStations(s);
+		//s = addStations_model(s);
+		s = addStations(s);
 		//s = GRASP(s);
 	}
 	catch (IsolatedNode &e) {
@@ -288,12 +288,16 @@ Solution perm_rep::addStations(Solution s)
 		s.routes.at(j).front().bLevel = inst->Q;
 	}
 
+	int last = 0;
 	vector<int> bssSequence;
 
 	for (int j = 0; j < s.routes.size(); j++) {
 		int curr = 1;
 
 		while (curr < s.routes.at(j).size()) {
+			if (curr == 0) {
+				throw "error";
+			}
 			int prev = curr - 1;
 			node currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 			node prevNode = inst->getNodeByKey(s.routes.at(j).at(prev).key);
@@ -380,7 +384,7 @@ Solution perm_rep::addStations(Solution s)
 					curr--;
 				}
 
-				// remove any bss sited in order to this node to be reached
+				// remove any bss sited in order to this node to be reached and discharge battery in previous nodes
 				currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 				while (currNode.type == "f" || currNode.type == "f_d") {
 					s.routes.at(j).erase(s.routes.at(j).begin() + curr);
@@ -389,6 +393,35 @@ Solution perm_rep::addStations(Solution s)
 					
 					currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 				}
+
+				//
+				currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+				int curr_ = curr;
+				/*
+				for (int i = last; i < curr_; i++) {
+					prevNode = inst->getNodeByKey(s.routes.at(j).at(curr_ - 1).key);
+					if (prevNode.type != "f" && prevNode.type != "f_d" && prevNode.type != "d") {
+						s.routes.at(j).at(curr_).bLevel -= s.routes.at(j).at(curr_ - 1).recharged; ////////////////////////
+					}					
+					s.routes.at(j).at(curr_).recharge = false;
+					s.routes.at(j).at(curr_).recharged = 0;
+					curr_--;
+
+					currNode = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+				}
+
+				
+				while (currNode.type != "f" && currNode.type != "f_d" && currNode.type != "d") {
+					prevNode = inst->getNodeByKey(s.routes.at(j).at(curr_ - 1).key);
+					if (prevNode.type != "f" && prevNode.type != "f_d" && prevNode.type != "d") {
+						s.routes.at(j).at(curr_).bLevel -= s.routes.at(j).at(curr_ - 1).recharged; ////////////////////////
+					}
+					s.routes.at(j).at(curr_).recharge = false;
+					s.routes.at(j).at(curr_).recharged = 0;
+					curr_--;
+
+					currNode = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+				}*/
 
 			}
 			// checking battery level
@@ -536,6 +569,7 @@ Solution perm_rep::addStations(Solution s)
 
 					int cEnergy = (s.routes.at(j).at(curr).bLevel + energy);
 
+					//if (s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - energy >= 0) {
 					if (s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - minBU >= 0) { // if battery is enough to go from current node and closest bss, insert bss in the route
 						vertex v;
 						v.key = bss;
@@ -575,10 +609,10 @@ Solution perm_rep::addStations(Solution s)
 							energy += inst->g * n.serviceTime;
 
 							// force to recharge just enough to reach the bss
-							if (n.type == "f" || n.type == "d" || s.routes.at(j).at(curr).bLevel + energy > minBU) {
+							if (n.type == "f" || n.type == "d" || n.type == "f_d" || s.routes.at(j).at(curr).bLevel + energy > minBU) {
 								break;
 							}
-
+							last = curr_;
 							curr_--;
 						}
 						// recompute battery parameters
@@ -598,13 +632,13 @@ Solution perm_rep::addStations(Solution s)
 						for (int i = curr_ + 1; i <= curr; i++) {
 							node n = inst->getNodeByKey(s.routes.at(j).at(i).key);
 
-							s.routes.at(j).at(i).bLevel += s.routes.at(j).at(i - 1).recharged;
+							//s.routes.at(j).at(i).bLevel += s.routes.at(j).at(i - 1).recharged;
 							
 							s.routes.at(j).at(i).recharge = true;
 							s.routes.at(j).at(i).recharged = inst->g * n.serviceTime;
 
-							accumulated += s.routes.at(j).at(i).recharged;
 							s.routes.at(j).at(i).bLevel += accumulated;
+							accumulated += s.routes.at(j).at(i).recharged;
 
 							// in the case of the battery level after partial recharging became overcharged
 							if (s.routes.at(j).at(i).bLevel + s.routes.at(j).at(i).recharged > inst->Q) {
@@ -1939,11 +1973,6 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 			pl = opt2(pl, beg, end);
 			Solution nSol = localSearch(pl);
 
-			for (int i : nSol.perm) {
-				cout << i << " ";
-			}
-			cout << endl;
-
 			// store the best solution so far
 			if (nSol.FO < best.FO && nSol.inf.size() == 0) {
 				best = nSol;
@@ -2046,6 +2075,11 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 	return best;
 }
 
+Solution perm_rep::BRKGA_()
+{
+	return Solution();
+}
+
 Solution perm_rep::testPermutation(permutation p)
 {
 	Solution s = permutationToSolution(p);
@@ -2118,6 +2152,31 @@ Solution perm_rep::GRASP(Solution s)
 	}
 	
 	return s;
+}
+
+float perm_rep::decode(vector<double> chromosome)
+{
+	v.resize(chromosome.size());
+
+	int beg = inst->numD + inst->numF;
+
+	// obtain a permutation out of the chromosome
+	for (unsigned i = 0; i < v.size(); ++i) {
+		v[i] = ValueKeyPair(chromosome[i], i + beg);
+	}
+
+	// Here we sort 'rank', which will produce a permutation of [n] stored in ValueKeyPair::second:
+	std::sort(v.begin(), v.end());
+
+	// generate the permutation
+	permutation p;
+	for (ValueKeyPair vkp : v) {
+		p.push_back(vkp.second);
+	}
+
+	Solution s = testPermutation(p);
+
+	return s.FO;
 }
 
 Solution perm_rep::greedDD()

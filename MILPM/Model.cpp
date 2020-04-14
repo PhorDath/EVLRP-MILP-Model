@@ -558,7 +558,6 @@ void Model::getRow(GRBModel & model)
 
 Solution Model::model()
 {
-	//inst->print3(cout);
 
 	GRBEnv env = GRBEnv(true);
 	try {
@@ -589,6 +588,9 @@ Solution Model::model()
 		// save solution	
 		result(model);
 		model.write("sol.sol");
+
+		//double d = model.get(GRB_DoubleAttr_Runtime);
+		//cout << d << endl << endl << endl;
 
 		return solu;
 	}
@@ -1209,6 +1211,17 @@ Solution Model::getSolution(GRBModel& model)
 		}
 	}
 
+	// get permutation
+	vector<int> p;
+	for (route& r : s.routes) {
+		for (vertex& v : r) {
+			if (v.n.type == "c" || v.n.type == "c_d") {
+				p.push_back(v.key);
+			}
+		}
+	}
+	s.perm = p;
+
 	return s;
 }
 
@@ -1330,7 +1343,7 @@ vector<string> Model::eval(Solution s)
 
 	for (route r : sol) {
 		// check if the current route start and finish in the same depot
-		if (inst->getNodeByKey(r.front().key).ogKey != inst->getNodeByKey(r.back().key).ogKey) {
+		if (inst->getNodeByKey(r.front().key).ogKey != inst->getNodeByKey(r.back().key).ogKey || inst->getNodeByKey(r.front().key).key != inst->getNodeByKey(r.back().key).key) {
 			ret.insert("route_beg_end");
 		}
 
@@ -2961,7 +2974,7 @@ void Model::c38_M(GRBModel & model)
 					GRBVar xij = getX(model, i.key, j.key);
 					float r = inst->g;
 					GRBVar wi = getW(model, i.key);
-					model.addConstr(tj >= ti + tdij * xij + r * wi - inst->M * (1 - xij), "c38_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
+					model.addConstr(tj >= ti + tdij * xij + (wi / r) - inst->M * (1 - xij), "c38_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
 				}
 			}
 		}

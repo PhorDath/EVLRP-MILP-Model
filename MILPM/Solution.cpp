@@ -199,6 +199,7 @@ void Solution::insertArc(int beg, int end, int value)
 void Solution::debug(ostream& strm)
 {
 	strm << fixed << setprecision(2);
+	strm << "Runtime: " << runtime << endl;
 	strm << "Objective function    : " << FOp.front() << endl;
 	strm << "	Depot siting cost  : " << FOp.at(1) << endl;
 	strm << "	BSS siting cost    : " << FOp.at(2) << endl;

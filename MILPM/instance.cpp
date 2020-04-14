@@ -1,6 +1,10 @@
 #include "instance.h"
 #include "Model.h"
 
+instance::instance()
+{
+}
+
 instance::instance(string file)
 {
 	dir = "";

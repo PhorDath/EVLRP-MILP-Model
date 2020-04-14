@@ -135,6 +135,76 @@ void exp_sa(string dir1)
 	return;
 }
 
+void exp_brkga(string dir1)
+{
+	fstream all;
+	all.open(dir1 + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	// prepare the output directory
+	string date = getDate();
+	string dirOutput = dir1;
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	// csv file
+	fstream csv;
+	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir1 << endl;
+		return;
+	}
+
+	// header
+	csv << "model,status,fo,fo_init,time\n";
+
+	csv.close();
+
+	int count = 0;
+	string line;
+	while (getline(all, line)) {
+		cout << line << endl;
+
+		// csv file
+		fstream csv;
+		csv.open(dirOutput + "result.csv", ios::out | ios::app);
+		if (csv.is_open() == false) {
+			cout << "Error opening file result.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		/*
+		perm_rep alg;
+		alg.loadInstance(dir1, line, 3);
+		alg.setOutputDir(dirOutput);
+		Solution s = alg.sA(1000, 100, 100, 50, 300);
+		*/
+		test t;
+		double f = t.BRKGA_(dir1, line);
+
+		csv << f << endl;
+		csv.close();
+
+		count++;
+	}
+
+	all.close();
+
+	return;
+}
+
+void test1()
+{
+	
+
+}
+
 void exp1(string dir1, string dir2) {
 	fstream file;
 	file.open(dir1 + "all.txt", ios::in);

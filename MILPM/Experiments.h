@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef EXPERIMENTS_H
 #define EXPERIMENTS_H
 
@@ -6,6 +8,7 @@
 #include "Model.h"
 #include "perm_rep.h"
 #include "routes_rep.h"
+#include "test.h"
 
 using namespace std;
 
@@ -15,6 +18,11 @@ string getDate();
 
 void exp_model(string dir);
 void exp_sa(string dir1);
+void exp_brkga(string dir1);
+
+void test1();
+
+///
 
 void exp1(string dir1, string dir2);
 void exp2(string dir1, string dir2);

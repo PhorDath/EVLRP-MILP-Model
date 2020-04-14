@@ -84,7 +84,8 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\boost\boost_1_72_0;C:\gurobi901\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\libs\brkgaAPI\src;D:\boost\boost_1_72_0;C:\gurobi901\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>D:\boost\boost_1_72_0\stage\lib;C:\gurobi901\win64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -113,8 +114,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\phord\AppData\Local\Programs\Python\Python37\include;D:\boost\boost_1_72_0;C:\gurobi901\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\libs\brkgaAPI\src;C:\Users\phord\AppData\Local\Programs\Python\Python37\include;D:\boost\boost_1_72_0;C:\gurobi901\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BrowseInformation>true</BrowseInformation>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -128,6 +131,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Algorithms.cpp" />
+    <ClCompile Include="Decoder.cpp" />
     <ClCompile Include="Experiments.cpp" />
     <ClCompile Include="instance.cpp" />
     <ClCompile Include="main.cpp" />
@@ -136,10 +140,12 @@
     <ClCompile Include="perm_rep.cpp" />
     <ClCompile Include="routes_rep.cpp" />
     <ClCompile Include="Solution.cpp" />
+    <ClCompile Include="test.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algorithms.h" />
+    <ClInclude Include="Decoder.h" />
     <ClInclude Include="Experiments.h" />
     <ClInclude Include="instance.h" />
     <ClInclude Include="MCLPModel.h" />
@@ -147,6 +153,7 @@
     <ClInclude Include="perm_rep.h" />
     <ClInclude Include="routes_rep.h" />
     <ClInclude Include="Solution.h" />
+    <ClInclude Include="test.h" />
     <ClInclude Include="Util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
