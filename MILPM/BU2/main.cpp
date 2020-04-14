@@ -20,7 +20,7 @@ int main() {
 	/*test t;
 	t.BRKGA_(dir3, file);*/
 
-	int op = 2;
+	int op = 1;
 	if (op == 0) {
 		
 	}
