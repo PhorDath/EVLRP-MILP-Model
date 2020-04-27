@@ -1,0 +1,1 @@
+g++ -m64 -g -o prog main.cpp -I /Library/gurobi752/mac64/include/ -L /Library/gurobi752/mac64/lib/ -lgurobi_c++ -lgurobi75 -lm
