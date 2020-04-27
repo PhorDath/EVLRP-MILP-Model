@@ -15,6 +15,7 @@ Model::Model(string dir, string fileName)
 	this->fileName = fileName;
 	inst = new instance(dir, fileName);
 	M = inst->M;
+	row += fileName;
 	//model();
 }
 
@@ -25,6 +26,7 @@ Model::Model(string dir, string fileName, int w)
 	inst = new instance(dir, fileName);
 	this->w = w;
 	M = inst->M;
+	row += fileName;
 	//model();
 }
 
@@ -35,6 +37,7 @@ Model::Model(string dir, string fileName, int w, int t)
 	inst = new instance(dir, fileName, t);
 	this->w = w;
 	M = inst->M;
+	row += fileName;
 	//model();
 }
 
@@ -46,6 +49,7 @@ Model::Model(string dir, string fileName, int w, string dirOutput)
 	this->w = w;
 	M = inst->M;
 	this->dirOutput = dirOutput;
+	row += fileName;
 	//model();
 }
 
@@ -59,6 +63,7 @@ Model::Model(string dir, string fileName, int w, int t, string dirOutput)
 	this->w = w;
 	M = inst->M;
 	this->dirOutput = dirOutput;
+	row += fileName;
 	//model();
 }
 
@@ -413,6 +418,9 @@ void Model::model4(GRBModel & model)
 	c48(model);
 	//
 
+	c49(model);
+	c50(model);
+
 	//r3(model);
 	//r4(model);
 
@@ -480,13 +488,11 @@ void Model::setup(GRBModel &model)
 void Model::result(GRBModel & model)
 {
 	string fN = dirOutput + model.get(GRB_StringAttr_ModelName) + ".sol";
-	//model.write(fN);
-
 	if (dirOutput == "") {
 		boost::filesystem::create_directory(directory + "output/");
 		fN = directory + "output/" + model.get(GRB_StringAttr_ModelName) + ".sol";
 	}
-	//cout << fN << endl;
+
 	int status = model.get(GRB_IntAttr_Status);
 	if (status == GRB_UNBOUNDED) {
 		cout << "The model can't be solved because there is no bound" << endl;
@@ -510,37 +516,45 @@ void Model::result(GRBModel & model)
 		cout << "Status: " << status << endl;
 		//model.write(fN);
 	}
-	model.write(fN);
-	// write more information in the solution file
-	fstream file;
-	file.open(fN, ios::out | ios::app);
-	if (file.is_open() == false) {
-		cout << "Error opening the solution file to write more information" << endl;
-	}
-	else {
-		file << "#" << endl;
+	
 
-		Solution s = getSolution(model);
+	double gap = model.get(GRB_DoubleAttr_MIPGap);
+	cout << gap << endl;
+	if (gap < 100) {
+		model.write(fN);
 
-		s.FO = model.get(GRB_DoubleAttr_ObjVal);
-		s.runtime = model.get(GRB_DoubleAttr_Runtime);
-		s.gap = model.get(GRB_DoubleAttr_MIPGap) * 100;
-		s.status = model.get(GRB_IntAttr_Status);
+		// write more information in the solution file
 
-		s.numVehicles = getNumVehicles(model);
-		
-		// get solution 
-		
-		s.inf = eval(s);
-		solu = s;
+		fstream file;
+		file.open(fN, ios::out | ios::app);
+		if (file.is_open() == false) {
+			cout << "Error opening the solution file to write more information" << endl;
+		}
+		else {
+			file << "#" << endl;
 
-		// get row for csv file
-		getRow(model);
+			Solution s = getSolution(model);
 
-		//s.strmSol(file);
-		s.debug(file);
+			s.FO = model.get(GRB_DoubleAttr_ObjVal);
+			s.runtime = model.get(GRB_DoubleAttr_Runtime);
+			s.gap = model.get(GRB_DoubleAttr_MIPGap) * 100;
+			s.status = model.get(GRB_IntAttr_Status);
 
-		file.close();
+			s.numVehicles = getNumVehicles(model);
+
+			// get solution 
+
+			s.inf = eval(s);
+			solu = s;
+
+			// get row for csv file
+			getRow(model);
+
+			//s.strmSol(file);
+			s.debug(file);
+
+			file.close();
+		}
 	}
 }
 
@@ -579,15 +593,13 @@ Solution Model::model()
 			model.write("attr.attr");
 		}
 
-		model.write("lp.lp");
+		//model.write("lp.lp");
 		model.getEnv().set(GRB_DoubleParam_TimeLimit, TMAX);
 		model.optimize();
 
-		
-
 		// save solution	
 		result(model);
-		model.write("sol.sol");
+		//model.write("sol.sol");
 
 		//double d = model.get(GRB_DoubleAttr_Runtime);
 		//cout << d << endl << endl << endl;
@@ -903,6 +915,11 @@ Solution Model::analyze(Solution s)
 void Model::printInst()
 {
 	inst->print(cout);
+}
+
+bool Model::fileOpened()
+{
+	return inst->isOpen;
 }
 
 vector<node> Model::vectorUnion(vector<node> a, vector<node> b) 
@@ -1662,8 +1679,8 @@ void Model::depotCostFO(GRBModel& model)
 
 	GRBLinExpr e = 0;
 	for (node i : UD0) {
-		// e += getZ(model, i.key) * (inst->depotCost / inst->numC);
-		e += getZ(model, i.key) * (inst->depotCost);
+		e += getZ(model, i.key) * (inst->depotCost / inst->depotLifetime);
+		//e += getZ(model, i.key) * (inst->depotCost);
 	}
 
 	//GRBVar v = model.getVarByName("depotCost");
@@ -1680,8 +1697,8 @@ void Model::bssCostFO(GRBModel& model)
 
 	GRBLinExpr e = 0;
 	for (auto i : R) {
-		// e += getY(model, i.key) * (inst->bssCost / inst->numC);
-		e += getY(model, i.key) * (inst->bssCost);
+		e += getY(model, i.key) * (inst->bssCost / inst->bssLifetime);
+		//e += getY(model, i.key) * (inst->bssCost);
 	}
 
 	model.addConstr(v == e, "bssCostR");
@@ -1699,8 +1716,8 @@ void Model::vehicleFixedCostFO(GRBModel& model)
 	for (node i : UD0) {
 		for (node j : V1) {
 			if (i.key != j.key) {
-				// e += getX(model, i.key, j.key) * (inst->vehicleCost / inst->numC);
-				e += getX(model, i.key, j.key) * (inst->vehicleCost);
+				e += getX(model, i.key, j.key) * (inst->vehicleCost / inst->vehicleLifetime);
+				//e += getX(model, i.key, j.key) * (inst->vehicleCost);
 			}
 		}
 	}
@@ -3354,6 +3371,37 @@ void Model::c48(GRBModel& model)
 		model.addQConstr(vi == inst->Q * e - qi * e, "c48(" + to_string(i.key) + ")");
 	}
 
+	model.update();
+}
+
+void Model::c49(GRBModel& model)
+{
+	vector<node> UD0 = inst->set_UD0();
+	vector<node> V1 = inst->set_V1();
+
+	GRBLinExpr e = 0;
+	for (node i : UD0) {
+		GRBVar zi = getZ(model, i.key);
+		e += zi;
+
+	}
+	model.addConstr(e <= inst->maxD, "c49");
+	model.update();
+}
+
+void Model::c50(GRBModel& model)
+{
+	vector<node> UD0 = inst->set_UD0();
+	vector<node> V1 = inst->set_V1();
+
+	GRBLinExpr e = 0;
+	for (node i : UD0) {
+		for (node j : V1) {
+			GRBVar xij = getX(model, i.key, j.key);
+			e += xij;
+		}
+	}
+	model.addConstr(e <= inst->maxV, "c50");
 	model.update();
 }
 

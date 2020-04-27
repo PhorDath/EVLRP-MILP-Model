@@ -39,6 +39,7 @@ class instance
 {
 public:
 	string dir, fileName;
+	bool isOpen;
 	int type = 0; // store the type of instance that was opened
 	vector<node> nodes;
 	int numD = 0;
@@ -49,7 +50,7 @@ public:
 	double r; // battery consumption rate
 	float g; // inverse refueling rate
 	float v; // average Velocity
-
+	int t = 3; // maximum number of depots
 	// used for the uk instances
 	int mDim;
 	vector<vector<float>> distanceMatrix; // used only for some instances
@@ -64,6 +65,9 @@ public:
 	int o; // Maximum number of recharging points to locate.
 	int ct; // Swapping time of battery, was defined as ten percent of the total battery charge time by conventional means
 	int M;
+	int maxD = 0;
+	int maxV = 0;
+	int maxB = 0;
 
 	float alfa; // percentagem of customers that will be transformed in stattions siting locations, used on the UK instances
 
@@ -88,15 +92,20 @@ public:
 	void readInstace();
 	void readPaz();
 	void readSSG14();
-	void readprplib(); // uk instances
+	void readprplib(); // uk instances	
 	void readUKAdapt();
 	void addDummyNodes();
 	vector<node> chooseStationsLocationRandom(vector<node> &customers);
 	vector<node> chooseStationsLocationMCLP(vector<node> &customers);
+	vector<node> chooseStationsLocationMCLP2(vector<node>& customers);
 	vector<node> removeNodesByIndex(vector<node> customers, set<int> ind);
 	void rearrangeDMatrix(vector<vector<float>> &m);
 	void createEdgesVector();
 	void printNode(node n);
+
+	//void adaptInstance();
+	
+	void writeAdapt(ostream& file);
 
 	//float dist(node a, node b);
 
@@ -139,9 +148,14 @@ public:
 	void print(ostream &stream);
 	void printSet(vector<node> set);
 	node getNodeByKey(int key);
+
+	void adaptAll();
+	void adaptUKInstance(); // uk instances
+
 	~instance();
 
 	
 };
 
+void adaptAll();
 #endif

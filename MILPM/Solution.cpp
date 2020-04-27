@@ -218,7 +218,39 @@ void Solution::debug(ostream& strm)
 	for (int i : perm) {
 		strm << i << ", ";
 	}
+	//return;
 	strm << endl;
+
+	std::set<int> depots;
+	for (route r : routes) {
+		for (vertex v : r) {
+			if (v.n.type == "d") {
+				depots.insert(v.n.ref2);
+			}
+		}
+	}
+
+	strm << "Depots sited: ";
+	for (int i : depots) {
+		strm << i << " ";
+	}
+	strm << endl;
+
+	std::set<int> stations;
+	for (route r : routes) {
+		for (vertex v : r) {
+			if (v.n.type == "f" || v.n.type == "f_d") {
+				stations.insert(v.n.ref2);
+			}			
+		}
+	}
+
+	strm << "Stations sited: ";
+	for (int i : stations) {
+		strm << i << " ";
+	}
+	strm << endl;
+
 	strm << "Routes: \n";
 	for (route r : routes) {
 		for (vertex v : r) {

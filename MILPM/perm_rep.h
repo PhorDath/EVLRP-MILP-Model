@@ -15,11 +15,15 @@ private:
 	Solution permutationToSolutionGrasp(permutation p);
 	Solution addDepots(Solution s);
 	Solution addStations(Solution s); // add stations to the solution by a greedy criteria (closest ) 
+	route addStations(route rt); // add stations to the solution by a greedy criteria (closest ) 
 	Solution addStations_model(Solution s); // add stations to the solution by a greedy criteria (closest ) 
-
-	Solution addStations2(Solution s); // add stations to the solution by a greedy criteria (closest ) 
 	Solution addStations(Solution s, int n); // add stations to the solution. it uses a greedy criteria and a candidate list
 	Solution addStationsGrasp(Solution s); // grasp
+
+	//
+	pair<int, int> closestBSS(Solution& s, int route, int key); // search for the closest bss of a node with a given key, return the pair (bss key, distance)
+	pair<int, int> closestBSS(route& r, int key); // search for the closest bss of a node with a given key, return the pair (bss key, distance)
+	pair<int, int> closestBSS(Solution& s, int route, int key, int m); // search for the closest bss of a node with a given key and given a candidate list determined by the parameter m (list size), return the pair (bss key, distance)
 
 	permutation randomPermutation();
 	route computeRoute(route sol);
@@ -45,9 +49,11 @@ private:
 	// GRASP
 	// this GRASP algorithm is responsible to improve the addDepot method
 	Solution GRASP(Solution s);
+	Solution localSearch_GRASP(Solution s);
+	Solution routeSplit(Solution s, int n, int m); // split route n in two in a given position m (m < s.route.at(n).size() - 2)
+	Solution bssReplacement(Solution s, int key); // Replace a bss defined by n and swap  it for others, aready placed, bss
 
-	// BGKGA
-	
+	// BGKGA	
 	vector<ValueKeyPair> v;
 
 	// greed

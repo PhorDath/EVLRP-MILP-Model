@@ -38,7 +38,7 @@ private:
 
 public:
 	MCLPModel(string dir, string fileName);
-	MCLPModel(instance *inst);
+	//MCLPModel(instance *inst);
 	vector<int> getY();
 	void model();
 	void setup(GRBModel &model);

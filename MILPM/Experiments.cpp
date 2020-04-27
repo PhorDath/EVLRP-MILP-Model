@@ -61,8 +61,11 @@ void exp_model(string dir1)
 		}
 
 		Model model(dir1, line, 0, 3, dirOutput);
-		model.optmize();
-		Solution s = model.getSolution();
+		if (model.fileOpened() == true) {
+			model.printInst();
+			model.optmize();
+			Solution s = model.getSolution();
+		}
 
 		csv << model.row;
 		csv.close();

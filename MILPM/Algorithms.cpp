@@ -151,7 +151,134 @@ Solution Algorithms::createOptimialSolution1()
 
 	return s;
 }
+/*
+void Algorithms::adaptInstance()
+{
+	if (inst->type != 3) {
+		throw "cant adapt this instance\n";
+	}
 
+	
+	
+	if (inst->numC >= 50) {
+		vector<pair<int, long long int>> dists;
+		// choose depots
+		int i = 0;
+		for (node n1 : inst->nodes) {
+			if (n1.type != "d") {
+				long long int sum = 0;
+				for (node n2 : inst->nodes) {
+					sum += inst->dist(n1.key, n2.key);
+					sum += inst->dist(n2.key, n1.key);
+				}
+				pair<int, long long int> aux = { i, sum };
+				dists.push_back(aux);
+			}
+		}
+
+		int d = inst->numC % (25) - 1;
+		partial_sort(dists.begin(), dists.begin() + d, dists.end(), [](pair<int, long long int> a, pair<int, long long int> b)-> bool {return a.second < b.second; });
+
+	}
+
+	
+
+
+	// choose stations candidates
+	MCLPModel model(inst->dir, inst->fileName);
+	vector<int> y = model.getY();
+
+	inst->type = 2;
+	fstream file;
+	file.open(inst->dir + inst->fileName + "_a.txt", ios::in | ios::app);
+	if (file.is_open() == false) {
+		cout << "Error opening file " << inst->fileName + "_a.txt" << endl;
+		cout << "In directory " << inst->dir << endl;
+		exit(1);
+	}
+
+	int ig;
+	string str;
+
+	file << "depots_number                       " << inst->numD;
+	file << "facilities_number                   " << inst->numF;
+	file << "customers_number                    " << inst->numC;
+	file << "maximum_num_statios                 " << inst->o; // maximum number of stations to be sited
+	file << "LB                                  " << inst->LB;
+	file << "UB                                  " << inst->UB;
+	file << "M                                   " << inst->M;
+	file << "distance_matrix_dimension           " << inst->mDim; // distance matrix dimension
+	file << "depot_cost                " << "usd      " << inst->depotCost;
+	file << "bss_cost                  " << "usd      " << inst->bssCost;
+	file << "brs_cost                  " << "usd      " << inst->brsCost;
+	file << "bss_energy_cost           " << "usd      " << inst->bssEnergyCost;
+	file << "brs_energy_cost           " << "usd      " << inst->brsEnergyCost;
+	file << "vehicle_cost              " << "usd      " << inst->vehicleCost;
+	file << "driver_wage               " << "usd      " << inst->driverWage;
+	file << "depot_lifetime            " << "year     " << inst->depotLifetime;
+	file << "bss_lifetime              " << "year     " << inst->bssLifetime;
+	file << "brs_lifetime              " << "year     " << inst->brsLifetime;
+	file << "vehicle_lifetime          " << "year     " << inst->vehicleLifetime;
+	file << "vehicle_range             " << "km       " << inst->vehicleRange; // vehicle autonomy
+	file << "battery_capacity          " << "kwh      " << inst->Q; // battery capacity
+	file << "battery_swap_time         " << "second   " << inst->ct; // battery swap time
+	file << "battery_consumption_rate  " << "x        " << inst->r; // battery consumption rate
+	file << "recharging_rate           " << "x        " << inst->g; // recharging rate
+	file << "vehicle_load              " << "kg       " << inst->C; // vehicle load capacity
+	file << "vehicle_speed             " << "km/g     " << inst->v; // speed
+
+
+
+	int numNodes = inst->numD + inst->numF + inst->numC;
+
+
+	// write nodes
+	node a;
+	for (int i = 0; i < numNodes; i++) {
+		file >> a.key >> a.id >> a.type >> a.x >> a.y >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime >> a.ogKey;
+		inst->nodes.push_back(a);
+	}
+
+	inst->distanceMatrix.resize(inst->mDim);
+	for (int i = 0; i < inst->mDim; i++) {
+		inst->distanceMatrix.at(i).resize(inst->mDim);
+		for (int j = 0; j < inst->mDim; j++) {
+			float d;
+			file >> d;
+			d = d;// / 1000; // convert from meters to kilometers
+			inst->distanceMatrix.at(i).at(j) = d;
+		}
+	}
+
+
+	// give all depot nodes a specific id
+	int id = 1;
+	for (int i = 0; i < inst->nodes.size(); i++) {
+		if (inst->nodes.at(i).type == "d") {
+			inst->nodes.at(i).id_n = id;
+			id++;
+		}
+	}
+
+	// adding depot arrival nodes
+	vector<node> UD0 = inst->set_UD0();
+	node n;
+	for (int i = 0; i < UD0.size(); i++) {
+		UD0.at(i).ref2 = i;
+		n = UD0.at(i);
+		n.type = "a";
+		inst->nodes.push_back(n);
+	}
+
+	// organize intial nodes key
+	for (int i = 0; i < inst->nodes.size(); i++) {
+		inst->nodes.at(i).key = i;
+		inst->nodes.at(i).ref = -1;
+		inst->nodes.at(i).ref2 = i;
+		//nodes.at(i).id_n = i;
+	}
+}
+*/
 string Algorithms::getRow(Solution s)
 {
 	string res = "";
@@ -438,7 +565,7 @@ vector<float> Algorithms::FOComplete(routes sol)
 		}
 	}
 	// depotCost = numDepots * (inst->depotCost / inst->numC);
-	depotCost = numDepots * (inst->depotCost);
+	depotCost = numDepots * (inst->depotCost / inst->depotLifetime);
 
 	// bss cost
 	float bssCost = 0;
@@ -459,10 +586,10 @@ vector<float> Algorithms::FOComplete(routes sol)
 		numBSS += i;
 	}
 	// bssCost = numBSS * (inst->bssCost / inst->numC);
-	bssCost = numBSS * (inst->bssCost);
+	bssCost = numBSS * (inst->bssCost / inst->bssLifetime);
 
 	// vehicle fixed cost
-	float vehicleCost = sol.size() * (inst->vehicleCost);
+	float vehicleCost = sol.size() * (inst->vehicleCost / inst->vehicleLifetime);
 	
 	// driving cost
 	float drivingCost = 0;

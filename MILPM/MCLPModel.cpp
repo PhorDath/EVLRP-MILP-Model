@@ -125,7 +125,7 @@ MCLPModel::MCLPModel(string dir, string fileName)
 
 	model();
 }
-
+/*
 MCLPModel::MCLPModel(instance * inst)
 {
 	this->dir = dir;
@@ -139,7 +139,7 @@ MCLPModel::MCLPModel(instance * inst)
 
 	model();
 }
-
+*/
 vector<int> MCLPModel::getY()
 {
 	vector<int> vec;

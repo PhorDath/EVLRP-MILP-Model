@@ -90,7 +90,6 @@ Solution perm_rep::permutationToSolution(permutation p)
 
 
 		}
-
 	}
 
 	s = addDepots(s);
@@ -222,32 +221,59 @@ Solution perm_rep::addDepots(Solution s)
 
 	//
 	int w = 0;
+	int qt = 0;
+	vector<int> added;
 	for (route r : s.routes) {
 
 		vector<int> m;
 
 		int lowestMean = INT_MAX;
+		vector<pair<node, int>> dpts;
 		node n;
 
 		for (int i = 0; i < UD0.size(); i++) {
 
 			int d1 = inst->dist(UD0.at(i), inst->getNodeByKey(r.front().key));
-
-
 			int d2 = inst->dist(inst->getNodeByKey(r.back().key), UD1.at(i));
 
+			dpts.push_back({ UD0.at(i) ,ceil((d1 + d2) / 2) });
+			/*
 			m.push_back(ceil((d1 + d2) / 2));
 
 			if (m.at(i) < lowestMean) {
 				lowestMean = m.at(i);
 				n = UD0.at(i);
 			}
+			*/
+		}
+
+		sort(dpts.begin(), dpts.end(), [](pair<node, int > dpt1, pair<node, int> dpt2) -> bool {return dpt1.second < dpt2.second; });
+
+		if (qt >= inst->maxD) { // if we already have the maximum amount of depots choosen
+			for (auto i : dpts) {
+				bool f = false;
+				for (auto j : added) {
+					if (i.first.key == j) {
+						n = i.first;
+						f = true;
+						break;
+					}
+				}
+				if (f == true) {
+					break;
+				}
+			}
+		}
+		else {
+			n = dpts.front().first;
+			qt++;
 		}
 
 		// insert the depot
 		vertex v;
 		v.key = n.key;
 		r.insert(r.begin(), v);
+		added.push_back(n.key);
 		// int id = n.id_n;
 
 		// insert the arrival depot node
@@ -276,6 +302,11 @@ Solution perm_rep::addDepots(Solution s)
 		s.routes.at(i).front().vLoad = inst->C;
 		s.routes.at(i).front().aTime = 0;
 		s.routes.at(i).front().wTime = 0;
+	}
+
+	set<int> st;
+	for (auto r : s.routes) {
+		st.insert(r.front().key);
 	}
 
 	return s;
@@ -397,6 +428,9 @@ Solution perm_rep::addStations(Solution s)
 				//
 				currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 				int curr_ = curr;
+
+				// here i am supposed to remove the the rechaged battery in the case of bss removal
+				// i will loop up to this later
 				/*
 				for (int i = last; i < curr_; i++) {
 					prevNode = inst->getNodeByKey(s.routes.at(j).at(curr_ - 1).key);
@@ -460,9 +494,14 @@ Solution perm_rep::addStations(Solution s)
 					}
 					// search for the closest bss
 					else if (currNode.type != "f") {
-						vector<node> R = inst->set_R(); // get all stations
-
+						//vector<node> R = inst->set_R(); // get all stations
+						
 						// search for the closest bss from the stop node
+						pair<int, int> ret = closestBSS(s, j, curr);
+						bss = ret.first;
+						minBU = ret.second;
+
+						/*
 						for (node r : R) {
 
 							int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key); // inst->dist(r.key, b);
@@ -473,13 +512,13 @@ Solution perm_rep::addStations(Solution s)
 								minBU = BU;
 							}
 						}
+						*/
 					}
 					// if the current node is a bss we have to watch out for a possible loop of bss
 					// so we have to make sure it wont happen 
 					else if (currNode.type == "f") {
 						vector<node> R = inst->set_R(); // get all stations
-						vector<node> R2 = inst->set_R(); // get all stations
-
+						
 						//
 						int curr__ = curr - 1;
 						bssSequence.clear();
@@ -541,6 +580,11 @@ Solution perm_rep::addStations(Solution s)
 						}
 
 						// search for the closest bss from the stop node
+						pair<int, int> ret = closestBSS(s, j, curr);
+						bss = ret.first;
+						minBU = ret.second;
+
+						/*
 						for (node r : R) {
 							int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key); // inst->dist(r.key, b);
 
@@ -550,6 +594,7 @@ Solution perm_rep::addStations(Solution s)
 								minBU = BU;
 							}
 						}
+						*/
 					}
 
 					// compute the amount of energy the vehcile can recharge during service time in the current routes segment
@@ -685,7 +730,301 @@ Solution perm_rep::addStations(Solution s)
 	}
 	return s;
 }
+/*
+route perm_rep::addStations(route rt)
+{
+	int last = 0;
+	vector<int> bssSequence;
 
+	int curr = 1;
+	while (curr < r.size()) {
+		if (curr == 0) {
+			throw "error";
+		}
+		int prev = curr - 1;
+		node currNode = inst->getNodeByKey(rt.at(curr).key);
+		node prevNode = inst->getNodeByKey(rt.at(prev).key);
+
+		vertex& cVertex = rt.at(curr);
+		vertex pVertex = rt.at(prev);
+
+		// computing parameters
+
+		// compute battery level in the current node
+		float bUsed = inst->getBatteryUsed(rt.at(prev).key, rt.at(curr).key);
+
+		cVertex.bLevel = pVertex.bLevel + pVertex.recharged - bUsed;
+
+		cVertex.recharged = 0;
+		cVertex.recharge = false;
+
+		// compute arrival time in the current node
+		float TD = inst->getTD(prevNode.key, currNode.key);
+		cVertex.aTime = pVertex.lTime + TD;
+		//s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).aTime + prevNode.serviceTime + inst->getTD(prevNode.key, currNode.key);
+
+		// compute waiting time in the current node
+		if (cVertex.aTime < currNode.readyTime) {
+			cVertex.wTime = currNode.readyTime - cVertex.aTime;
+		}
+		else { // no waiting time
+			cVertex.wTime = 0;
+		}
+
+		// compute de departure time in the current node
+		cVertex.lTime = cVertex.aTime + cVertex.wTime + currNode.serviceTime;
+
+		// compute vehcile load in the current node
+		cVertex.vLoad = pVertex.vLoad - currNode.demand;
+
+		if (rt.at(curr).bLevel < 0) {
+			// if not enough battery, we have to insert a bss in the route
+
+			int minBU = 0; // minimum battery usage
+			int meanBU = 0;
+
+			// try to put a bss 
+			while (rt.at(curr).bLevel - minBU < 0) {
+				int put = false;
+				curr--;
+				minBU = INT_MAX;
+
+				currNode = inst->getNodeByKey(rt.at(curr).key);
+				int bss;
+
+				// special case
+				// if the route is traced back to the depot due to a node 
+				if (currNode.type == "d") {
+					vector<node> R = inst->set_R(); // get all stations
+
+					// search for the closest bss from the stop node
+					for (node r : R) {
+
+						int BU1 = inst->getBatteryUsed(rt.at(curr).key, r.key);
+						int BU2 = inst->getBatteryUsed(r.key, rt.at(curr + 1).key);
+
+						// get the lowest dist
+						if (BU2 < minBU && BU1 < rt.at(curr).bLevel + rt.at(curr).recharged) {
+							bss = r.key;
+							minBU = BU2;
+						}
+					}
+				}
+				// search for the closest bss
+				else if (currNode.type != "f") {
+					//vector<node> R = inst->set_R(); // get all stations
+
+					// search for the closest bss from the stop node
+					pair<int, int> ret = closestBSS(rt, curr);
+					bss = ret.first;
+					minBU = ret.second;
+
+				}
+				// if the current node is a bss we have to watch out for a possible loop of bss
+				// so we have to make sure it wont happen 
+				else if (currNode.type == "f") {
+					vector<node> R = inst->set_R(); // get all stations
+
+					//
+					int curr__ = curr - 1;
+					bssSequence.clear();
+					while (inst->getNodeByKey(s.routes.at(j).at(curr__).key).type == "f") {
+						bssSequence.push_back(s.routes.at(j).at(curr__).key);
+						curr__--;
+					}
+
+					// remove all bss that initially precced the current one in order to avoid loops
+					for (int key : bssSequence) {
+						for (int i = 0; i < R.size(); i++) {
+							if (R.at(i).key == key) {
+								R.erase(R.begin() + i);
+							}
+						}
+					}
+
+					if (R.size() == 0) { // this means that the next node is isolated and cant be reached even by a chain of bss
+						// remove the isolated node and push it to the next route
+						vertex aux = s.routes.at(j).at(curr + 1);
+						s.routes.at(j).erase(s.routes.at(j).begin() + curr + 1);
+
+						// push to next route
+						if (j < s.routes.size() - 2) { // if we have routes to push
+							int size = s.routes.at(j + 1).size();
+							s.routes.at(j + 1).insert(s.routes.at(j + 1).begin() + size - 1, aux);
+
+						}
+						else { // no more routes to push, create a new one
+							route r;
+
+							vertex bss;
+							int minDist = INT_MAX;
+							for (route r : s.routes) {
+								int dist = inst->dist(r.front().key, aux.key);
+
+								if (dist < minDist) {
+									minDist = dist;
+									bss = r.front();
+								}
+							}
+
+							r.push_back(bss);
+							r.push_back(aux);
+							r.push_back(bss);
+
+							s.routes.push_back(r); // bug?
+						}
+
+						// we also remove all the previous chain of bss
+						node n = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+						while (n.type == "f") {
+							s.routes.at(j).erase(s.routes.at(j).begin() + curr);
+							curr--;
+							n = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+						}
+
+						// throw IsolatedNode(s.routes.at(j).at(curr + 1).key, j, s.perm);							
+					}
+
+					// search for the closest bss from the stop node
+					pair<int, int> ret = closestBSS(s, j, curr);
+					bss = ret.first;
+					minBU = ret.second;
+				}
+
+				// compute the amount of energy the vehcile can recharge during service time in the current routes segment
+				int curr_ = curr;
+				int energy = 0;
+				while (true) {
+
+					node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+
+					if (n.type == "f" || n.type == "d") {
+						break;
+					}
+
+					energy += inst->g * n.serviceTime;
+					curr_--;
+				}
+
+				int cEnergy = (s.routes.at(j).at(curr).bLevel + energy);
+
+				//if (s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - energy >= 0) {
+				if (s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - minBU >= 0) { // if battery is enough to go from current node and closest bss, insert bss in the route
+					vertex v;
+					v.key = bss;
+
+					s.routes.at(j).insert(s.routes.at(j).begin() + curr + 1, v); // insert in the routes
+
+					currNode = inst->getNodeByKey(s.routes.at(j).at(curr + 1).key);
+
+					s.routes.at(j).at(curr + 1).vLoad = s.routes.at(j).at(curr).vLoad; // compute vehicle load
+
+					prevNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+					s.routes.at(j).at(curr + 1).aTime = s.routes.at(j).at(curr).lTime + inst->getTD(prevNode.key, bss); // compute arrival time
+					s.routes.at(j).at(curr + 1).lTime = s.routes.at(j).at(curr + 1).aTime + currNode.serviceTime + inst->ct; // compute departure time
+
+					// s.routes.at(j).at(curr + 1).bLevel = inst->Q;
+					auto BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, s.routes.at(j).at(curr + 1).key);
+					s.routes.at(j).at(curr + 1).bLevel = s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - BU; // compute battery level
+					// inst->getBatteryUsed(s.routes.at(j).at(curr).key, s.routes.at(j).at(curr + 1).key) = minBU
+
+					int bLevel = s.routes.at(j).at(curr + 1).bLevel;
+					s.routes.at(j).at(curr + 1).recharged = inst->Q - bLevel; // compute the amount of energy recharged
+					// inst->Q - 
+					s.routes.at(j).at(curr + 1).recharge = true;
+
+					curr++;
+					put = true;
+
+				}
+				else if ((s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged + energy) - minBU >= 0) { // considering recharge during service time
+					// recharge during service time
+					curr_ = curr;
+					energy = 0;
+					auto a = inst->getBatteryUsed(s.routes.at(j).at(curr).key, bss);
+					// find the last customers before the lastest depot or customer
+					while (true) {
+						node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+						energy += inst->g * n.serviceTime;
+
+						// force to recharge just enough to reach the bss
+						if (n.type == "f" || n.type == "d" || n.type == "f_d" || s.routes.at(j).at(curr).bLevel + energy > minBU) {
+							break;
+						}
+						last = curr_;
+						curr_--;
+					}
+					// recompute battery parameters
+					int accumulated = 0;
+					// compute first node
+					node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+
+					s.routes.at(j).at(curr_).recharge = true;
+					s.routes.at(j).at(curr_).recharged = inst->g * n.serviceTime;
+					accumulated += s.routes.at(j).at(curr_).recharged;
+					// in the case of the battery level after partial recharging became overcharged
+					if (s.routes.at(j).at(curr_).bLevel + s.routes.at(j).at(curr_).recharged > inst->Q) {
+						s.routes.at(j).at(curr_).recharged = inst->Q - s.routes.at(j).at(curr_).bLevel;
+					}
+
+					// compute the rest
+					for (int i = curr_ + 1; i <= curr; i++) {
+						node n = inst->getNodeByKey(s.routes.at(j).at(i).key);
+
+						//s.routes.at(j).at(i).bLevel += s.routes.at(j).at(i - 1).recharged;
+
+						s.routes.at(j).at(i).recharge = true;
+						s.routes.at(j).at(i).recharged = inst->g * n.serviceTime;
+
+						s.routes.at(j).at(i).bLevel += accumulated;
+						accumulated += s.routes.at(j).at(i).recharged;
+
+						// in the case of the battery level after partial recharging became overcharged
+						if (s.routes.at(j).at(i).bLevel + s.routes.at(j).at(i).recharged > inst->Q) {
+							s.routes.at(j).at(i).recharged = inst->Q - s.routes.at(j).at(i).bLevel;
+						}
+
+					}
+
+					prevNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+
+					// insert bss vertex in the route
+					vertex v;
+					v.key = bss;
+
+					v.vLoad = s.routes.at(j).at(prev).vLoad; // compute vehicle load						
+
+					v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss); // compute arrival time
+
+					v.lTime = v.aTime + inst->ct; // compute departure time			
+
+					auto bUsed = inst->getBatteryUsed(s.routes.at(j).at(prev).key, v.key);
+					v.bLevel = s.routes.at(j).at(prev).bLevel + s.routes.at(j).at(curr).recharged - bUsed; // compute battery level
+
+					v.recharged = inst->Q - v.bLevel; // compute the amount of energy recharged
+
+					v.recharge = true;
+
+					s.routes.at(j).insert(s.routes.at(j).begin() + curr + 1, v); // insert in the routes
+
+					curr++;
+					put = true;
+				}
+				else {
+					//bssSequence.clear();
+				}
+
+				if (put == true) {
+					break;
+				}
+			}
+		}
+		curr++;
+	}
+	
+	return s;
+}
+*/
 Solution perm_rep::addStations_model(Solution s)
 {
 	// set all vehicles to full energy
@@ -1117,47 +1456,61 @@ Solution perm_rep::addStations(Solution s, int n)
 		s.routes.at(j).front().bLevel = inst->Q;
 	}
 
+	int last = 0;
 	vector<int> bssSequence;
 
 	for (int j = 0; j < s.routes.size(); j++) {
 		int curr = 1;
 
 		while (curr < s.routes.at(j).size()) {
+			if (curr == 0) {
+				throw "error";
+			}
 			int prev = curr - 1;
 			node currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 			node prevNode = inst->getNodeByKey(s.routes.at(j).at(prev).key);
 
+			vertex& cVertex = s.routes.at(j).at(curr);
+			vertex pVertex = s.routes.at(j).at(prev);
+
 			// computing parameters
 
 			// compute battery level in the current node
-			s.routes.at(j).at(curr).bLevel = s.routes.at(j).at(prev).bLevel - inst->getBatteryUsed(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key);
+			float bUsed = inst->getBatteryUsed(s.routes.at(j).at(prev).key, s.routes.at(j).at(curr).key);
+
+			cVertex.bLevel = pVertex.bLevel + pVertex.recharged - bUsed;
+
+			cVertex.recharged = 0;
+			cVertex.recharge = false;
 
 			// compute arrival time in the current node
-			s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, currNode.key);
+			float TD = inst->getTD(prevNode.key, currNode.key);
+			cVertex.aTime = pVertex.lTime + TD;
+			//s.routes.at(j).at(curr).aTime = s.routes.at(j).at(prev).aTime + prevNode.serviceTime + inst->getTD(prevNode.key, currNode.key);
 
 			// compute waiting time in the current node
-			if (s.routes.at(j).at(curr).aTime < currNode.readyTime) {
-				s.routes.at(j).at(curr).wTime = currNode.readyTime - s.routes.at(j).at(curr).aTime;
+			if (cVertex.aTime < currNode.readyTime) {
+				cVertex.wTime = currNode.readyTime - cVertex.aTime;
 			}
 			else { // no waiting time
-				s.routes.at(j).at(curr).wTime = 0;
+				cVertex.wTime = 0;
 			}
 
 			// compute de departure time in the current node
-			s.routes.at(j).at(curr).lTime = s.routes.at(j).at(curr).aTime + s.routes.at(j).at(curr).wTime + inst->getNodeByKey(currNode.key).serviceTime;
+			cVertex.lTime = cVertex.aTime + cVertex.wTime + currNode.serviceTime;
 
 			// compute vehcile load in the current node
-			s.routes.at(j).at(curr).vLoad = s.routes.at(j).at(prev).vLoad - currNode.demand;
+			cVertex.vLoad = pVertex.vLoad - currNode.demand;
 
-			// checking due date
-			if (s.routes.at(j).at(curr).aTime > currNode.dueDate) {
-				// if the current node is reached after the due date, we will remove this node from the route and push it to the next
+			// checking due date and vehicle load
+			if (s.routes.at(j).at(curr).aTime > currNode.dueDate || s.routes.at(j).at(curr).vLoad < 0) { ////////////////////////////////////////////////
+				// if the current node is reached after the due date, we will remove this node from the route and push it to the next one
 
 				vertex v = s.routes.at(j).at(curr); // store the node key that will be removed				
 				s.routes.at(j).erase(s.routes.at(j).begin() + curr); // remove the node from the route
 
 				// checking if we are in the last route
-				if (j < s.routes.size() - 1) {
+				if (j < s.routes.size() - 1) { // not last route
 					int rSize = s.routes.at(j + 1).size();
 					s.routes.at(j + 1).insert(s.routes.at(j + 1).begin() + rSize - 1, v); // insert just before the last node
 					curr--;
@@ -1199,57 +1552,70 @@ Solution perm_rep::addStations(Solution s, int n)
 					curr--;
 				}
 
+				// remove any bss sited in order to this node to be reached and discharge battery in previous nodes
+				currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+				while (currNode.type == "f" || currNode.type == "f_d") {
+					s.routes.at(j).erase(s.routes.at(j).begin() + curr);
 
+					curr--;
+
+					currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+				}
+
+				//
+				currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+				int curr_ = curr;
+
+				// here i am supposed to remove the the rechaged battery in the case of bss removal
+				// i will look up to this later
 			}
 			// checking battery level
 			else if (s.routes.at(j).at(curr).bLevel < 0) {
-				// if not enough battery we have to insert a bss in the route
+				// if not enough battery, we have to insert a bss in the route
 
 				int minBU = 0; // minimum battery usage
 				int meanBU = 0;
 
+				// try to put a bss 
 				while (s.routes.at(j).at(curr).bLevel - minBU < 0) {
 					int put = false;
 					curr--;
 					minBU = INT_MAX;
 
 					currNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
-
 					int bss;
-					// search for the closest bss
-					if (currNode.type != "f") {
 
-						// generate a candidate list with size n
-						struct aux {
-							int id, BU;
-						};
-						vector<aux> cand;
-
-						// compute all the distances from the current node to all bss
+					// special case
+					// if the route is traced back to the depot due to a node 
+					if (currNode.type == "d") {
 						vector<node> R = inst->set_R(); // get all stations
+
+						// search for the closest bss from the depot
 						for (node r : R) {
 
-							int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key);
-							aux a;
-							a.id = r.key;
-							a.BU = BU;
+							int BU1 = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key);
+							int BU2 = inst->getBatteryUsed(r.key, s.routes.at(j).at(curr + 1).key);
 
-							cand.push_back(a);
+							// get the lowest dist
+							if (BU2 < minBU && BU1 < s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged) {
+								bss = r.key;
+								minBU = BU2;
+							}
 						}
-
-						// paritaly sort the list
-						partial_sort(cand.begin(), cand.begin() + n, cand.end(),
-							[](aux a, aux b) -> bool {
-							return a.BU < b.BU;
-						}
-						);
-
-						int c = Random::get(0, n);
-
-						bss = cand.at(c).id;
-						minBU = cand.at(c).BU;
 					}
-					else {
+					// search for the closest bss
+					else if (currNode.type != "f") {
+						//vector<node> R = inst->set_R(); // get all stations
+
+						// search for the closest bss from the stop node
+						pair<int, int> ret = closestBSS(s, j, curr, n);
+						bss = ret.first;
+						minBU = ret.second;
+
+					}
+					// if the current node is a bss we have to watch out for a possible loop of bss
+					// so we have to make sure it wont happen 
+					else if (currNode.type == "f") {
 						vector<node> R = inst->set_R(); // get all stations
 
 						//
@@ -1299,7 +1665,6 @@ Solution perm_rep::addStations(Solution s, int n)
 								r.push_back(bss);
 
 								s.routes.push_back(r); // bug?
-
 							}
 
 							// we also remove all the previous chain of bss
@@ -1314,18 +1679,13 @@ Solution perm_rep::addStations(Solution s, int n)
 						}
 
 						// search for the closest bss from the stop node
-						for (node r : R) {
-							int BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, r.key); // inst->dist(r.key, b);
+						pair<int, int> ret = closestBSS(s, j, curr, n);
+						bss = ret.first;
+						minBU = ret.second;
 
-							// get the lowest dist
-							if (BU < minBU && r.key != s.routes.at(j).at(curr).key) {
-								bss = r.key;
-								minBU = BU;
-							}
-						}
 					}
 
-					// compute amount of energy the vehcile can recharge during service time in the current routes segment
+					// compute the amount of energy the vehcile can recharge during service time in the current routes segment
 					int curr_ = curr;
 					int energy = 0;
 					while (true) {
@@ -1342,7 +1702,7 @@ Solution perm_rep::addStations(Solution s, int n)
 
 					int cEnergy = (s.routes.at(j).at(curr).bLevel + energy);
 
-					if (s.routes.at(j).at(curr).bLevel - minBU >= 0) { // if battery is enough to go from current node and closest bss, insert bss in the route
+					if (s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - minBU >= 0) { // if battery is enough to go from current node and closest bss, insert bss in the route
 						vertex v;
 						v.key = bss;
 
@@ -1350,52 +1710,93 @@ Solution perm_rep::addStations(Solution s, int n)
 
 						currNode = inst->getNodeByKey(s.routes.at(j).at(curr + 1).key);
 
-						s.routes.at(j).at(curr + 1).bLevel = inst->Q;
+						s.routes.at(j).at(curr + 1).vLoad = s.routes.at(j).at(curr).vLoad; // compute vehicle load
+
+						prevNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
+						s.routes.at(j).at(curr + 1).aTime = s.routes.at(j).at(curr).lTime + inst->getTD(prevNode.key, bss); // compute arrival time
+						s.routes.at(j).at(curr + 1).lTime = s.routes.at(j).at(curr + 1).aTime + currNode.serviceTime + inst->ct; // compute departure time
+
+						// s.routes.at(j).at(curr + 1).bLevel = inst->Q;
+						auto BU = inst->getBatteryUsed(s.routes.at(j).at(curr).key, s.routes.at(j).at(curr + 1).key);
+						s.routes.at(j).at(curr + 1).bLevel = s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged - BU; // compute battery level
+						// inst->getBatteryUsed(s.routes.at(j).at(curr).key, s.routes.at(j).at(curr + 1).key) = minBU
+
+						int bLevel = s.routes.at(j).at(curr + 1).bLevel;
+						s.routes.at(j).at(curr + 1).recharged = inst->Q - bLevel; // compute the amount of energy recharged
+						// inst->Q - 
 						s.routes.at(j).at(curr + 1).recharge = true;
-						s.routes.at(j).at(curr + 1).vLoad = s.routes.at(j).at(curr).vLoad;
-						s.routes.at(j).at(curr + 1).recharged = inst->Q - (s.routes.at(j).at(curr).bLevel - minBU); // compute the amount of energy recharged
-						
-						s.routes.at(j).at(curr + 1).aTime = s.routes.at(j).at(curr).lTime + inst->getTD(currNode.key, bss);
-						s.routes.at(j).at(curr + 1).lTime = s.routes.at(j).at(curr + 1).aTime + currNode.serviceTime + inst->ct;
 
 						curr++;
 						put = true;
 
 					}
-					else if ((s.routes.at(j).at(curr).bLevel + energy) - minBU >= 0) { // considering recharge during service time
+					else if ((s.routes.at(j).at(curr).bLevel + s.routes.at(j).at(curr).recharged + energy) - minBU >= 0) { // considering recharge during service time
 						// recharge during service time
 						curr_ = curr;
 						energy = 0;
+						auto a = inst->getBatteryUsed(s.routes.at(j).at(curr).key, bss);
+						// find the last customers before the lastest depot or customer
 						while (true) {
-
 							node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+							energy += inst->g * n.serviceTime;
 
 							// force to recharge just enough to reach the bss
-							if (n.type == "f" || n.type == "d" || s.routes.at(j).at(curr).bLevel + energy > minBU) {
+							if (n.type == "f" || n.type == "d" || n.type == "f_d" || s.routes.at(j).at(curr).bLevel + energy > minBU) {
 								break;
 							}
-
-							s.routes.at(j).at(curr_).recharge = true;
-							s.routes.at(j).at(curr_).recharged = inst->g * n.serviceTime;
-							s.routes.at(j).at(curr_).bLevel += s.routes.at(j).at(curr_).recharged;
-							if (s.routes.at(j).at(curr_).bLevel > inst->Q) {
-								s.routes.at(j).at(curr_).bLevel = inst->Q;
-							}
-
-							energy += inst->g * n.serviceTime;
+							last = curr_;
 							curr_--;
 						}
+						// recompute battery parameters
+						int accumulated = 0;
+						// compute first node
+						node n = inst->getNodeByKey(s.routes.at(j).at(curr_).key);
+
+						s.routes.at(j).at(curr_).recharge = true;
+						s.routes.at(j).at(curr_).recharged = inst->g * n.serviceTime;
+						accumulated += s.routes.at(j).at(curr_).recharged;
+						// in the case of the battery level after partial recharging became overcharged
+						if (s.routes.at(j).at(curr_).bLevel + s.routes.at(j).at(curr_).recharged > inst->Q) {
+							s.routes.at(j).at(curr_).recharged = inst->Q - s.routes.at(j).at(curr_).bLevel;
+						}
+
+						// compute the rest
+						for (int i = curr_ + 1; i <= curr; i++) {
+							node n = inst->getNodeByKey(s.routes.at(j).at(i).key);
+
+							//s.routes.at(j).at(i).bLevel += s.routes.at(j).at(i - 1).recharged;
+
+							s.routes.at(j).at(i).recharge = true;
+							s.routes.at(j).at(i).recharged = inst->g * n.serviceTime;
+
+							s.routes.at(j).at(i).bLevel += accumulated;
+							accumulated += s.routes.at(j).at(i).recharged;
+
+							// in the case of the battery level after partial recharging became overcharged
+							if (s.routes.at(j).at(i).bLevel + s.routes.at(j).at(i).recharged > inst->Q) {
+								s.routes.at(j).at(i).recharged = inst->Q - s.routes.at(j).at(i).bLevel;
+							}
+
+						}
+
+						prevNode = inst->getNodeByKey(s.routes.at(j).at(curr).key);
 
 						// insert bss vertex in the route
 						vertex v;
 						v.key = bss;
-						v.bLevel = inst->Q;
+
+						v.vLoad = s.routes.at(j).at(prev).vLoad; // compute vehicle load						
+
+						v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss); // compute arrival time
+
+						v.lTime = v.aTime + inst->ct; // compute departure time			
+
+						auto bUsed = inst->getBatteryUsed(s.routes.at(j).at(prev).key, v.key);
+						v.bLevel = s.routes.at(j).at(prev).bLevel + s.routes.at(j).at(curr).recharged - bUsed; // compute battery level
+
+						v.recharged = inst->Q - v.bLevel; // compute the amount of energy recharged
+
 						v.recharge = true;
-						v.vLoad = s.routes.at(j).at(prev).vLoad;
-						v.recharged = inst->Q - (s.routes.at(j).at(curr).bLevel - minBU); // compute the amount of energy recharged
-						v.aTime = s.routes.at(j).at(prev).lTime + inst->getTD(prevNode.key, bss);
-						cout << currNode.key << " - " << bss << endl;
-						v.lTime = s.routes.at(j).at(curr).aTime + currNode.serviceTime + inst->ct;
 
 						s.routes.at(j).insert(s.routes.at(j).begin() + curr + 1, v); // insert in the routes
 
@@ -1472,6 +1873,74 @@ Solution perm_rep::addStationsGrasp(Solution s)
 	}
 
 	return addStations(s);
+}
+
+pair<int, int> perm_rep::closestBSS(Solution& s, int route, int key)
+{
+	vector<node> R = inst->set_R();
+	int minBU = INT_MAX;
+	int bss = 0;
+
+	// search for the closest bss from the stop node
+	for (node r : R) {
+		int BU = inst->getBatteryUsed(s.routes.at(route).at(key).key, r.key); // inst->dist(r.key, b);
+
+		// get the lowest dist
+		if (BU < minBU && r.key != s.routes.at(route).at(key).key) {
+			bss = r.key;
+			minBU = BU;
+		}
+	}
+	return pair<int, int>(bss, minBU);
+}
+
+pair<int, int> perm_rep::closestBSS(route& rt, int key)
+{
+	vector<node> R = inst->set_R();
+	int minBU = INT_MAX;
+	int bss = 0;
+
+	// search for the closest bss from the stop node
+	for (node r : R) {
+		int BU = inst->getBatteryUsed(rt.at(key).key, r.key); // inst->dist(r.key, b);
+
+		// get the lowest dist
+		if (BU < minBU && r.key != rt.at(key).key) {
+			bss = r.key;
+			minBU = BU;
+		}
+	}
+	return pair<int, int>(bss, minBU);
+}
+
+pair<int, int> perm_rep::closestBSS(Solution& s, int route, int key, int m)
+{
+	vector<node> R = inst->set_R();
+
+	if (m > R.size()) {
+		throw "candidate list's size is grater then R's size";
+	}
+
+	vector<pair<int, int>> dists;
+
+	// create the candidate list
+	for (node r : R) {
+		// excluding the vertex if it already appears as the current vertex
+		if (r.key != s.routes.at(route).at(key).key) {
+
+			int BU = inst->getBatteryUsed(s.routes.at(route).at(key).key, r.key); // inst->dist(r.key, b);
+			dists.push_back(pair<int, int>(r.key, BU));
+		}
+	}
+
+	partial_sort(dists.begin(), dists.begin() + m, dists.end(),
+		[](pair<int, int> a, pair<int, int> b) {
+			return a.second < b.second;
+		});
+
+	int n = Random::get(0, m - 1);
+
+	return dists.at(n);
 }
 
 permutation perm_rep::randomPermutation()
@@ -2118,9 +2587,9 @@ void perm_rep::setOutputDir(string dir)
 Solution perm_rep::GRASP(Solution s)
 {
 
-	double n = inst->set_R().size();
+	int n = inst->set_R().size();
 	if (n >= 2) {
-		n = floor(n * 0.1) + 2;
+		n = floor(double(n) * 0.2) + 2;
 	}
 	else if (n == 1) {
 		n = 1;
@@ -2129,20 +2598,20 @@ Solution perm_rep::GRASP(Solution s)
 		// throw an error?
 	}
 
+	Solution best;
+	best.FO = INT_MAX;
+
 	int it = 20;
 	int i = 0;
-
-	Solution best = addStations(s, n);
-
 	while (i < it) {
-		
-		// generate the solution 
-		s = addStations(best, n);
+		Solution sl = addStations(s, n);
+		sl = procSol(sl);
 
 		// local search
+		sl = localSearch_GRASP(sl);
 
-		if (s.FO < best.FO) {
-			best = s;
+		if (sl.FO < best.FO && sl.inf.size() == 0) {
+			best = sl;
 			i = 0;
 		}
 		else {
@@ -2151,6 +2620,277 @@ Solution perm_rep::GRASP(Solution s)
 
 	}
 	
+	return best;
+}
+
+Solution perm_rep::localSearch_GRASP(Solution s)
+{
+	Solution sl = s;
+	try {
+		//s = routeSplit(s, 0, 3);
+		s = bssReplacement(s, 3);
+	}
+	catch (string s) {
+		cout << s << endl;
+	}
+
+	return s;
+}
+
+Solution perm_rep::routeSplit(Solution s, int n, int m)
+{
+	if (m > s.routes.at(n).size() - 3) {
+		throw "cant split the route with parameter m = " + to_string(m) + "\n" + "routes size is " + to_string(s.routes.at(n).size());
+	}
+	if (m < 1) {
+		throw "cant split route in the first two possitions";
+	}
+	if (s.routes.at(n).size() < 4) {
+		throw "route cant be splitted due to its size (" + to_string(s.routes.at(n).size()) + ")";
+	}
+	
+
+	route r = s.routes.at(n);
+	route new_r;
+
+	// copy part of the route to the new route
+	for (int i = m; i < r.size(); i++) {
+		new_r.push_back(r.at(i));
+	}
+	// delete the part copied
+	int qt = r.size() - m;
+	for (int i = 0; i < qt; i++) {
+		r.erase(r.end() - 1);
+	}
+
+	// checking if both routes has at least one customer
+	int numC1 = 0;
+	for (int i = 0; i < r.size(); i++) {
+		node curr = inst->getNodeByKey(r.at(i).key);
+		if (curr.type == "c" || curr.type == "c_d") {
+			numC1++;
+		}
+	}
+
+	int numC2 = 0;
+	for (int i = 0; i < new_r.size(); i++) {
+		node curr = inst->getNodeByKey(new_r.at(i).key);
+		if (curr.type == "c" || curr.type == "c_d") {
+			numC2++;
+		}
+	}
+
+	if (numC1 < 1 || numC2 <1) {
+		throw "route cant be splitted due to the number of customers one (or both) new routes be less than 1";
+	}
+	else if (numC1 < 1 && numC2 < 1) {
+		throw "route cant be splitted due to the number of customers be less than 2";
+	}
+	
+	// route r treatment
+	// need to add the final arrival node and remove any unnecessary bss
+
+	// remove all bss from the end of the route
+	int i = r.size() - 1;
+	while (inst->getNodeByKey(r.at(i).key).type == "f" || inst->getNodeByKey(r.at(i).key).type == "f_d") {
+		r.erase(r.begin() + i);
+		i--;
+	}
+
+	// insert arrival node
+	vertex arrival;
+	arrival.key = r.at(0).key + inst->numC + inst->numF + 1; // set key
+	//r.push_back(arrival);
+
+	int last = r.size() - 1;
+	arrival.aTime = r.at(last).lTime + inst->getTD(r.at(last).key, arrival.key); // arrival time
+	arrival.bLevel = r.at(last).bLevel + r.at(last).recharged - inst->dist(r.at(last).key, arrival.key);  // battery level
+	arrival.vLoad = r.at(last).vLoad - inst->getNodeByKey(r.at(last).key).demand; // vehicle load
+	arrival.lTime = 0;
+
+	// if battery level is negative we shall try to add a bss in the route to adress this problem
+	if (arrival.bLevel < 0) {
+
+		pair<int, int> b = closestBSS(r, last); // get the battery usage from the last customer node and the closest bss
+
+		// prepare the bss to insertion
+		vertex bss;
+		bss.key = b.first;
+		bss.aTime = r.at(last).lTime + inst->getTD(r.at(last).key, bss.key);
+		bss.lTime = bss.aTime + inst->ct;
+		bss.bLevel = r.at(last).bLevel + r.at(last).recharged - inst->dist(r.at(last).key, bss.key);
+		bss.recharge = true;
+		bss.recharged = inst->Q - bss.bLevel;
+		bss.vLoad = r.at(last).vLoad;
+
+		if (bss.recharged > inst->Q) {
+			throw "error recharging the battery in the bss";
+		}
+
+		int TD1 = inst->getTD(b.first, arrival.key); // get the battery usage from the bss and the arrival node
+		if (bss.bLevel + bss.recharged > 0) {
+			r.push_back(bss);
+			last++;
+
+			// recompute the arrival node parameter
+			arrival.aTime = r.at(last).lTime + inst->getTD(r.at(last).key, arrival.key); // arrival time
+			arrival.bLevel = r.at(last).bLevel + r.at(last).recharged - inst->dist(r.at(last).key, arrival.key);  // battery level
+			arrival.vLoad = r.at(last).vLoad - inst->getNodeByKey(r.at(last).key).demand; // vehicle load
+			arrival.lTime = 0;
+
+			r.push_back(arrival);
+
+			s.routes.at(n) = r; // put route in the solution
+		}
+		else {
+			throw "error allocating a bss to the new route";
+		}
+
+	}
+	else {
+		r.push_back(arrival);
+	}
+
+	s.routes.at(n) = r; // insert in the solution
+
+	// new route treatment
+
+	// remove every bss from the start of the route
+	i = 0;
+	while (inst->getNodeByKey(new_r.at(i).key).type == "f" || inst->getNodeByKey(new_r.at(i).key).type == "f_d") {
+		new_r.erase(new_r.begin() + i);
+		i++;
+	}
+
+	
+	// create depot
+	vertex depot;
+	depot.key = new_r.back().key - (inst->numC + inst->numF + 1);
+	depot.bLevel = inst->Q;
+	depot.vLoad = inst->C;
+	depot.aTime = 0;
+	depot.wTime = 0;
+	depot.lTime = 0;
+
+	new_r.insert(new_r.begin() + 0, depot);
+
+	for (int i = 1; i < new_r.size(); i++) {
+		node curr = inst->getNodeByKey(new_r.at(i).key); // get current node
+
+		new_r.at(i).vLoad = new_r.at(i - 1).vLoad - curr.demand; // calculate demand
+		new_r.at(i).aTime = new_r.at(i - 1).lTime + inst->getTD(new_r.at(i).key, new_r.at(i - 1).key); // calculate arrival time
+		new_r.at(i).wTime = 0;
+		if (new_r.at(i).aTime < curr.readyTime) { // verify if vehicles arrives too early
+			new_r.at(i).wTime = curr.readyTime - new_r.at(i).aTime;
+		}
+		new_r.at(i).lTime = new_r.at(i).aTime + curr.serviceTime; // calculate departure time
+		new_r.at(i).bLevel = new_r.at(i - 1).bLevel + new_r.at(i - 1).recharged - inst->dist(new_r.at(i).key, new_r.at(i - 1).key);
+
+		if (curr.type == "f" || curr.type == "f_d") {
+			new_r.at(i).recharge = true;
+			new_r.at(i).recharged = inst->Q - new_r.at(i).bLevel;
+		}
+		else {
+			new_r.at(i).recharge = false;
+			new_r.at(i).recharged = 0;
+		}
+
+		if (new_r.at(i).bLevel < 0) {
+			cout << "ERROR!\n";
+			exit(1);
+		}
+	}
+
+	s.routes.push_back(new_r); // insert new route in the solution
+
+	return s;
+}
+
+Solution perm_rep::bssReplacement(Solution s, int key)
+{
+	bool found = false;
+	set<int> bss;
+	// get a list of all bss beeing used
+	for (route r : s.routes) {
+		for (vertex v : r) {
+			node curr = inst->getNodeByKey(v.key);
+			if ((curr.type == "f" || curr.type == "f_d") && curr.key != key) {
+				bss.insert(v.key);
+			}
+			if (curr.key == key) {
+				found = true;
+			}
+		}
+	}
+	if (found == false) {
+		throw "bss " + to_string(key) + " is not used in the given solution";
+	}
+
+	for (int i = 0; i < s.routes.size(); i++) {
+		for (int j = 1; j < s.routes.at(i).size() - 1; j++) {
+			if (s.routes.at(i).at(j).key == key) { // try to replace the bss
+			
+				// search for a replacement 
+				for (int b : bss) {					
+					// check if the bss can fit the route
+					vertex prev = s.routes.at(i).at(j - 1);
+					vertex next = s.routes.at(i).at(j + 1);
+
+					int dist_prev_repl = inst->dist(prev.key, b);
+					int time_prev_repl = inst->getTD(s.routes.at(i).at(j - 1).key, b);
+
+					vertex repl;
+					repl.key = b;
+					repl.bLevel = prev.bLevel + prev.recharged - dist_prev_repl;
+					repl.aTime = prev.lTime + time_prev_repl;
+					repl.wTime = 0;
+					if (repl.aTime < inst->getNodeByKey(repl.key).readyTime) {
+						repl.wTime = inst->getNodeByKey(repl.key).readyTime - repl.aTime;
+					}
+					repl.lTime = repl.wTime + repl.wTime + inst->ct;
+					repl.recharge = true;
+					repl.recharged = inst->Q - repl.bLevel;
+					repl.vLoad = s.routes.at(i).at(j).vLoad;
+					//
+
+					int dist_repl_next = inst->dist(b, s.routes.at(i).at(j + 1).key);
+					int time_repl_next = inst->getTD(b, s.routes.at(i).at(j + 1).key);
+
+					// checking battery level and time windows
+					if (repl.bLevel > 0 && (repl.bLevel + repl.recharged) - dist_repl_next >= next.bLevel && repl.lTime + time_repl_next > inst->getNodeByKey(next.key).dueDate) {
+						
+						// replace bss
+						s.routes.at(i).at(j) = repl;
+
+						// compute the rest of the route to  carrie the changes to the other nodes
+						for (int k = j + 1; k < s.routes.at(i).size(); k++) {
+							node curr = inst->getNodeByKey(s.routes.at(i).at(k).key);
+
+							s.routes.at(i).at(k).bLevel = s.routes.at(i).at(k - 1).bLevel + s.routes.at(i).at(k - 1).recharged - inst->dist(s.routes.at(i).at(k - 1).key, s.routes.at(i).at(k).key); // compute battery level
+							s.routes.at(i).at(k).aTime = s.routes.at(i).at(k - 1).lTime + inst->getTD(s.routes.at(i).at(k - 1).key, s.routes.at(i).at(k).key); // arrival time
+							s.routes.at(i).at(k).wTime = 0; // waiting time
+							if (s.routes.at(i).at(k).aTime < curr.readyTime) {
+								s.routes.at(i).at(k).wTime = curr.readyTime - s.routes.at(i).at(k - 1).aTime;
+							}
+							
+							if (curr.type == "f" || curr.type == "f_d") {
+								s.routes.at(i).at(k).lTime = s.routes.at(i).at(k).wTime + s.routes.at(i).at(k).wTime + inst->ct; // departure time
+
+
+								s.routes.at(i).at(k).recharged = inst->Q - s.routes.at(i).at(k).bLevel; // amount recharged
+							}
+							else {
+								s.routes.at(i).at(k).lTime = s.routes.at(i).at(k).wTime + s.routes.at(i).at(k).wTime + curr.serviceTime; // departure time
+
+								// s.routes.at(i).at(k).recharged = inst->Q - s.routes.at(i).at(k).bLevel; // amount recharged
+							}			
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return s;
 }
 

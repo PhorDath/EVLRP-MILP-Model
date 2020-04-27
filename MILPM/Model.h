@@ -7,7 +7,7 @@
 #include "Util.h"
 #include "perm_rep.h"
 
-#define TMAX 1800
+#define TMAX 600
 
 using namespace std;
 
@@ -159,6 +159,9 @@ private:
 
 	void c48(GRBModel& model);
 
+	void c49(GRBModel& model); // limiting number of depots
+
+	void c50(GRBModel& model); // limit vehicle number
 
 	// extra functions
 	GRBVar	getX	(GRBModel &model, int keya, int keyb);
@@ -202,7 +205,7 @@ private:
 	float getTravelCost(GRBModel& model);
 
 public:
-	string	row;
+	string	row = "";
 
 			Model	(string fileName);
 			Model	(string dir, string fileName);
@@ -218,5 +221,6 @@ public:
 	void		setIS(Solution s);
 	Solution	analyze(Solution s);
 	void		printInst();
+	bool fileOpened();
 	~Model();
 };

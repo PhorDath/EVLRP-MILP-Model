@@ -10,6 +10,7 @@
 #include "instance.h"
 #include "Util.h"
 #include "effolkronium/random.hpp"
+#include "MCLPModel.h"
 
 using namespace std;
 using Random = effolkronium::random_static;
@@ -117,6 +118,8 @@ public:
 	void getSol2(ostream &strm, Solution sol);
 
 	Solution createOptimialSolution1();
+
+	void adaptInstance();
 
 	~Algorithms();
 };

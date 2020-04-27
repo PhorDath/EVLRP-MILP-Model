@@ -13,35 +13,36 @@ const string dir2 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/SSG14/";
 const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
-const string file3 = "UK100_01.txt";
+const string file3 = "UK100_11.txt";
 const string file = "UK200_11.txt";
 
 int main() {
-	/*test t;
-	t.BRKGA_(dir3, file);*/
-
-	int op = 2;
+	//adaptAll();
+	//return 0;
+	/*
+	instance i(dir3, file);
+	i.adaptAll();
+	i.adaptUKInstance();
+	i.print2(cout);
+	*/
+	int op = 1;
 	if (op == 0) {
-		
 	}
 	if (op == 1) {
-		//exp_sa(dir3);
+		exp_sa(dir3);
 		//exp_model(dir3);
-		exp_brkga(dir3);
+		//exp_brkga(dir3);
 
 	}	
 	if (op == 2) {
 		Solution init;
-
 		perm_rep alg;
 		alg.loadInstance(dir3, file, 3);
 		alg.printInstance();
-		init = alg.sA(1000, 100, 100, 50, 300);
-		init.debug(cout);
 
-		return 0;
 		try {
-			//init = alg.testPermutation({ 6, 11, 5, 9, 8, 7, 10 }); // UK10_11.txt // optmal
+			
+			init = alg.testPermutation({ 6, 11, 5, 9, 8, 7, 10 }); // UK10_11.txt // optmal
 			//init = alg.testPermutation({ 7, 10, 8, 11, 9, 5, 6 }); // UK10_11.txt
 			//init = alg.testPermutation({ 10, 7, 8, 5, 11, 9, 6 }); // UK10_11.txt			
 			//init = alg.testPermutation({ 6, 11, 5, 9, 7, 10, 8 }); // UK10_11.txt
@@ -53,8 +54,8 @@ int main() {
 			//init = alg.testPermutation({ 15, 6, 8, 10, 7, 12, 16, 9, 11, 13, 14 }); // UK15_11.txt
 			//init = alg.testPermutation({ 13, 9, 14, 11, 16, 12, 15, 6, 8, 10, 7 }); // UK15_11.txt
 			//init = alg.testPermutation({ 15, 6, 8, 10, 7, 12, 9, 13, 14, 11, 16 }); // UK15_11.txt
-
 			//init = alg.testPermutation({ 113, 152, 72, 144, 105, 155, 200, 156, 204, 138, 100, 184, 142, 188, 179, 61, 59, 197, 127, 137, 90, 64, 69, 106, 140, 81, 163, 74, 83, 109, 159, 132, 114, 126, 154, 117, 92, 108, 77, 80, 129, 62, 68, 171, 121, 162, 151, 94, 180, 201, 174, 193, 82, 98, 96, 67, 177, 165, 116, 199, 91, 168, 122, 118, 110, 190, 101, 125, 173, 112, 102, 79, 123, 135, 160, 153, 158, 89, 166, 185, 192, 136, 146, 191, 161, 93, 175, 172, 169, 88, 167, 198, 73, 124, 107, 202, 133, 203, 145, 58, 164, 76, 157, 149, 176, 195, 208, 84, 60, 97, 205, 181, 78, 147, 87, 57, 86, 128, 207, 85, 139, 183, 95, 70, 71, 131, 189, 75, 103, 186, 141, 134, 104, 65, 120, 143, 148, 196, 170, 130, 66, 194, 119, 178, 111, 150, 99, 115, 63, 206, 182, 187 }); // UK200_11.txt
+
 
 			//init.debug(cout);
 
@@ -72,6 +73,7 @@ int main() {
 			*/
 
 			//
+			init.debug(cout);
 		}
 		catch (PermutationInf e) {
 			cout << e.what() << endl;
@@ -79,7 +81,11 @@ int main() {
 
 		return 0;
 
+
+	}
+	else if (op == 3) {
 		Model model(dir3, file, 0, 3);
+		model.printInst();
 		//model.setIS(init);
 		model.optmize(0);
 		Solution s1 = model.getSolution();
@@ -87,13 +93,18 @@ int main() {
 		s1.debug(cout);
 		cout << endl;
 		return 0;
-		cout << "----------------------------------------------------\n";
 
-		perm_rep a;
-		a.loadInstance(dir3, file, 3);
-		Solution s2 = a.procSol(s1);
-		s2.debug(cout);
+	}
+	else if (op == 4) {
+		perm_rep alg;
+		alg.loadInstance(dir3, file, 3);
+		alg.printInstance();
+		Solution s = alg.sA(1000, 100, 100, 50, 300);
+
+		s.debug(cout);
 		cout << endl;
+		return 0;
+
 	}
 
 }
