@@ -65,9 +65,10 @@ void exp_model(string dir1)
 			model.printInst();
 			model.optmize();
 			Solution s = model.getSolution();
+			s.saveXML(dirOutput + line + ".xml");
 		}
 
-		csv << model.row;
+		csv << model.row << endl;
 		csv.close();
 
 		count++;
@@ -126,8 +127,9 @@ void exp_sa(string dir1)
 		alg.loadInstance(dir1, line, 3);
 		alg.setOutputDir(dirOutput);
 		Solution s = alg.sA(1000, 100, 100, 50, 300);
+		
 
-		csv << alg.row;
+		csv << alg.row << endl;
 		csv.close();
 
 		count++;
@@ -182,12 +184,6 @@ void exp_brkga(string dir1)
 			return;
 		}
 
-		/*
-		perm_rep alg;
-		alg.loadInstance(dir1, line, 3);
-		alg.setOutputDir(dirOutput);
-		Solution s = alg.sA(1000, 100, 100, 50, 300);
-		*/
 		test t;
 		double f = t.BRKGA_(dir1, line);
 

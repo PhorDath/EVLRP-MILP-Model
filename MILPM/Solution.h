@@ -56,6 +56,7 @@ public:
 	string instance;
 
 	double FO;
+	double FO_;
 	vector<float> FOp;
 	vector<string> inf;
 	vector<vector<vertex>> routes;
@@ -66,6 +67,8 @@ public:
 	double gap;
 
 	int numVehicles = 0;
+	long long int totalDistance = 0;
+	long long int totalTime;
 	vector<arc> arcs;
 
 	arc getArc(int a, int b);

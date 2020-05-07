@@ -117,6 +117,8 @@ public:
 	void getSol(ostream &strm, Solution sol);
 	void getSol2(ostream &strm, Solution sol);
 
+	void solutionToXML(Solution s);
+
 	Solution createOptimialSolution1();
 
 	void adaptInstance();

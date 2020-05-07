@@ -318,7 +318,6 @@ void instance::print(ostream &stream)
 		}
 	}
 	stream << endl;
-
 }
 
 void instance::printSet(vector<node> set)
@@ -849,6 +848,8 @@ void instance::adaptUKInstance()
 	vector<node> stations = chooseStationsLocationMCLP2(customers);
 
 	if (stations.size() == 0) {
+		cout << "no candidates\n";
+
 		return;
 	}
 
@@ -922,7 +923,7 @@ void instance::adaptUKInstance()
 	for (int i = 0; i < s; i++) {
 		node n = nodes.at(i);
 		n.type = "f";
-		n.serviceTime = 600;
+		n.serviceTime = 0;
 		n.id_n = -1;
 		nodes.push_back(n);
 	}
@@ -979,7 +980,7 @@ void instance::adaptUKInstance()
 	v = v;// / 3.6; // convert the speed to m/s;
 	vehicleRange = 161; // meters
 	r = 1;// (vehicleRange / Q); // vehicleRange
-	g = 4;
+	g = 14;
 	fullRechargeTime = Q / g;
 	ct = 600;
 	o = numC + numF;
@@ -1135,7 +1136,8 @@ void instance::readUKAdapt()
 	//M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
 
 	// measures units 
-	driverWage /= 1000;
+	driverWage /= 60;
+	driverWage /= 60;
 	depotLifetime *= 365;
 	bssLifetime *= 365;
 	brsLifetime *= 365;
@@ -1149,14 +1151,10 @@ void instance::readUKAdapt()
 	brsEnergyCost /= 1000;
 	Q = vehicleRange; // battery capacity
 	ct; // battery swap time
-	//r = 1; // battery consumption rate
-	g = 54;//4; // recharging rate
+	//g = 54;//4; // recharging rate
 	C; // vehicle load capacity
-	//v = 90; // speed
-
-	// calculating extra parameters
 	//Q *= 1000;// *60 * 60;// The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40]. // the conversion between KWh to KWs was done
-	o = numC + numF;
+	//o = numC + numF;
 	LB = 0; // wrong
 	UB = numC + numF;
 	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
@@ -1258,7 +1256,7 @@ vector<node> instance::chooseStationsLocationMCLP2(vector<node>& customers)
 	}
 
 	// remove the selecteds customers from the customer vector
-	//customers = removeNodesByIndex(customers, st);
+	customers = removeNodesByIndex(customers, st);
 
 	return stations;
 }

@@ -6,7 +6,7 @@ Model::Model(string fileName)
 	this->fileName = fileName;
 	inst = new instance("", fileName);
 	M = inst->M;
-	//model();
+
 }
 
 Model::Model(string dir, string fileName)
@@ -16,7 +16,7 @@ Model::Model(string dir, string fileName)
 	inst = new instance(dir, fileName);
 	M = inst->M;
 	row += fileName;
-	//model();
+
 }
 
 Model::Model(string dir, string fileName, int w)
@@ -27,7 +27,7 @@ Model::Model(string dir, string fileName, int w)
 	this->w = w;
 	M = inst->M;
 	row += fileName;
-	//model();
+
 }
 
 Model::Model(string dir, string fileName, int w, int t)
@@ -418,7 +418,7 @@ void Model::model4(GRBModel & model)
 	c48(model);
 	//
 
-	c49(model);
+	//c49(model);
 	c50(model);
 
 	//r3(model);
@@ -565,7 +565,7 @@ void Model::getRow(GRBModel & model)
 	res += to_string(model.get(GRB_IntAttr_Status)) + ",";
 	res += to_string(model.get(GRB_DoubleAttr_ObjVal)) + ","; 
 	res += to_string(model.get(GRB_DoubleAttr_MIPGap) * 100) + ",";
-	res += to_string(model.get(GRB_DoubleAttr_Runtime)) + "\n";
+	res += to_string(model.get(GRB_DoubleAttr_Runtime));
 
 	row = res;
 }
@@ -876,7 +876,7 @@ float Model::getTravelCost(GRBModel& model)
 					//cout << varName << endl;
 					//cout << fixed << setprecision(2) << inst->dist(i.key, j.key) << endl;
 					//cout << fixed << setprecision(2) << inst->dist(i.key, j.key) * inst->driverWage << endl;
-					count += inst->dist(i.key, j.key) * inst->driverWage;
+					count += inst->getTD(i.key, j.key) * inst->driverWage;
 				}
 			}
 		}
@@ -1737,9 +1737,14 @@ void Model::drivingCostFO(GRBModel& model)
 	for (auto i : V0) {
 		for (auto j : V1) {
 			if (i.key != j.key) {
-				e += getX(model, i.key, j.key) * inst->dist(i, j) * inst->driverWage;
+				e += getX(model, i.key, j.key) * inst->getTD(i, j) * (inst->driverWage);
 			}
 		}
+	}
+
+	vector<node> C = inst->set_C();
+	for (node i : C) {
+		e += i.serviceTime * inst->driverWage;
 	}
 
 	model.addConstr(v == e, "drivingCostR");

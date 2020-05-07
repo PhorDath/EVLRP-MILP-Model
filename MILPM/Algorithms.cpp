@@ -134,6 +134,41 @@ void Algorithms::getSol(ostream & strm, Solution sol)
 	}
 }
 
+void Algorithms::solutionToXML(Solution s)
+{
+	ptree tree;
+	tree.add("routes.<xmlattr>.version", "1.0");
+	int i = 1;
+
+	for (route r : s.routes) {
+		ptree& rt = tree.add("routes.route", "");
+		for (vertex v : r) {
+			ptree& vertex = rt.add("vertex", "");
+			vertex.add("key", v.key);
+			vertex.add("arrivalTime", v.aTime);
+			vertex.add("waitingTime", v.wTime);
+			vertex.add("departureTime", v.lTime);
+			vertex.add("batteryLevel", v.bLevel);
+			vertex.add("vehicleLoad", v.vLoad);
+			vertex.add("recharged", v.recharged);
+
+			ptree& data = vertex.add("data", "");
+			data.add("id", v.n.id);
+			data.add("type", v.n.type);
+			data.add("x", v.n.x);
+			data.add("y", v.n.y);
+			data.add("demand", v.n.demand);
+			data.add("serviceTime", v.n.serviceTime);
+			data.add("readyTime", v.n.readyTime);
+			data.add("dueDate", v.n.dueDate);
+
+		}
+		i++;
+	}
+
+	//write_xml(file, tree);
+}
+
 Solution Algorithms::createOptimialSolution1()
 {
 	vector<int> a{ 0, 7, 6, 3, 8, 10, 11, 5, 9, 12 };
@@ -286,7 +321,7 @@ string Algorithms::getRow(Solution s)
 	res += to_string(s.status) + ",";
 	res += to_string(s.FO) + ",";
 	res += to_string(s.FOINIT) + ",";
-	res += to_string(s.runtime) + "\n";
+	res += to_string(s.runtime);
 	cout << res << endl;
 
 
@@ -463,6 +498,7 @@ float Algorithms::FO(vector<vector<vertex>> sol)
 
 	fo = depotCost + bssCost + brsCost + drivingCost + vehicleCost + energyCost + operationalCost;
 
+
 	float p = FOP(sol);
 
 	fo_parcels = { depotCost, bssCost, brsCost, drivingCost, vehicleCost, energyCost, operationalCost , p};
@@ -593,10 +629,20 @@ vector<float> Algorithms::FOComplete(routes sol)
 	
 	// driving cost
 	float drivingCost = 0;
-
+	/*
 	for (route r : sol) {
 		for (int i = 0; i < r.size() - 1; i++) {
 			drivingCost += inst->dist(r.at(i).key, r.at(i + 1).key) * inst->driverWage;
+		}
+	}
+	*/
+	for (route r : sol) {
+		for (int i = 0; i < r.size() - 1; i++) {
+			auto n = inst->getNodeByKey(r.at(i).key);
+			drivingCost += inst->getTD(r.at(i).key, r.at(i + 1).key) * inst->driverWage;
+			if (n.type == "c") {
+				drivingCost += n.serviceTime * inst->driverWage;
+			}
 		}
 	}
 
@@ -641,7 +687,9 @@ vector<float> Algorithms::FOComplete(routes sol)
 	//int p = FOP(sol);
 	float p = 0;
 
-	fo_parcels = { fo + p, depotCost, bssCost, vehicleCost, drivingCost, brsEnergyCost, bssEnergyCost, bssUseCost, p };
+	float FO_ = depotCost * inst->depotLifetime + bssCost * inst->bssLifetime + vehicleCost * inst->vehicleLifetime + drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
+
+	fo_parcels = { fo + p, depotCost, bssCost, vehicleCost, drivingCost, brsEnergyCost, bssEnergyCost, bssUseCost, p, FO_};
 
 	return fo_parcels;
 }
