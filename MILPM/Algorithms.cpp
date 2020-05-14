@@ -961,13 +961,22 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 	for (route r : sol) {
 		for (int i = 0; i < r.size() - 1; i++) {
 			if(r.at(i).key == r.at(i + 1).key) {
-				ret.insert("vertex_sequence");
+				ret.insert("consecutive_vertex");
 				a = true;
 				break;
 			}
 		}
 		if (a == true) {
 			break;
+		}
+	}
+
+	for (route r : sol) {
+		if (inst->getNodeByKey(r.front().key).type != "d") {
+			ret.insert("begin");
+		}
+		if (inst->getNodeByKey(r.back().key).type != "a") {
+			ret.insert("end");
 		}
 	}
 

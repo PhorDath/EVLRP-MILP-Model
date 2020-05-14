@@ -78,6 +78,7 @@ public:
 	vector<vector<vertex>> sol; // solution vector
 	vector<float> fo_parcels;
 	string row = "";
+	chrono::steady_clock::time_point t;
 
 	// aux	
 	Solution procSol(Solution s); // processes solution

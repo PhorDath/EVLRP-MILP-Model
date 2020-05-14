@@ -536,7 +536,8 @@ void Model::result(GRBModel & model)
 			Solution s = getSolution(model);
 
 			s.FO = model.get(GRB_DoubleAttr_ObjVal);
-			s.runtime = model.get(GRB_DoubleAttr_Runtime);
+			//s.runtime = model.get(GRB_DoubleAttr_Runtime);
+			s.runtime = duration;
 			s.gap = model.get(GRB_DoubleAttr_MIPGap) * 100;
 			s.status = model.get(GRB_IntAttr_Status);
 
@@ -565,7 +566,8 @@ void Model::getRow(GRBModel & model)
 	res += to_string(model.get(GRB_IntAttr_Status)) + ",";
 	res += to_string(model.get(GRB_DoubleAttr_ObjVal)) + ","; 
 	res += to_string(model.get(GRB_DoubleAttr_MIPGap) * 100) + ",";
-	res += to_string(model.get(GRB_DoubleAttr_Runtime));
+	//res += to_string(model.get(GRB_DoubleAttr_Runtime));
+	res += to_string(duration);
 
 	row = res;
 }
@@ -593,9 +595,14 @@ Solution Model::model()
 			model.write("attr.attr");
 		}
 
+		auto t1 = std::chrono::high_resolution_clock::now();
+
 		//model.write("lp.lp");
 		model.getEnv().set(GRB_DoubleParam_TimeLimit, TMAX);
 		model.optimize();
+
+		auto t2 = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
 
 		// save solution	
 		result(model);

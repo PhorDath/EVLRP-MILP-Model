@@ -7,13 +7,15 @@
 #include "Util.h"
 #include "perm_rep.h"
 
-#define TMAX 300
+#define TMAX 60
 
 using namespace std;
 
 class Model	
 {
 private:
+	long long duration;
+
 	Solution solu;
 	Solution init;
 	bool initProv = false;
