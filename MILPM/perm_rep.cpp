@@ -3063,7 +3063,7 @@ route perm_rep::addStations(route rt, int n)
 
 Solution perm_rep::addStationsGrasp(Solution s)
 {
-	
+	return Solution();
 }
 
 bool perm_rep::rechargeSchedule(route &r, int beg, int end, int energy)
@@ -3125,6 +3125,16 @@ vector<int> perm_rep::getListC(route r)
 	}
 
 	return C;
+}
+
+int perm_rep::getNumD(Solution s)
+{
+	set<int> d;
+	for (auto r : s.routes) {
+		d.insert(r.front().key);
+	}
+
+	return d.size();
 }
 
 pair<int, int> perm_rep::closestBSS(Solution& s, int route, int key)
@@ -3514,8 +3524,7 @@ Solution perm_rep::localSearch(permutation p)
 
 				try {
 					Solution sl = permutationToSolutionGrasp(pl);
-					sl = procSol(sl);
-
+					//sl = procSol(sl);
 
 					if (sl.FO < best.FO) {
 						best = sl;
@@ -3874,6 +3883,7 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 
 	int t0 = initTemp;
 	int tf = finalTemp;
+	this->maxRuntime = maxRuntime;
 
 	Solution curr = greedDD();
 	int FOINIT = curr.FO;
@@ -3884,10 +3894,11 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 	Solution best = curr;
 	int temp = t0;
 
-	cout << "initial solution: " << best.FO << endl;
+	cout << "initial solution: " << fixed << best.FO << endl;
 
 	int b = best.FO;
 
+	start = std::chrono::high_resolution_clock::now();
 	auto t1 = std::chrono::high_resolution_clock::now();
 	long long duration;
 
@@ -3898,44 +3909,67 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 		do {
 			// select a neighbor from the current solution
 			permutation pl = curr.perm;
-			int beg = Random::get(0, int(pl.size()) - 2);
-			int end = Random::get(beg + 1, int(pl.size()) - 1);
+
+			if (pl.size() == 0) {
+				pl = randomPermutation();
+			}
+
+			int beg = 0;
+			int end = 0;
+			if (pl.size() >= 2) {
+				beg = Random::get(0, int(pl.size()) - 2);
+				end = Random::get(beg + 1, int(pl.size()) - 1);
+			}
+
+			//cout << beg << " " << end << " " << pl.size() << endl;
+
+			//cout << "a1" << endl;
 			pl = opt2(pl, beg, end);
-			Solution nSol = localSearch(pl);
-
-			// store the best solution so far
-			if (nSol.FO < best.FO && nSol.inf.size() == 0) {
-				best = nSol;
-				counter = 0;
-				cout << "Improvment, ";
-				cout << fixed << "FO: " << best.FO << endl;
-			}
-
-			// search-space exploration
-			double delta = (nSol.FO - curr.FO); //
-			if (delta < 0.0) { // accept improvment solution
-				curr = nSol;
-				counter++;
-			}
-			else { // 
-				int a = -delta / temp;
-				double prob = pow(EulerConstant, a);
-
-				double value = Random::get(0.0, 1.0);
-
-				if (value < prob) {
-					curr = nSol;
+			//cout << "a2" << endl;
+			try {
+				Solution nSol = localSearch(pl);
+				//cout << "a3" << endl;
+				// store the best solution so far
+				if (nSol.FO < best.FO && nSol.inf.size() == 0) {
+					best = nSol;
+					counter = 0;
+					cout << "Improvment, ";
+					cout << fixed << "FO: " << best.FO << endl;
 				}
 
-				counter++;
+				// search-space exploration
+				double delta = (nSol.FO - curr.FO); //
+				if (delta < 0.0) { // accept improvment solution
+					curr = nSol;
+					counter++;
+				}
+				else { // 
+					int a = -delta / temp;
+					double prob = pow(EulerConstant, a);
+
+					double value = Random::get(0.0, 1.0);
+
+					if (value < prob) {
+						curr = nSol;
+					}
+
+					counter++;
+				}
 			}
+			catch (exception e) {
+				cout << e.what() << endl;
+			}
+			catch (string s) {
+				cout << s << endl;
+			}
+
 
 			// measure runtime
 			auto t2 = std::chrono::high_resolution_clock::now();
-			long long duration2 = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+			long long duration2 = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
 
 			// stop if max runtime is reached
-			if (duration2 > maxRuntime) {
+			if (duration2 > this->maxRuntime) {
 				break;
 			}
 
@@ -3945,14 +3979,14 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 
 		// measure runtime
 		auto t2 = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+		duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
 		cout << "duration: " << duration << endl;
 
-	} while (temp > tf && duration < maxRuntime);
+	} while (temp > tf && duration < this->maxRuntime);
 
 
 	auto t2 = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+	duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
 	best.runtime = duration;
 	best.FOINIT = FOINIT;
 
@@ -4013,7 +4047,7 @@ Solution perm_rep::BRKGA_()
 
 Solution perm_rep::testPermutation(permutation p)
 {
-	Solution s = permutationToSolution(p);
+	Solution s = permutationToSolutionGrasp(p);
 	s = procSol(s);
 
 	// get nodes
@@ -4076,7 +4110,7 @@ bool perm_rep::getArcsNodes(Solution& s)
 
 Solution perm_rep::GRASP_p(Solution s)
 {
-
+	cout << "GRASP\n";
 	int n = inst->set_R().size();
 	if (n >= 2) {
 		n = floor(double(n) * 0.2) + 2;
@@ -4094,15 +4128,15 @@ Solution perm_rep::GRASP_p(Solution s)
 	int it = 20;
 	int i = 0;
 	while (i < it) {
-		//cout << 1 << endl;
+		//cout << "a" << endl;
 		Solution sl = addStations(s, n);
-		//cout << 2 << endl;
+		//cout << "b" << endl;
 		sl = procSol(sl);
 
 		// local search
-		//cout << 3 << endl;
+		//cout << "c" << endl;
 		sl = bVNS_r(sl);
-		//cout << 4 << endl;
+		//cout << "d" << endl;
 		if (sl.FO < best.FO && sl.inf.size() == 0) {
 			best = sl;
 			i = 0;
@@ -4111,61 +4145,71 @@ Solution perm_rep::GRASP_p(Solution s)
 			i++;
 		}
 
+		auto t2 = std::chrono::high_resolution_clock::now();
+		long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+		if (duration > maxRuntime) {
+			break;
+		}
 	}
 	
+	cout << "GRASP_END\n";
 	return best;
 }
 
 Solution perm_rep::bVNS_r(Solution s)
 {
+	cout << "VNS\n";
 	Solution best = s;
 
 	int it = 0;
-	int itMax = 100;
-	int maxRuntime = 300;
+	int itMax = 20;
 	int n = 1;
-	int maxN = 3;
+	int maxN = 4;
 
-	auto t1 = std::chrono::high_resolution_clock::now();
+	//auto t1 = std::chrono::high_resolution_clock::now();
 
 	do {
+		cout << "it: " << it << endl;
+		Solution sl;
 		try {
-			//cout << 1 << endl;
-			s = shakeRandom_r(s, n);
+			cout << 1 << endl;
+			cout << "shake " << n << endl;
+			
+			if (getNumD(s) == 1) {
+				maxN = 3;
+			}
+			else {
+				maxN = 4;
+			}
+
+			sl = shakeRandom_r(s, n);
 			//cout << 2 << endl;
-		}
-		catch (string s) {
-			cout << s << endl;
-		}
-
-		try {
+			sl = localSearch_r(sl, "2opt");
 			//cout << 3 << endl;
-			s = localSearch_r(s, "2opt");
-			//cout << 4 << endl;
 		}
-		catch (string s) {
-			cout << s << endl;
-		}
+		catch (string str) {
+			cout << str << endl;
+		}		
 
-		if (s.FO < best.FO && s.inf.size() == 0) {
-			//cout << fixed << "improvment: " << best.FO << " --> " << s.FO << endl;
+		if (sl.FO < best.FO && s.inf.size() == 0) {
+			cout << fixed << setprecision(2) << "improvment: " << best.FO << " --> " << s.FO << endl;
 			best = s;
+			s = sl;
 			it = 0;
 			n = 1;
 		}
 		else {
 			it++;
 			n++;
-
 			if (n > maxN) {
 				n = maxN;
 			}
-
 		}
 
 		// measure runtime
 		auto t2 = std::chrono::high_resolution_clock::now();
-		long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+		long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
 
 		// stop if max runtime is reached
 		if (duration >= maxRuntime) {
@@ -4174,6 +4218,7 @@ Solution perm_rep::bVNS_r(Solution s)
 
 	} while (it < itMax);
 
+	cout << "VNS_END\n";
 	return best;
 }
 
@@ -4231,6 +4276,7 @@ Solution perm_rep::rVNS_r(Solution s)
 
 Solution perm_rep::localSearch_r(Solution s, string n)
 {
+	/*
 	vector<int> rts;
 	int i = 0;
 	for (auto r : s.routes) {
@@ -4254,8 +4300,9 @@ Solution perm_rep::localSearch_r(Solution s, string n)
 
 	int p2 = Random::get<int>(p + 1, customers.size() - 1);
 	p2 = customers.at(p2);
-
-
+	*/
+	
+	//cout << "localSearch_r\n";
 	Solution best = s;
 	best = procSol(best);
 	bool improv = true;
@@ -4266,42 +4313,98 @@ Solution perm_rep::localSearch_r(Solution s, string n)
 		improv = false;
 		Solution curr = best;
 		if (n == "2opt") {
-			for (int i = 0; i < s.routes.size() - 1; i++) {
-				int tc = getNumC(s.routes.at(i));
-				if (tc < 2) {
-					break;
+			for (int i = 0; i < s.routes.size(); i++) {
+				vector<int> customers = getListC(curr.routes.at(i));
+				if (customers.size() < 2) {
+					continue;
 				}
-
-				vector<int> customers = getListC(s.routes.at(i));
-
-				for (int a = 0; a < customers.size() - 2; a++) {
-					for (int b = a + 1; b < customers.size() - 1; b++) {
-
-						Solution sl;
+				
+				for (int a = 0; a < customers.size() - 1; a++) {
+					for (int b = a + 1; b < customers.size(); b++) {
 						try {
-							sl = opt2_route_r(curr, i, customers.at(a), customers.at(b));
-							sl = procSol(sl);
+							//cout << "aqui1\n";
+							/*
+							cout << "Route: ";
+							for (auto c : s.routes.at(i)) {
+								cout << c.key << " ";
+							}
+							cout << endl;
+							cout << "C    : ";
+							for (auto c : getListC(s.routes.at(i))) {
+								cout << c << " ";
+							}
+							cout << endl;
+							*/
+							Solution sl = opt2_route_r(curr, i, customers.at(a), customers.at(b));
+							//cout << "aqui2\n";
+						
+							if (sl.FO < best.FO && sl.inf.size() == 0) {
+								cout << "improvment: " << sl.FO << " - " << curr.FO << endl;
+								best = sl;
+								improv = true;
+								break;
+							}
+							//cout << "aqui3\n";
 						}
 						catch (string str) {
 							cout << str << endl;
+							continue;
+						}
+						catch (exception e) {
+							cout << e.what() << endl;
+							continue;
+						}
+
+					}
+					if (improv == true) {
+						break;
+					}
+				}
+				if (improv == true) {
+					break;
+				}
+			}
+			curr = best;
+			//cout << "end\n";
+		}
+		else if (n == "shiftC") {
+
+			for(int r = 0; r < s.routes.size(); r++) {
+				vector<int> c = getListC(s.routes.at(r));
+
+				for (int i = 0; i < c.size() - 1; i++) {
+					for (int j = i + 1; j < c.size(); j++) {
+						Solution sl;
+
+						try {
+							sl = shiftCustomer_r(curr, r, i, j);
+						}
+						catch (string s) {
+							cout << s << endl;
 						}
 
 						if (sl.FO < curr.FO) {
+							cout << "improvment: " << sl.FO << " - " << curr.FO << endl;
 							best = sl;
 							improv = true;
-
-							return best; // first improvment
+							break;
 						}
+						
 					}
 				}
+				if (improv == true) {
+					break;
+				}
 			}
-			//cout << "end\n";
+			if (improv == true) {
+				break;
+			}
 		}
 		else {
 			throw "invalid neighborhood structure " + n;
 		}
 	}
-
+	//cout << "end_localSearch_r\n";
 	return best;
 }
 
@@ -4569,237 +4672,319 @@ Solution perm_rep::routePartition_r(Solution s, int a, int pa, int b, int pb)
 {
 	//cout << "route_partition\n";
 	
-	/*
-	cout << a << " - " << pa << " - " << b << " - " << pb << endl;
-
-	for (auto r : s.routes) {
-		for (auto v : r) {
-			cout << v.key << " ";
+	try {
+		if (a == b) {
+			throw "same_route";
 		}
-		cout << endl;
-	}
-	cout << endl;
-
-	//exit(1);
-	*/
-	
-	if (a == b) {
-		throw "same_route";
-	}
-	if (pa > s.routes.at(a).size() - 1) {
-		throw "cant_split_route_a";
-	}
-	if (pb > s.routes.at(b).size() - 1) {
-		throw "cant_split_route_b";
-	}
-
-	route r1 = s.routes.at(a);
-	route r2 = s.routes.at(b);
-
-	vertex arrival = r1.back(); // store the arrival route r1 node
-	r1.erase(r1.begin() + r1.size() - 1); // remove the last (arrival) node
-
-	// get the part of the route r1 (subr) that will change to route r2
-	route subr;
-
-	int qt = r1.size() - pa;
-	int i = 0;
-	while(i < qt) {
-	//for (int i = pa; i < r1.size(); i++) {
-		vertex v = r1.at(pa);
-		r1.erase(r1.begin() + pa);
-
-		subr.push_back(v);
-		i++;
-	}
-
-	// must remove bss from the beggin and the end of sub
-	// end
-	subr = removeBSS_beg_end(subr);
-
-	if (subr.size() == 0) {
-		//cout << "fudeu" << endl;
-	}
-
-	// remove bss from the route's end if there is any
-	r1 = removeBSS_beg_end(r1);
-
-	r1.push_back(arrival); // insert back the depot arrival node
-
-	r1 = addStations(r1); // rearrange the first route
-
-	arrival = r2.back(); // backup arrival route r1 arrival node 
-	r2.erase(r2.begin() + r2.size() - 1); // remove the last (arrival) node
-
-	// insert subroute in route r2
-	for (auto i : subr) {
-		r2.push_back(i);
-	}
-
-	r2.push_back(arrival); // insert back the arrival node in route r2
-
-	r2 = addStations(r2);
-
-	if (inst->getNodeByKey(r2.back().key).type != "a") {
-		while (inst->getNodeByKey(r2.back().key).type != "a") {
-			r2.erase(r2.end() - 1);
+		if (pa > s.routes.at(a).size() - 1) {
+			throw "cant_split_route_a";
 		}
+		if (pb > s.routes.at(b).size() - 1) {
+			throw "cant_split_route_b";
+		}
+
+		route r1 = s.routes.at(a);
+		route r2 = s.routes.at(b);
+
+		vertex arrival = r1.back(); // store the arrival route r1 node
+		r1.erase(r1.begin() + r1.size() - 1); // remove the last (arrival) node
+
+		// get the part of the route r1 (subr) that will change to route r2
+		route subr;
+
+		int qt = r1.size() - pa;
+		int i = 0;
+		while (i < qt) {
+			//for (int i = pa; i < r1.size(); i++) {
+			vertex v = r1.at(pa);
+			r1.erase(r1.begin() + pa);
+
+			subr.push_back(v);
+			i++;
+		}
+
+		// must remove bss from the beggin and the end of sub
+		// end
+		subr = removeBSS_beg_end(subr);
+
+		if (subr.size() == 0) {
+			//cout << "fudeu" << endl;
+		}
+
+		// remove bss from the route's end if there is any
+		r1 = removeBSS_beg_end(r1);
+
+		r1.push_back(arrival); // insert back the depot arrival node
+
+		r1 = addStations(r1); // rearrange the first route
+
+		arrival = r2.back(); // backup arrival route r1 arrival node 
+		r2.erase(r2.begin() + r2.size() - 1); // remove the last (arrival) node
+
+		// insert subroute in route r2
+		for (auto i : subr) {
+			r2.push_back(i);
+		}
+
+		r2.push_back(arrival); // insert back the arrival node in route r2
+
+		r2 = addStations(r2);
+
+		if (inst->getNodeByKey(r2.back().key).type != "a") {
+			while (inst->getNodeByKey(r2.back().key).type != "a") {
+				r2.erase(r2.end() - 1);
+			}
+		}
+
+		if (inst->getNodeByKey(r1.back().key).type != "a") {
+			throw "error";
+		}
+		if (inst->getNodeByKey(r2.back().key).type != "a") {
+			throw "error";
+		}
+
+		s.routes.at(a) = r1;
+		s.routes.at(b) = r2;
+
+		s = procSol(s);
+
+		//cout << "end\n";
+		return s;
 	}
-
-	if (inst->getNodeByKey(r1.back().key).type != "a") {
-		throw "error";
-	}
-	if (inst->getNodeByKey(r2.back().key).type != "a") {
-		throw "error";
-	}
-
-	s.routes.at(a) = r1;
-	s.routes.at(b) = r2;
-
-	s = procSol(s);
-
-	//cout << "end\n";
-	return s;
+	catch (exception e) {
+		cout << e.what() << endl;
+		throw "error generating 2opt neighborhood with parameteres " + to_string(a) + " " + to_string(pa) + " " + to_string(b) + " " + to_string(pb);
+	}	
 }
 
 Solution perm_rep::opt2_route_r(Solution s, int j, int beg, int end)
 {
-	//cout << "2opt\n";
+	try {
+		//cout << "2opt\n";
 
-	if (beg >= end) {
-		throw "cant 2opt route with beg " + to_string(beg) + " and end " + to_string(end);
-	}
-	if (j < 0 || j >= s.routes.size()) {
-		throw "route " + to_string(j) + " is out of bound";
-	}
-	if (inst->getNodeByKey(s.routes.at(j).back().key).type != "a") {
-		throw "error";
-	}
-
-	route rt = s.routes.at(j);
-
-	route prev, next, subr;
-
-	int i = 0;
-	for (i = 0; i < beg; i++) {
-		prev.push_back(rt.at(i));
-	}
-	prev = removeBSS(prev);
-
-	for (i; i < end; i++) {
-		subr.push_back(rt.at(i));
-	}
-	subr = removeBSS(subr);// remove bss
-
-	for (i; i < rt.size(); i++) {
-		next.push_back(rt.at(i));
-	}
-	next = removeBSS(next);
-
-	if (next.size() == 0) {
-		next.push_back(subr.back());
-		subr.erase(subr.begin() + subr.size() - 1);
-		//throw "error";
-	}
-
-	// invert subroute
-	for (int i = 0; i < int(subr.size() / 2); i++) {
-		vertex v = subr.at(i);
-		subr.at(i) = subr.at(subr.size() - 1 - i);
-		subr.at(subr.size() - 1 - i) = v;
-	}
-
-	// build new route
-	rt.clear();
-	for (int j = 0; j < prev.size(); j++) {
-		rt.push_back(prev.at(j));
-	}
-	for (int j = 0; j < subr.size(); j++) {
-		rt.push_back(subr.at(j));
-	}
-	for (int j = 0; j < next.size(); j++) {
-		rt.push_back(next.at(j));
-	}
-
-	rt = addStations(rt);
-
-	if (inst->getNodeByKey(rt.back().key).type != "a") {
-		//cout << "fudeu\n";
-	}
-
-	if (inst->getNodeByKey(rt.back().key).type != "a") {
-		while (inst->getNodeByKey(rt.back().key).type != "a") {
-			rt.erase(rt.end() - 1);
+		if (beg >= end) {
+			throw "cant 2opt route with beg " + to_string(beg) + " and end " + to_string(end);
+		}
+		if (j < 0 || j >= s.routes.size()) {
+			throw "route " + to_string(j) + " is out of bound";
+		}
+		if (inst->getNodeByKey(s.routes.at(j).back().key).type != "a") {
+			throw "error";
 		}
 
+		route rt = s.routes.at(j);
+		//cout << 1 << endl;
+		route prev, next, subr;
+
+		int i = 0;
+		for (i = 0; i < beg; i++) {
+			if (i >= rt.size()) {
+				throw "error";
+			}
+			prev.push_back(rt.at(i));
+		}
+		for (i; i <= end; i++) {
+			if (i >= rt.size()) {
+				throw "error";
+			}
+			subr.push_back(rt.at(i));
+		}
+		for (i; i < rt.size(); i++) {
+			if (i >= rt.size()) {
+				throw "error";
+			}
+			next.push_back(rt.at(i));
+		}
+		//cout << 12 << endl;
+		prev = removeBSS(prev);
+		subr = removeBSS(subr);// remove bss
+		next = removeBSS(next);
+
+		//cout << 2 << endl;
+		if (next.size() == 0) {
+			next.push_back(subr.back());
+			subr.erase(subr.begin() + subr.size() - 1);
+			//throw "error";
+		}
+		//cout << 3 << endl;
+		// invert subroute
+		int a = 0, b = subr.size() - 1;
+		while (a < b) {
+			vertex v = subr.at(a);
+			subr.at(a) = subr.at(b);
+			subr.at(b) = v;
+			a++; b--;
+		}
+		/*
+		for (int i = 0; i < int(subr.size() / 2); i++) {
+			vertex v = subr.at(i);
+			subr.at(i) = subr.at(subr.size() - 1 - i);
+			subr.at(subr.size() - 1 - i) = v;
+		}
+		*/
+		//cout << 4 << endl;
+		// build new route
+		rt.clear();
+		for (int j = 0; j < prev.size(); j++) {
+			rt.push_back(prev.at(j));
+		}
+		for (int j = 0; j < subr.size(); j++) {
+			rt.push_back(subr.at(j));
+		}
+		for (int j = 0; j < next.size(); j++) {
+			rt.push_back(next.at(j));
+		}
+		//cout << 5 << endl;
+		rt = addStations(rt);
+		//cout << 6 << endl;
+		if (inst->getNodeByKey(rt.back().key).type != "a") {
+			//cout << "fudeu\n";
+		}
+		//cout << 7 << endl;
+		if (inst->getNodeByKey(rt.back().key).type != "a") {
+			while (inst->getNodeByKey(rt.back().key).type != "a") {
+				rt.erase(rt.end() - 1);
+			}
+
+		}
+		//cout << 8 << endl;
+		if (inst->getNodeByKey(s.routes.at(j).back().key).type != "a") {
+			throw "error";
+		}
+		//cout << 9 << endl;
+		s.routes.at(j) = rt;
+		//cout << 10 << endl;
+		s = procSol(s);
+		//cout << 11 << endl;
+		//cout << "end\n";
+		return s;
 	}
-
-	if (inst->getNodeByKey(s.routes.at(j).back().key).type != "a") {
-		throw "error";
+	catch (exception e) {
+		cout << e.what() << endl;
+		throw "error generating 2opt neighborhood with parameteres " + to_string(j) + " " + to_string(beg) + " " + to_string(end);
 	}
-
-	s.routes.at(j) = rt;
-
-	s = procSol(s);
-
-	//cout << "end\n";
-	return s;
+	catch (string str) {
+		cout << str << endl;
+		throw "error generating 2opt neighborhood with parameteres " + to_string(j) + " " + to_string(beg) + " " + to_string(end);
+	}
 }
 
 Solution perm_rep::shiftCustomer_r(Solution s, int j, int c, int q)
 {
-	//cout << "shift_customer\n";
+	try {
+		//cout << "shift_customer\n";
 
-	route rt = s.routes.at(j);
+		route rt = s.routes.at(j);
 
-	if (c + q > rt.size() - 2) {
-		/*
-		for (auto r : s.routes) {
-			for (auto v : r) {
-				cout << v.key << " ";
-			}
-			cout << endl;
+		if (c + q > rt.size() - 2) {
+			throw "cant shift customer " + to_string(c) + " in " + to_string(q) + " positions";
 		}
-		*/
-		throw "cant shift customer " + to_string(c) + " in " + to_string(q) + " positions";
+
+		if (inst->getNodeByKey(rt.at(c).key).type != "c") {
+			throw "node in position " + to_string(c) + " in the route " + to_string(j) + " is not a customer";
+		}
+
+		vertex v = rt.at(c); // store the customer
+
+		rt.erase(rt.begin() + c); // remove customer
+
+		rt.insert(rt.begin() + q, v);
+
+		rt = removeBSS(rt, c); /////
+
+		rt = addStations(rt);
+
+		if (inst->getNodeByKey(rt.back().key).type != "a") {
+			//cout << "fudeu\n";
+		}
+
+		while (inst->getNodeByKey(rt.back().key).type != "a") {
+			rt.erase(rt.end() - 1);
+		}
+
+		s.routes.at(j) = rt;
+
+		s = procSol(s);
+
+		//cout << "end\n";
+		return s;
+	}
+	catch (exception e) {
+		cout << e.what() << endl;
+		throw "error generating 2opt neighborhood with parameteres " + to_string(j) + " " + to_string(c) + " " + to_string(q);
+	}
+	
+}
+
+Solution perm_rep::changeDepot(Solution s, int r, int keyDPT)
+{
+	if (!inst->isDepot(keyDPT)) {
+		throw to_string(keyDPT) + " is not a depot";
 	}
 
-	if (inst->getNodeByKey(rt.at(c).key).type != "c") {
-		throw "node in position " + to_string(c) + " in the route " + to_string(j) + " is not a customer";
-	}
+	route rt = s.routes.at(r);
 
-	vertex v = rt.at(c); // store the customer
+	rt.front().key = keyDPT;
+	rt.back().key = inst->getArrival(keyDPT);
+	rt = removeBSS(rt);
 
-	rt.erase(rt.begin() + c); // remove customer
+	s.routes.at(r) = rt;
 
-	rt.insert(rt.begin() + q, v);
-
-	rt = removeBSS(rt, c); /////
-
-	rt = addStations(rt);
-
-	if (inst->getNodeByKey(rt.back().key).type != "a") {
-		//cout << "fudeu\n";
-	}
-
-	while (inst->getNodeByKey(rt.back().key).type != "a") {
-		rt.erase(rt.end() - 1);
-	}
-
-	s.routes.at(j) = rt;
-
-	s = procSol(s);
-
-	//cout << "end\n";
 	return s;
+}
+
+Solution perm_rep::swapDepot(Solution s, int kDPTA, int kDPTB)
+{
+	try {
+		auto UD0 = inst->set_UD0();
+		if (UD0.size() == 1) {
+			throw "only onde depot";
+		}
+
+		if (!inst->isDepot(kDPTA)) {
+			throw to_string(kDPTA) + " is not a depot";
+		}
+
+		if (!inst->isDepot(kDPTB)) {
+			throw to_string(kDPTB) + " is not a depot";
+		}
+
+		set<int> dpts;
+		bool find = false;
+		for (auto i : s.routes) {
+			dpts.insert(i.front().key);
+			if (i.front().key == kDPTA) {
+				find = true;
+			}
+		}
+		if (find == false) {
+			throw "depot " + to_string(kDPTA) + " is not currently in the solution";
+		}
+
+		for (route& rt : s.routes) {
+			if (rt.front().key == kDPTA) {
+				rt.front().key = kDPTB;
+				rt.back().key = inst->getArrival(kDPTB);
+				rt = removeBSS(rt);
+				rt = addStations(rt);
+			}
+		}
+
+		s = procSol(s);
+
+		return s;
+	}
+	catch (exception e) {
+		cout << e.what() << endl;
+		throw "error generating 2opt neighborhood with parameteres " + to_string(kDPTA) + " " + to_string(kDPTB);
+	}
 }
 
 Solution perm_rep::shakeRandom_r(Solution s, int n)
 {
-	switch (n)
+	switch (n) 
 	{
-	case 1:
-	{
+	case 1: {
 		// route partition
 		if (s.routes.size() <= 1) { // cant use this neighborhood in solutions with only one route
 			return s;
@@ -4842,11 +5027,14 @@ Solution perm_rep::shakeRandom_r(Solution s, int n)
 			cout << e << endl;
 			throw "error generating neighbor " + to_string(n);
 		}
+		catch (exception e) {
+			cout << e.what() << endl;
+			throw "error generating neighbor " + to_string(n);
+		}
 		
 		break;
 	}		
-	case 2:
-	{
+	case 2: {
 		vector<int> rts;
 		int i = 0;
 		for (auto r : s.routes) {
@@ -4879,11 +5067,14 @@ Solution perm_rep::shakeRandom_r(Solution s, int n)
 			cout << e << endl;
 			throw "error generating neighbor " + to_string(n);
 		}
+		catch (exception e) {
+			cout << e.what() << endl;
+			throw "error generating neighbor " + to_string(n);
+		}
 
 		break;
 	}
-	case 3:
-	{
+	case 3: {
 		vector<int> rts;
 		int i = 0;
 		for (auto r : s.routes) {
@@ -4913,11 +5104,108 @@ Solution perm_rep::shakeRandom_r(Solution s, int n)
 			cout << e << endl;
 			throw "error generating neighbor " + to_string(n);
 		}
-		
+		catch (exception e) {
+			cout << e.what() << endl;
+			throw "error generating neighbor " + to_string(n);
+		}
+
 		break;
 	}
-	case 4:
-	{
+	case 4: {
+		set<int> dpts;
+		for (route& r : s.routes) {
+			dpts.insert(r.front().key);
+		}
+
+		if (dpts.size() > 1) {
+			
+
+			vector<int> vdpts;
+			vdpts.assign(dpts.begin(), dpts.end());
+
+			int dptA = Random::get<int>(0, vdpts.size() - 1);
+			int a = dptA;
+			dptA = vdpts[dptA];
+			vdpts.erase(vdpts.begin() + a);
+			int dptB = Random::get<int>(0, vdpts.size() - 1);
+			dptB = vdpts[dptB];
+
+			/*
+			int i = 0;
+			for (auto n : UD0) {
+				if (n.key == dptA) {
+					break;
+				}
+				i++;
+			}
+			UD0.erase(UD0.begin() + i);
+
+			int dptB = Random::get<int>(0, UD0.size() - 1);
+			dptB = UD0[dptB].key;
+			*/
+
+			try {
+				return swapDepot(s, dptA, dptB);
+			}
+			catch (string e) {
+				cout << e << endl;
+				throw "error generating neighbor " + to_string(n);
+			}
+			catch (exception e) {
+				cout << e.what() << endl;
+				throw "error generating neighbor " + to_string(n);
+			}
+		}
+		else {
+			return s;
+		}
+
+		break;
+	}
+	case 5: {
+		auto UD0 = inst->set_UD0();
+
+		if (UD0.size() > 1) {
+			int rt = Random::get<int>(0, s.routes.size() - 1);
+
+			/*
+			vector<int> dpts;
+			for (auto r : s.routes) {
+				dpts.push_back(r.front().key);
+			}
+			*/
+
+			int i = 0;
+			for (auto n : UD0) {
+				if (n.key == s.routes.at(rt).front().key) {
+					break;
+				}
+				i++;
+			}
+			UD0.erase(UD0.begin() + i);
+
+			int dpt = Random::get<int>(0, UD0.size() - 1);
+			dpt = UD0.at(dpt).key;
+
+			try {
+				return changeDepot(s, rt, dpt);
+			}
+			catch (string e) {
+				cout << e << endl;
+				throw "error generating neighbor " + to_string(n);
+			}
+			catch (exception e) {
+				cout << e.what() << endl;
+				throw "error generating neighbor " + to_string(n);
+			}
+		}
+		else {
+			return s;
+		}
+
+		break;
+	}
+	case 6: {
 		int rt = Random::get<int>(1, s.routes.size() - 1);
 		int p = Random::get<int>(2, s.routes.size() - 3);
 
@@ -4938,11 +5226,6 @@ Solution perm_rep::shakeRandom_r(Solution s, int n)
 	}		
 	}
  
-}
-
-Solution perm_rep::randomRoutePartition_r(Solution s)
-{
-	return Solution();
 }
 
 float perm_rep::decode(vector<double> chromosome)
@@ -5066,12 +5349,13 @@ int perm_rep::test_addStations()
 
 int perm_rep::test_shakeRandom_r(int i)
 {
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK10_01.txt", 3);
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_01.txt", 3);
 	printInstance();
 
 	try {
 
-		Solution init = testPermutation({ 9, 11, 6, 10, 7, 8, 5 }); // UK10_01.txt // optmal
+		//Solution init = testPermutation({ 9, 11, 6, 10, 7, 8, 5 });
+		Solution init = permutationToSolution(randomPermutation());
 
 		getArcsNodes(init);
 		init.debug(cout);
@@ -5150,45 +5434,40 @@ int perm_rep::test_routePartition()
 
 int perm_rep::test_opt2_route()
 {
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK10_01.txt", 3);
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_01.txt", 3);
 	printInstance();
 
 	Solution init;
 
 	try {
 
-		init = testPermutation({ 9, 11, 6, 10, 7, 8, 5 }); // UK10_01.txt // optmal
+		//init = testPermutation({ 9, 11, 6, 10, 7, 8, 5 }); // UK10_01.txt // optmal
+		init = permutationToSolution(randomPermutation());
+
+		getArcsNodes(init);
 
 		init.debug(cout);
 
-		init = opt2_route_r(init, 0, 4, 8);
+		int i, j, k;
+		cin >> i;
+		cin >> j;
+		cin >> k;
 
-		init = procSol(init);
+		Solution n = opt2_route_r(init, i, j, k);
 
-		// get nodes
-		for (route& r : init.routes) {
-			for (vertex& v : r) {
-				for (node n : inst->nodes) {
-					if (v.key == n.key) {
-						v.n = n;
-						break;
-					}
-				}
-			}
+		getArcsNodes(n);
+	
+		n.debug(cout);
+
+		for (auto r : init.routes.at(i)) {
+			cout << r.key << " ";
 		}
-		// get arcs
-		for (route& r : init.routes) {
-			for (int i = 0; i < r.size() - 1; i++) {
-				arc a;
-				a.beg = r.at(i).key;
-				a.end = r.at(i + 1).key;
-				a.value = inst->dist(a.beg, a.end);
-				a.value2 = inst->getTD(a.beg, a.end);
-				init.arcs.push_back(a);
-			}
+		cout << endl;
+		for (auto r : n.routes.at(i)) {
+			cout << r.key << " ";
 		}
-
-		init.debug(cout);
+		cout << endl;
+		cout << init.FO << " - " << n.FO << endl;
 	}
 	catch (PermutationInf e) {
 		cout << e.what() << endl;
@@ -5238,6 +5517,40 @@ int perm_rep::test_shiftCustomer()
 		}
 
 		init.debug(cout);
+	}
+	catch (PermutationInf e) {
+		cout << e.what() << endl;
+	}
+
+	return 1;
+}
+
+int perm_rep::test_swapDepot()
+{
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK100_01.txt", 3);
+	printInstance();
+
+	Solution init;
+
+	try {
+
+		init = testPermutation(randomPermutation());
+		init.debug(cout);
+
+		int a, b;
+		cin >> a;
+		cin >> b;
+
+		Solution n = swapDepot(init, a, b);
+		n = procSol(n);
+		getArcsNodes(n);	
+		n.debug(cout);
+
+		cout << init.FO << " - " << n.FO << endl;
+
+		for (auto i : n.inf) {
+			cout << i << endl;
+		}
 	}
 	catch (PermutationInf e) {
 		cout << e.what() << endl;
@@ -5351,19 +5664,13 @@ int perm_rep::test_neigh()
 
 int perm_rep::test_localSearch_r()
 {
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK10_01.txt", 3);
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK100_01.txt", 3);
 	printInstance();
 
 	
 	//Solution init = permutationToSolution({ 9, 11, 6, 10, 7, 8, 5 }); // good
-	Solution init = permutationToSolution({ 7, 9, 5, 11, 6, 10, 8 });
-	//Solution init = permutationToSolution(randomPermutation());
-	for (auto i : init.perm){
-		cout << i << " ";
-	}
-	cout << endl;
-
-	cout << "FO: " << fixed << init.FO << endl;
+	//Solution init = permutationToSolution({ 7, 9, 5, 11, 6, 10, 8 });
+	Solution init = permutationToSolution(randomPermutation());
 
 	Solution ls = localSearch_r(init, "2opt");
 
@@ -5374,11 +5681,19 @@ int perm_rep::test_localSearch_r()
 	cout << "FO1: " << fixed << init.FO << endl;
 	cout << "FO2: " << fixed << ls.FO << endl;
 
+	for (auto i : ls.inf) {
+		cout << i << " ";
+	}
+	cout << endl;
+
 	return 0;
 }
 
 int perm_rep::test_VNS()
 {
+	maxRuntime = 300;
+	start = std::chrono::high_resolution_clock::now();
+
 	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK100_01.txt", 3);
 	printInstance();
 
@@ -5398,7 +5713,7 @@ int perm_rep::test_VNS()
 
 int perm_rep::test_GRASP()
 {
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK10_01.txt", 3);
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_11.txt", 3);
 	printInstance();
 
 	//Solution init = permutationToSolution({ 9, 11, 6, 10, 7, 8, 5 }); 0 10 9 7 5 11 8 12

@@ -78,7 +78,7 @@ public:
 	vector<vector<vertex>> sol; // solution vector
 	vector<float> fo_parcels;
 	string row = "";
-	chrono::steady_clock::time_point t;
+	chrono::steady_clock::time_point start;
 
 	// aux	
 	Solution procSol(Solution s); // processes solution
@@ -102,6 +102,7 @@ public:
 
 public:
 	instance *inst;
+	long long maxRuntime;
 
 	Algorithms();
 

@@ -32,6 +32,7 @@ private:
 
 	int getNumC(route r);
 	vector<int> getListC(route r);
+	int getNumD(Solution s);
 
 	//
 	pair<int, int> closestBSS(Solution& s, int route, int key); // search for the closest bss of a node with a given key, return the pair (bss key, distance)
@@ -78,9 +79,11 @@ private:
 	Solution bssReplacement_r(Solution s, int key); // Replace a bss defined by n and swap  it for others, aready placed, bss
 	Solution routePartition_r(Solution s, int r1, int p1, int r2, int p2);
 	Solution opt2_route_r(Solution s, int j, int beg, int end); // i = route, j = beg, i = end
-	Solution shiftCustomer_r(Solution s, int j, int c, int q);
+	Solution shiftCustomer_r(Solution s, int j, int c, int q);	
+	Solution changeDepot(Solution s, int r, int keyDPT);
+	Solution swapDepot(Solution s, int kDPTA, int kDPTB);
+
 	Solution shakeRandom_r(Solution s, int n);
-	Solution randomRoutePartition_r(Solution s);
 
 	// BGKGA	
 	vector<ValueKeyPair> v;
@@ -105,6 +108,7 @@ public:
 	int test_routePartition();
 	int test_opt2_route();
 	int test_shiftCustomer();
+	int test_swapDepot();
 	int test_neigh();
 	int test_localSearch_r();
 	int test_VNS();

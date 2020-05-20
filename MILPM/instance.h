@@ -152,6 +152,9 @@ public:
 	void adaptAll();
 	void adaptUKInstance(); // uk instances
 
+	bool isDepot(int key);
+	int getArrival(int key);
+
 	~instance();
 
 	

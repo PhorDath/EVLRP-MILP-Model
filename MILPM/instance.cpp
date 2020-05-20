@@ -1029,6 +1029,35 @@ void instance::adaptUKInstance()
 
 }
 
+bool instance::isDepot(int key)
+{
+	auto UD0 = set_UD0();
+
+	for (auto n : UD0) {
+		if (n.key == key) {
+			return true;
+		}
+	}
+	return false;
+}
+
+int instance::getArrival(int key)
+{
+	if (isDepot(key)) {
+		auto UD1 = set_UD1();
+		node nd = getNodeByKey(key);
+
+		for (auto n : UD1) {
+			if (n.ogKey == nd.ogKey) {
+				return n.key;
+			}
+		}
+	}
+	else {
+		throw to_string(key) + " is not a depot";
+	}
+}
+
 void instance::readUKAdapt()
 {
 	type = 2;
