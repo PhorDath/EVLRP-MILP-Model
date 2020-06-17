@@ -65,6 +65,68 @@ bool Algorithms::tcCoverage(vector<bool> coverage)
 	return false;
 }
 
+set<int> Algorithms::getListBSS(Solution s)
+{
+	set<int> ret;
+	for (auto i : s.routes) {
+		for (auto j : i) {
+			if (inst->getNodeByKey(j.key).type == "f") {
+				ret.insert(j.key);
+			}
+		}
+	}
+	return ret;
+}
+
+int Algorithms::getNumC(route r)
+{
+	int C = 0;
+	for (auto i : r) {
+		if (inst->getNodeByKey(i.key).type == "c") {
+			C++;
+		}
+	}
+	return C;
+}
+
+vector<int> Algorithms::getListC(route r)
+{
+	vector<int> C;
+
+	int pos = 0;
+	for (auto i : r) {
+		if (inst->getNodeByKey(i.key).type == "c") {
+			C.push_back(pos);
+		}
+		pos++;
+	}
+
+	return C;
+}
+
+int Algorithms::getNumD(Solution s)
+{
+	set<int> d;
+	for (auto r : s.routes) {
+		d.insert(r.front().key);
+	}
+
+	return d.size();
+}
+
+int Algorithms::getPreviousStatioPos(route& r, int n)
+{
+	while (inst->getNodeByKey(r.at(n).key).type != "f" && inst->getNodeByKey(r.at(n).key).type != "d") {
+		n--;
+		if (n == -1) {
+			throw "error!";
+		}
+	}
+
+	return n;
+}
+
+
 void Algorithms::getSol(ostream & strm, Solution sol)
 {
 	strm << inst->fileName << endl;
@@ -577,6 +639,8 @@ int Algorithms::routeFO(route r)
 
 vector<float> Algorithms::FOComplete(routes sol)
 {
+	//routes sol = s.routes;
+
 	auto UD0 = inst->set_UD0();
 	auto UD1 = inst->set_UD1();
 	auto C = inst->set_C();
@@ -614,6 +678,7 @@ vector<float> Algorithms::FOComplete(routes sol)
 			if (inst->getNodeByKey(v.key).type == "f" || inst->getNodeByKey(v.key).type == "f_d") {
 				node n = inst->getNodeByKey(v.key);
 				qt.at(n.ref2) = 1;
+
 			}
 		}
 	}
@@ -629,13 +694,6 @@ vector<float> Algorithms::FOComplete(routes sol)
 	
 	// driving cost
 	float drivingCost = 0;
-	/*
-	for (route r : sol) {
-		for (int i = 0; i < r.size() - 1; i++) {
-			drivingCost += inst->dist(r.at(i).key, r.at(i + 1).key) * inst->driverWage;
-		}
-	}
-	*/
 	for (route r : sol) {
 		for (int i = 0; i < r.size() - 1; i++) {
 			auto n = inst->getNodeByKey(r.at(i).key);
@@ -648,8 +706,8 @@ vector<float> Algorithms::FOComplete(routes sol)
 
 	// energy cost in brs
 	float energy = 0;
-	for (auto route : sol) {
-		for (auto v : route) {
+	for (route r : sol) {
+		for (vertex v : r) {
 			node n = inst->getNodeByKey(v.key);
 			if (n.type == "c" || n.type == "c_d") {
 				energy += v.recharged;
@@ -659,21 +717,23 @@ vector<float> Algorithms::FOComplete(routes sol)
 	float brsEnergyCost = energy * inst->brsEnergyCost;
 
 	// energy cost in bss
-	energy = 0;
-	for (auto route : sol) {
-		for (auto v : route) {
+	float bssEnergyCost = 0;// = energy * inst->bssEnergyCost;
+	for (route r : sol) {
+		energy = 0;
+		for (vertex v : r) {
 			node n = inst->getNodeByKey(v.key);
 			if (n.type == "f" || n.type == "f_d") {
 				energy += v.recharged;
 			}				
 		}
+		bssEnergyCost += energy * inst->bssEnergyCost;
 	}
-	float bssEnergyCost = energy * inst->bssEnergyCost;
+	
 
 	energy = 0;
 	// bss use cost
-	for (auto route : sol) {
-		for (auto v : route) {
+	for (route r : sol) {
+		for (vertex v : r) {
 			node n = inst->getNodeByKey(v.key);
 			if (n.type == "f" || n.type == "f_d") {
 				energy += 1;
@@ -692,6 +752,173 @@ vector<float> Algorithms::FOComplete(routes sol)
 	fo_parcels = { fo + p, depotCost, bssCost, vehicleCost, drivingCost, brsEnergyCost, bssEnergyCost, bssUseCost, p, FO_};
 
 	return fo_parcels;
+}
+
+Solution Algorithms::fixSol(Solution s, route r_new, int pos)
+{
+	vector<float> FOp = s.FOp;
+	vector<float> newFOp = FOp;
+
+	float cost_r_old = 0;
+	float cost_r = 0;
+
+	// unmodified route cost
+	route r_old = s.routes.at(pos);
+
+	// driving cost old
+	float drivingCost = 0;
+	for (int i = 0; i < r_old.size() - 1; i++) {
+		auto n = inst->getNodeByKey(r_old.at(i).key);
+		drivingCost += inst->getTD(r_old.at(i).key, r_old.at(i + 1).key) * inst->driverWage;
+		if (n.type == "c") {
+			drivingCost += n.serviceTime * inst->driverWage;
+		}
+	}	
+	newFOp.at(4) -= drivingCost;
+
+	// driving cost new
+	drivingCost = 0;
+	for (int i = 0; i < r_new.size() - 1; i++) {
+		auto n = inst->getNodeByKey(r_new.at(i).key);
+		drivingCost += inst->getTD(r_new.at(i).key, r_new.at(i + 1).key) * inst->driverWage;
+		if (n.type == "c") {
+			drivingCost += n.serviceTime * inst->driverWage;
+		}
+	}
+	newFOp.at(4) += drivingCost;
+
+	// energy cost in brs old
+	float energy = 0;
+	cost_r_old = 0;
+	for (vertex v : r_old) {
+		node n = inst->getNodeByKey(v.key);
+		if (n.type == "c" || n.type == "c_d") {
+			energy += v.recharged;
+		}
+	}	
+	cost_r_old += energy * inst->brsEnergyCost;
+	newFOp.at(5) -= cost_r_old;
+
+	// energy cost in brs new
+	energy = 0;
+	cost_r = 0;
+	for (vertex v : r_new) {
+		node n = inst->getNodeByKey(v.key);
+		if (n.type == "c" || n.type == "c_d") {
+			energy += v.recharged;
+		}
+	}
+	cost_r += energy * inst->brsEnergyCost;
+	newFOp.at(5) += cost_r;
+
+	// energy cost in bss old
+	energy = 0;
+	cost_r_old = 0;
+	for (vertex v : r_old) {
+		node n = inst->getNodeByKey(v.key);
+		if (n.type == "f" || n.type == "f_d") {
+			energy += v.recharged;
+		}
+	}
+	cost_r_old += energy * inst->bssEnergyCost;
+	newFOp.at(6) -= cost_r_old;
+
+	// energy cost in bss new
+	energy = 0;
+	cost_r = 0;
+	for (vertex v : r_new) {
+		node n = inst->getNodeByKey(v.key);
+		if (n.type == "f" || n.type == "f_d") {
+			energy += v.recharged;
+		}
+	}
+	cost_r += energy * inst->bssEnergyCost;
+	newFOp.at(6) += cost_r;
+
+	// bss use cost old
+	energy = 0;
+	cost_r_old = 0;
+	for (vertex v : r_old) {
+		node n = inst->getNodeByKey(v.key);
+		if (n.type == "f" || n.type == "f_d") {
+			energy += 1;
+		}
+	}	
+	cost_r_old += energy * inst->bssUseCost;
+	newFOp.at(7) -= cost_r_old;
+
+	// bss use cost new
+	energy = 0;
+	cost_r = 0;
+	for (vertex v : r_new) {
+		node n = inst->getNodeByKey(v.key);
+		if (n.type == "f" || n.type == "f_d") {
+			energy += 1;
+		}
+	}
+	cost_r += energy * inst->bssUseCost;
+	newFOp.at(7) += cost_r;
+
+	//s.routes.at(pos) = r_new;
+
+	//set<int> F_new = getListBSS(s);
+	//int cost_bss_r = F_new.size() * inst->bssCost;
+
+	// get bss in the new route
+	/*
+	vector<int> BSS_old;
+	for (vertex v : s.routes.at(pos)) {
+		BSS_old.push_back(v.key);
+	}
+
+	vector<int> BSS_new;
+	for (vertex v : r_new) {
+		BSS_new.push_back(v.key);
+	}
+	*/
+
+	s.inf = evalRoute(r_new);
+
+	int s1 = 0;
+	for (auto i : r_old) {
+		if (inst->getNodeByKey(i.key).type == "c") {
+			s1++;
+		}
+	}
+	int s2 = 0;
+	for (auto i : r_new) {
+		if (inst->getNodeByKey(i.key).type == "c") {
+			s2++;
+		}
+	}
+
+	if (s1 != s2) {
+		s.inf.push_back("customers_coverage");
+	}
+
+	// fo_parcels = { fo + p, depotCost, bssCost, vehicleCost, drivingCost, brsEnergyCost, bssEnergyCost, bssUseCost, p, FO_};
+
+	newFOp.at(0) -= (FOp.at(2) + FOp.at(4) + FOp.at(5) + FOp.at(6) + FOp.at(7));
+	newFOp.at(0) += (newFOp.at(2) - newFOp.at(4) + newFOp.at(5) + newFOp.at(6) + newFOp.at(7));
+	
+	
+	s.FOp = newFOp;
+
+	s.routes.at(pos) = r_new;
+	set<int> BSS;
+	for (route r : s.routes) {
+		for (vertex v : r) {
+			if (inst->getNodeByKey(v.key).type == "f") {
+				BSS.insert(v.key);
+			}
+		}
+	}
+	s.FOp.at(2) = BSS.size() * (inst->bssCost / inst->bssLifetime);
+	
+	s.FOp.at(0) = s.FOp.at(1) + s.FOp.at(2) + s.FOp.at(3) + s.FOp.at(4) + s.FOp.at(5) + s.FOp.at(6) + s.FOp.at(7);
+	s.FO = s.FOp.at(0);
+
+	return s;
 }
 
 vector<float> Algorithms::FOComplete_old(vector<vector<vertex>> sol)
@@ -1053,6 +1280,66 @@ vector<string> Algorithms::fullEval(Solution s)
 	}
 
 	return r;
+}
+
+vector<string> Algorithms::evalRoute(route r)
+{
+	set<string> ret;
+
+	// check if the current route start and finish in the same depot
+	if (inst->getNodeByKey(r.front().key).ogKey != inst->getNodeByKey(r.back().key).ogKey) {
+		ret.insert("route_beg_end");
+	}
+
+	for (auto v : r) {
+		node n = inst->getNodeByKey(v.key);
+
+		// checking time windows
+		if (n.type == "c") {
+			if (v.aTime + v.wTime > n.dueDate + n.serviceTime || v.aTime + v.wTime < n.readyTime) {
+				// cout << "Vertex " << v.key << " arrival is " << v.aTime << " and its ready time and due date is " << n.readyTime << " and " << n.dueDate << endl;
+				ret.insert("time_window");
+			}
+		}
+
+		// checking battery lvl
+		if (v.bLevel < 0 || v.bLevel > inst->Q) {
+			// cout << "Vertex " << v.key << " and " << v.bLevel << endl;
+			ret.insert("battery_level");
+		}
+
+		// checking vehicle load
+		if (v.vLoad < 0 || v.vLoad > inst->C) {
+			// cout << v.key << endl;
+			ret.insert("vehicle_load");
+		}
+	}
+
+	// checking vertex sequence, if there are two repeated consecutive vertexes
+	bool a = false;
+
+	for (int i = 0; i < r.size() - 1; i++) {
+		if (r.at(i).key == r.at(i + 1).key) {
+			ret.insert("consecutive_vertex");
+			a = true;
+			break;
+		}
+	}	
+
+	if (inst->getNodeByKey(r.front().key).type != "d") {
+		ret.insert("begin");
+	}
+	if (inst->getNodeByKey(r.back().key).type != "a") {
+		ret.insert("end");
+	}
+	
+
+	vector<string> ret2;
+	for (string s : ret) {
+		ret2.push_back(s);
+	}
+
+	return ret2;
 }
 
 void Algorithms::printInstance()

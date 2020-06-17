@@ -41,8 +41,6 @@ Solution perm_rep::permutationToSolution(permutation p)
 	//
 	for (auto i : p) { // iterate sequentially over the permutation adding the customers to a route
 		node n = inst->getNodeByKey(i);
-
-
 		// search which route can receive the next permutation node
 		int j = 0;
 		for (j = 0; j < weight.size(); j++) {
@@ -91,25 +89,64 @@ Solution perm_rep::permutationToSolution(permutation p)
 
 		}
 	}
+	/*
+	Solution curr;
+	s.FO = INT_MAX;
+	for (auto n : inst->set_UD0()) {
+		curr = addDepotsN(s, n.key);
 
-	s = addDepots(s);
-	try {
-		//s = addStations_model(s);
-		s = addStations(s);
-		//s = addStations_ROUTE(s);
-		//s = GRASP_p(s);
+		try {
+			//curr = GRASP_p(curr);
+			curr = addStations(curr); 
+
+			curr = procSol(curr);
+
+			if (curr.FO < s.FO && curr.inf.size() == 0) {
+				s = curr;
+			}
+		}
+		catch (IsolatedNode& e) {
+			cout << e.what() << endl;
+		}
+		catch (exception e) {
+			cout << e.what() << endl;
+			throw PermutationInf(s.perm);
+		}
 	}
-	catch (IsolatedNode &e) {
-		cout << e.what() << endl;
-	}
-	catch (exception e) {
-		cout << e.what() << endl;
-		throw PermutationInf(s.perm);
+	*/
+
+	Solution best;
+	best.FO = INT_MAX;
+	for (auto n : inst->set_UD0()) {
+		Solution curr = addDepotsN(s, n.key);
+
+		try {
+			curr = addStations(curr);
+			curr = procSol(curr);
+
+			if (curr.FO < best.FO && curr.inf.size() == 0) {
+				best = curr;
+			}
+		}
+		catch (IsolatedNode& e) {
+			cout << e.what() << endl;
+		}
+		catch (exception e) {
+			cout << e.what() << endl;
+			throw PermutationInf(s.perm);
+		}
 	}
 
-	s = procSol(s);
+	/*
+	for (vertex v : best.routes.at(0)) {
+		if (inst->getNodeByKey(v.key).type == "f") {
+			cout << v.recharged << " ";
+		}
+	}
+	cout << endl;
+	*/
 
-	return s;
+	return best;
 }
 
 Solution perm_rep::permutationToSolution(permutation p, int cn)
@@ -206,7 +243,7 @@ Solution perm_rep::permutationToSolution(permutation p, int cn)
 
 	s = addDepots(s);
 	try {
-		s = GRASP_p(s);
+		s = GRASP_p(s, 10, INT_MAX);
 	}
 	catch (IsolatedNode& e) {
 		cout << e.what() << endl;
@@ -268,6 +305,126 @@ Solution perm_rep::permutationToSolution(permutation p, int cn)
 
 	return s;
 	*/
+}
+
+Solution perm_rep::permutationToSolutionAlt(permutation p)
+{
+	vector<bool> coverage(inst->nodes.size(), false);
+
+	Solution s;
+	s.perm = p;
+
+	// adding the first vertex to the first route
+	int v = p.front(); // get the first element in the permutation
+
+	vertex new_v; // create the vertex to be added
+	new_v.key = v;
+
+	s.routes.resize(1); // set the number of route to one
+	s.routes.front().push_back(new_v);
+
+	p.erase(p.begin()); // remove the first element that were already added
+
+	// search for the closest depot from the fisrt inserted node
+	// we will use it to estimate the arrival and departure time in each node
+	// we intent to minimize the number of vertexes infeasible due to time window constraints
+	int minTT = INT_MAX;
+	int dpt = -1;
+	auto UD0 = inst->set_UD0();
+	for (node n : UD0) {
+		int tt = inst->getTD(n.key, s.routes.front().front().key);
+		if (tt < minTT) {
+			minTT = tt;
+			dpt = n.key;
+		}
+	}
+	// set the fisrt vertex`s arrival and departure time
+	s.routes.front().front().aTime = minTT;
+	s.routes.front().front().lTime = minTT + inst->getNodeByKey(s.routes.front().front().key).serviceTime;
+
+	vector<int> weight; // this vector will store the amount of freight required to in the route // it will be use to determine if the routes is already full and cant supply more customers
+	weight.push_back(inst->getNodeByKey(v).demand);
+
+	//
+	for (auto i : p) { // iterate sequentially over the permutation adding the customers to a route
+		node n = inst->getNodeByKey(i);
+
+
+		// search which route can receive the next permutation node
+		int j = 0;
+		for (j = 0; j < weight.size(); j++) {
+			vertex back = s.routes.at(j).back();
+			int time = back.lTime + inst->getTD(back.key, n.key);
+
+			if (n.demand + weight.at(j) <= inst->C && time <= n.dueDate) { // check the route total freight and stipulated time windows
+
+				// create the new vertex
+				new_v.key = n.key;
+				new_v.aTime = back.lTime + inst->getTD(back.key, new_v.key);
+				new_v.lTime = new_v.aTime + n.serviceTime;
+
+				s.routes.at(j).push_back(new_v); // insert node
+				weight.at(j) += n.demand; // update the total freight weight in the route
+				break;
+			}
+		}
+		// new route will be created
+		if (j == weight.size()) { // if no route can fit the next node we shall create a new one
+			// create the new vertex
+			new_v.key = n.key;
+
+			vector<vertex> temp;
+			temp.push_back(new_v); // create the new route with the first node
+			s.routes.push_back(temp); // add the new route to solution
+			weight.push_back(n.demand); // add the route's weight in the weight vector
+
+			minTT = INT_MAX;
+			dpt = -1;
+			//auto UD0 = inst->set_UD0();
+			for (node n : UD0) {
+				int tt = inst->getTD(n.key, s.routes.at(j).front().key);
+				if (tt < minTT) {
+					minTT = tt;
+					dpt = n.key;
+				}
+			}
+			// set the fisrt vertex`s arrival and departure time
+			s.routes.at(j).front().aTime = minTT;
+			s.routes.at(j).front().lTime = minTT + inst->getNodeByKey(s.routes.at(j).front().key).serviceTime;
+
+			//new_v.aTime = inst->getTD(s.routes.at(j).back().key, new_v.key);
+			//new_v.lTime = new_v.aTime + n.serviceTime;
+
+
+		}
+	}
+
+	///
+	Solution best;
+	best.FO = INT_MAX;
+	for (auto n : inst->set_UD0()) {
+		Solution curr = addDepotsN(s, n.key);
+
+		try {
+			//curr = GRASP_p(curr);
+			curr = addStationsAlt(curr);
+
+			curr = procSol(curr);
+
+			if (curr.FO < best.FO && curr.inf.size() == 0) {
+				best = curr;
+			}
+		}
+		catch (IsolatedNode& e) {
+			cout << e.what() << endl;
+		}
+		catch (exception e) {
+			cout << e.what() << endl;
+			throw PermutationInf(s.perm);
+		}
+	}
+
+	return best;
 }
 
 Solution perm_rep::permutationToSolutionGrasp(permutation p)
@@ -362,12 +519,23 @@ Solution perm_rep::permutationToSolutionGrasp(permutation p)
 		}
 	}
 
-	s = addDepots(s);
+	vector<pair<int, float>> dists;
+	for (node d : inst->set_UD0()) {
+		float dist = 0;
+		for (route r : s.routes) {	
+			float a = inst->dist(d, inst->getNodeByKey(r.front().key));
+			float b = inst->dist(inst->getNodeByKey(r.front().key), d);
+			dist += (a + b) / 2.0;
+		}
+		dists.push_back(pair<int, float>(d.key, dist));
+	}
+	sort(dists.begin(), dists.end());
+
 	try {
-		//s = addStations_model(s);
-		//s = addStations(s);
-		//s = addStations_ROUTE(s);
-		s = GRASP_p(s);
+		s = addDepotsN(s, dists.front().first);
+		s = GRASP_p(s, 10, 30);
+		//curr = addStationsAlt(curr);
+		//curr = procSol(curr);
 	}
 	catch (IsolatedNode& e) {
 		cout << e.what() << endl;
@@ -376,59 +544,35 @@ Solution perm_rep::permutationToSolutionGrasp(permutation p)
 		cout << e.what() << endl;
 		throw PermutationInf(s.perm);
 	}
-
-	s = procSol(s);
-
 	return s;
 
 	/*
-	vector<bool> coverage(inst->nodes.size(), false);
+	Solution best;
+	best.FO = INT_MAX;
+	for (auto n : inst->set_UD0()) {
+		Solution curr = addDepotsN(s, n.key);
 
-	Solution s;
-	s.perm = p;
+		try {
+			curr = GRASP_p(curr);
+			//curr = addStationsAlt(curr);
 
-	// adding the first vertex to the first route
-	int v = p.front(); // get the first element in the permutation
+			//curr = procSol(curr);
 
-	vertex new_v; // create the vertex to be added
-	new_v.key = v;
-
-	s.routes.resize(1); // set the number of route to one
-	s.routes.front().push_back(new_v);
-
-	p.erase(p.begin()); // remove the first element that were already added
-
-	vector<int> weight; // this vector will store the amount of freight required to in the route
-	weight.push_back(inst->getNodeByKey(v).demand);
-
-	//
-	for (auto i : p) { // iterate sequentially over the permutation adding the customers to a route
-		node n = inst->getNodeByKey(i);
-		new_v.key = n.key;
-
-		// search which route can receive the next permutation node
-		int j = 0;
-		for (j = 0; j < weight.size(); j++) {
-			if (n.demand + weight.at(j) <= inst->C) { // we put the node in the first route that fits it
-				s.routes.at(j).push_back(new_v); // insert node
-				weight.at(j) += n.demand; // update the total freight weight in the route
-				break;
+			if (curr.FO < best.FO && curr.inf.size() == 0) {
+				best = curr;
 			}
 		}
-		if (j == weight.size()) { // if no route can fit the next node
-			vector<vertex> temp;
-			temp.push_back(new_v); // create the new route with the first node
-			s.routes.push_back(temp); // add the new route to solution
-			weight.push_back(n.demand); // add the route's weight in the weight vector
+		catch (IsolatedNode& e) {
+			cout << e.what() << endl;
+		}
+		catch (exception e) {
+			cout << e.what() << endl;
+			throw PermutationInf(s.perm);
 		}
 	}
-
-	s = addDepots(s);
-	s = addStationsGrasp(s);
-	s = procSol(s); // maybe will generate a bug where the permutation will be erased
-
-	return s;
+	return best;
 	*/
+	
 }
 
 Solution perm_rep::choosePermutationToSolution(permutation p, int n)
@@ -537,6 +681,37 @@ Solution perm_rep::addDepots(Solution s)
 	set<int> st;
 	for (auto r : s.routes) {
 		st.insert(r.front().key);
+	}
+
+	return s;
+}
+
+Solution perm_rep::addDepotsN(Solution s, int n)
+{
+	//vector<vector<int>> dm; // matrix dm (distance matrix) where dm[i][j] (i = depot and j = route)
+// this matrix will store for each route x depot combination the sum of the distances depot -> initial node and the last node -> depot
+
+	node d = inst->getNodeByKey(n);
+	node a = inst->getNodeByKey(inst->getArrival(d.key));
+
+	for (route& r : s.routes) {
+		// insert the depot
+		vertex v;
+		v.key = d.key;
+		r.insert(r.begin(), v);
+
+		// insert the arrival depot node
+		v.key = a.key;
+		r.push_back(v);
+
+	}
+
+	for (int i = 0; i < s.routes.size(); i++) {
+		s.routes.at(i).front().bLevel = inst->Q;
+		s.routes.at(i).front().lTime = 0;
+		s.routes.at(i).front().vLoad = inst->C;
+		s.routes.at(i).front().aTime = 0;
+		s.routes.at(i).front().wTime = 0;
 	}
 
 	return s;
@@ -1095,10 +1270,6 @@ route perm_rep::addStations(route rt)
 		vertex& cVertex = rt.at(curr);
 		vertex pVertex = rt.at(prev);
 
-		if (currNode.type == "a" && rt.at(curr).bLevel >= 0) {
-			break;
-		}
-
 		// computing parameters
 
 		// compute battery level in the current node
@@ -1137,6 +1308,10 @@ route perm_rep::addStations(route rt)
 
 		// compute vehcile load in the current node
 		cVertex.vLoad = pVertex.vLoad - currNode.demand;
+
+		if (currNode.type == "a" && rt.at(curr).bLevel >= 0) {
+			break;
+		}
 
 		if (rt.at(curr).aTime > currNode.dueDate || rt.at(curr).vLoad < 0) { // if a vertex is infeasible to the time window constraint, push it to the end of the route
 			if (currNode.type == "a") {
@@ -2284,6 +2459,55 @@ Solution perm_rep::addStations(Solution s, int n)
 		try {
 			s.routes.at(j) = addStations(s.routes.at(j), n);
 
+			// remove infeasible nodes from the routes end
+			while (inst->getNodeByKey(s.routes.at(j).back().key).type != "a") {
+				vertex v = s.routes.at(j).back();
+				s.routes.at(j).erase(s.routes.at(j).end() - 1);
+
+				if (j == s.routes.size() - 1) { // create a new route
+					route r;
+					r.push_back(s.routes.at(j).front());
+
+					r.push_back(v);
+
+					int i = s.routes.at(j).size() - 1;
+					while (inst->getNodeByKey(s.routes.at(j).at(i).key).type != "a") {
+						i--;
+					}
+
+					r.push_back(s.routes.at(j).at(i));
+
+					s.routes.push_back(r);
+				}
+				else {
+					s.routes.at(j + 1).insert(s.routes.at(j + 1).begin() + 1, v);
+				}
+			}
+		}
+		catch (string s) {
+			cout << s << endl;
+		}
+		catch (exception e) {
+			cout << e.what() << endl;
+			throw PermutationInf(s.perm);
+		}
+
+	}
+	s = procSol(s);
+	return s;
+}
+
+Solution perm_rep::addStationsAlt(Solution s)
+{
+	int last = 0;
+	vector<int> bssSequence;
+
+	for (int j = 0; j < s.routes.size(); j++) {
+		int curr = 1;
+		try {
+			s.routes.at(j) = addStationsAlt(s.routes.at(j));
+
+
 			while (inst->getNodeByKey(s.routes.at(j).back().key).type != "a") {
 				vertex v = s.routes.at(j).back();
 				s.routes.at(j).erase(s.routes.at(j).end() - 1);
@@ -2318,6 +2542,7 @@ Solution perm_rep::addStations(Solution s, int n)
 
 	}
 
+	s = procSol(s);
 	return s;
 }
 
@@ -3055,15 +3280,255 @@ route perm_rep::addStations(route rt, int n)
 		}
 	}
 
-
 	rt.insert(rt.end(), temp.begin(), temp.end());
 
 	return rt;
 }
 
-Solution perm_rep::addStationsGrasp(Solution s)
+route perm_rep::addStationsAlt(route rt)
 {
-	return Solution();
+	vector<vertex> temp;
+	int last = 0;
+	vector<int> bssSequence;
+
+	// initialize the first node
+	rt.front().bLevel = inst->Q;
+
+	int curr = 1;
+	while (curr < rt.size()) {
+		if (curr == 0) {
+			throw "error";
+		}
+		if (inst->getNodeByKey(rt.at(curr).key).type == "d") {
+			throw "error";
+		}
+		int prev = curr - 1;
+		node currNode = inst->getNodeByKey(rt.at(curr).key);
+		node prevNode = inst->getNodeByKey(rt.at(prev).key);
+
+		vertex& cVertex = rt.at(curr);
+		vertex pVertex = rt.at(prev);
+
+		if (currNode.type == "a" && rt.at(curr).bLevel >= 0) {
+			break;
+		}
+
+		// computing parameters
+
+		// compute battery level in the current node
+		float bUsed = inst->getBatteryUsed(rt.at(prev).key, rt.at(curr).key);
+
+		cVertex.bLevel = pVertex.bLevel + pVertex.recharged - bUsed;
+
+		if (currNode.type == "f" || currNode.type == "f_d") {
+			cVertex.recharged = inst->Q - cVertex.bLevel;
+			cVertex.recharge = true;
+		}
+		else {
+			cVertex.recharged = inst->g * currNode.serviceTime;
+			cVertex.recharge = true;
+		}
+
+		// compute arrival time in the current node
+		float TD = inst->getTD(prevNode.key, currNode.key);
+		cVertex.aTime = pVertex.lTime + TD;
+
+		// compute waiting time in the current node
+		if (cVertex.aTime < currNode.readyTime) {
+			cVertex.wTime = currNode.readyTime - cVertex.aTime;
+		}
+		else { // no waiting time
+			cVertex.wTime = 0;
+		}
+
+		// compute de departure time in the current node
+		if (currNode.type == "f" || currNode.type == "f_d") {
+			cVertex.lTime = cVertex.aTime + cVertex.wTime + inst->ct;
+		}
+		else {
+			cVertex.lTime = cVertex.aTime + cVertex.wTime + currNode.serviceTime;
+		}
+
+		// compute vehcile load in the current node
+		cVertex.vLoad = pVertex.vLoad - currNode.demand;
+
+		if (rt.at(curr).aTime > currNode.dueDate || rt.at(curr).vLoad < 0) { // if a vertex is infeasible to the time window constraint, push it to the end of the route
+			if (currNode.type == "a") {
+				curr--;
+
+				while (inst->getNodeByKey(rt.at(curr).key).type == "f") {
+					rt.erase(rt.begin() + curr);
+					curr--;
+				}
+
+				vertex v = rt.at(curr);
+				rt.erase(rt.begin() + curr);
+				temp.push_back(v);
+
+			}
+			else {
+				vertex v = rt.at(curr);
+				rt.erase(rt.begin() + curr);
+				temp.push_back(v);
+				curr--;
+			}
+		}
+		else if (rt.at(curr).bLevel < 0) {
+			
+			vector<pair<int, int>> candidates;
+
+			int curr_ = curr - 1;
+			int bss, pos;
+/*
+			if (inst->getNodeByKey(rt.at(curr_).key).type == "f") {
+				pos = curr_;
+				bss = closestBSS(rt, curr_).first;
+
+				
+				vector<node> R = inst->set_R(); // get all stations
+					//
+				int curr__ = curr - 1;
+				bssSequence.clear();
+				while (inst->getNodeByKey(rt.at(curr__).key).type == "f") {
+					bssSequence.push_back(rt.at(curr__).key);
+					curr__--;
+				}
+
+				// remove all bss that initially precced the current one in order to avoid loops
+				for (int key : bssSequence) {
+					for (int i = 0; i < R.size(); i++) {
+						if (R.at(i).key == key) {
+							R.erase(R.begin() + i);
+						}
+					}
+				}
+
+				// search for the closest bss from the stop node
+				pair<int, int> ret = closestBSS(rt, curr);
+				bss = ret.first;
+				minBU = ret.second;
+				
+			}
+			else {*/
+				while ((rt.at(curr_).bLevel + rt.at(curr_).recharged <= inst->Q * 1) && inst->getNodeByKey(rt.at(curr_).key).type != "f" && inst->getNodeByKey(rt.at(curr_).key).type != "d") {
+
+					int bss = minimalDeviationBSS(rt, curr_);
+
+					if (bss != -1) {
+						candidates.push_back(pair<int, int>(curr_, bss));
+					}
+					curr_--;
+				}
+				
+				if (candidates.size() == 0) {
+					//curr_--;
+					int pBSS = getPreviousStatioPos(rt, curr_);
+
+					vector<int> usedBSS;
+					int count = pBSS;
+					while (inst->getNodeByKey(rt.at(count).key).type == "f") {
+						usedBSS.push_back(rt.at(count).key);
+						count--;
+					}
+					curr_ = count + 1;
+
+					vector<node> R = inst->set_R();
+
+					for (auto j : usedBSS) {
+						for (int i = 0; i < R.size(); i++) {						
+							if(R.at(i).key == j) {
+								R.erase(R.begin() + i);
+								break;
+							}
+						}
+					}
+
+					if (R.size() == 0) {
+						throw "Set R has zero elements after stations removal";
+					}
+
+					int minDev = INT_MAX;
+					bss = -1;
+
+					for (auto i : R) {
+						int dev1 = inst->getBatteryUsed(rt.at(curr_).key, i.key);
+						int dev2 = inst->getBatteryUsed(i.key, rt.at(curr_ + 1).key);
+						int bLevel = rt.at(curr_).bLevel + rt.at(curr_).recharged;
+
+						if (dev2 < minDev && dev1 < abs(bLevel)) {
+							minDev = dev2;
+							bss = i.key;
+						}
+					}
+					pos = curr_;
+
+				}
+				else {
+					int c = Random::get<int>(0, candidates.size() - 1);
+					bss = candidates.at(c).second;
+					pos = candidates.at(c).first;
+				}	
+			//}
+
+			// choose a random place in the cadidate list to receive a bss
+			vertex v;
+			v.key = bss;
+
+			v.vLoad = rt.at(pos).vLoad; // compute vehicle load						
+
+			v.aTime = rt.at(pos).lTime + inst->getTD(rt.at(pos).key, v.key); // compute arrival time
+
+			v.lTime = v.aTime + inst->ct; // compute departure time			
+
+			auto bUsed = inst->getBatteryUsed(rt.at(pos).key, v.key);
+			v.bLevel = rt.at(pos).bLevel + rt.at(pos).recharged - bUsed; // compute battery level
+
+			v.recharged = inst->Q - v.bLevel; // compute the amount of energy recharged
+
+			v.recharge = true;
+
+			rt.insert(rt.begin() + pos + 1, v); // insert in the routes
+
+			curr = pos + 1;
+			
+		}
+		curr++;
+	}
+
+	// optmize battery
+
+	for (int i = 0; i < rt.size(); i++) {
+		node n = inst->getNodeByKey(rt.at(i).key);
+
+		if (n.type == "f" || n.type == "a") {
+			int bLevel = rt.at(i).bLevel;
+
+			int j = i - 1;
+			while (inst->getNodeByKey(rt.at(j).key).type == "c" && bLevel > 0) {
+
+				if (rt.at(j).recharged > 0) {
+					if (rt.at(j).recharged >= bLevel) {
+						rt.at(j).recharged -= bLevel;
+						bLevel = 0;
+					}
+					else if (rt.at(j).recharged < bLevel) {
+						rt.at(j).recharge = false;
+						bLevel -= rt.at(j).recharged;
+						rt.at(j).recharged = 0;
+					}
+
+				}
+				j--;
+			}
+
+			rt.at(i).bLevel = bLevel;
+		}
+	}
+
+
+	rt.insert(rt.end(), temp.begin(), temp.end());
+
+	return rt;
 }
 
 bool perm_rep::rechargeSchedule(route &r, int beg, int end, int energy)
@@ -3099,42 +3564,6 @@ bool perm_rep::rechargeSchedule(route &r, int beg, int end, int energy)
 vector<int> perm_rep::knapSack(route r, int beg, int end)
 {
 	return vector<int>();
-}
-
-int perm_rep::getNumC(route r)
-{
-	int C = 0;
-	for(auto i : r) {
-		if (inst->getNodeByKey(i.key).type == "c") {
-			C++;
-		}
-	}
-	return C;
-}
-
-vector<int> perm_rep::getListC(route r)
-{
-	vector<int> C;
-
-	int pos = 0;
-	for (auto i : r) {
-		if (inst->getNodeByKey(i.key).type == "c") {
-			C.push_back(pos);
-		}
-		pos++;
-	}
-
-	return C;
-}
-
-int perm_rep::getNumD(Solution s)
-{
-	set<int> d;
-	for (auto r : s.routes) {
-		d.insert(r.front().key);
-	}
-
-	return d.size();
 }
 
 pair<int, int> perm_rep::closestBSS(Solution& s, int route, int key)
@@ -3299,6 +3728,54 @@ pair<int, int> perm_rep::closestBSS(Solution& s, int route, int key, int m)
 	int n = Random::get(0, m - 1);
 
 	return dists.at(n);
+}
+
+int perm_rep::minimalDeviationBSS(route r, int v)
+{
+	if (v < 0 || v > r.size() - 2) {
+		throw "error on minimalDeviationBSS";
+	}
+
+		vector<node> R = inst->set_R();
+
+	int minDev = INT_MAX;
+	int bss = -1;
+
+	for (auto i : R) {
+		int dev1 = inst->getBatteryUsed(r.at(v).key, i.key);
+		int dev2 = inst->getBatteryUsed(i.key, r.at(v + 1).key);
+		int bLevel = r.at(v).bLevel + r.at(v).recharged;
+
+		if (dev2 < minDev && dev1 < abs(bLevel)) {
+			minDev = dev2;
+			bss = i.key;
+		}
+	}
+
+	return bss;	
+}
+
+int perm_rep::minimalDeviationBSS(int v1, int v2)
+{
+	vector<node> R = inst->set_R();
+
+	node a = inst->getNodeByKey(v1);
+	node b = inst->getNodeByKey(v2);
+
+	int minDev = INT_MAX;
+	int bss = -1;
+
+	for (auto i : R) {
+		int dev = inst->dist(a.key, i.key);
+		dev += inst->dist(i.key, b.key);
+
+		if (dev < minDev) {
+			dev = minDev;
+			bss = i.key;
+		}
+	}
+
+	return bss;
 }
 
 permutation perm_rep::randomPermutation()
@@ -3502,9 +3979,8 @@ route perm_rep::removeBSS(route r, int pos)
 
 Solution perm_rep::localSearch(permutation p)
 {
-
 	Solution best = permutationToSolution(p);
-	best = procSol(best);
+	//best = procSol(best);
 	best.perm = p;
 
 	bool improv = true;
@@ -3529,7 +4005,8 @@ Solution perm_rep::localSearch(permutation p)
 					if (sl.FO < best.FO) {
 						best = sl;
 						improv = true;
-						return best;
+						//return best;
+						break;
 					}
 				}
 				catch (PermutationInf e) {
@@ -3542,9 +4019,68 @@ Solution perm_rep::localSearch(permutation p)
 				}
 				
 			}
+			if (improv == true) {
+				break;
+			}
+		}
+		if (improv == true) {
+			break;
 		}
 	}
+	return best;
+}
 
+
+Solution perm_rep::localSearch_light(permutation p)
+{
+	Solution best = permutationToSolution(p);
+	best = procSol(best);
+	best.perm = p;
+
+	bool improv = true;
+	while (improv == true) {
+		improv = false;
+		Solution curr = best;
+
+		for (int i = 0; i < p.size() - 1; i++) {
+			for (int j = i + 1; j < p.size(); j++) {
+				// cout << i << " - " << j << endl;
+
+				permutation pl = curr.perm;
+				// swap nodes in the permutation
+				int aux = pl.at(j);
+				pl.at(j) = pl.at(i);
+				pl.at(i) = aux;
+
+				try {
+					Solution sl = permutationToSolution(pl);
+					//sl = procSol(sl);
+
+					if (sl.FO < best.FO) {
+						best = sl;
+						improv = true;
+						//return best;
+						break;
+					}
+				}
+				catch (PermutationInf e) {
+					cout << e.what() << endl;
+					continue;
+				}
+				catch (exception e) {
+					cout << e.what() << endl;
+					continue;
+				}
+
+			}
+			if (improv == true) {
+				break;
+			}
+		}
+		if (improv == true) {
+			break;
+		}
+	}
 	return best;
 }
 
@@ -3596,6 +4132,19 @@ permutation perm_rep::opt2(permutation p, int beg, int end)
 	//solution s = permutationToSolution(p);
 
 	return p;
+}
+
+Solution perm_rep::GRASP(int maxIt, int maxRuntime)
+{
+	Solution s = greedDD();
+	s = GRASP_p(s, 10, INT_MAX);
+
+	row = "";
+	row = getRow(s);
+
+	s.saveXML(dirOutput + inst->fileName + ".xml");
+
+	return s;
 }
 
 Solution perm_rep::GA(int popSize, int eliteP, int maxGen)
@@ -3907,6 +4456,7 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 		int counter = 0;
 		cout << "temp: " << temp << endl;
 		do {
+			//cout << "it: " << counter << endl;
 			// select a neighbor from the current solution
 			permutation pl = curr.perm;
 
@@ -3927,14 +4477,28 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 			pl = opt2(pl, beg, end);
 			//cout << "a2" << endl;
 			try {
-				Solution nSol = localSearch(pl);
+				
+				Solution nSol;
+				nSol = localSearch_light(pl);
+				/*
+				if (temp <= initTemp * 0.3) {
+					//nSol = localSearch(pl);
+					nSol = permutationToSolutionGrasp(pl);
+				}
+				else {
+					nSol = localSearch_light(pl);				
+				}
+				*/
+				
+				//Solution nSol = permutationToSolution(pl);
+				//nSol = bVNS_r(nSol);
+
 				//cout << "a3" << endl;
 				// store the best solution so far
 				if (nSol.FO < best.FO && nSol.inf.size() == 0) {
+					cout << "Improvment (SA): " << best.FO << " --> " << nSol.FO << endl;
 					best = nSol;
 					counter = 0;
-					cout << "Improvment, ";
-					cout << fixed << "FO: " << best.FO << endl;
 				}
 
 				// search-space exploration
@@ -3982,7 +4546,7 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 		duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
 		cout << "duration: " << duration << endl;
 
-	} while (temp > tf && duration < this->maxRuntime);
+	} while (temp >= tf && duration < this->maxRuntime);
 
 
 	auto t2 = std::chrono::high_resolution_clock::now();
@@ -4108,9 +4672,9 @@ bool perm_rep::getArcsNodes(Solution& s)
 	return true;
 }
 
-Solution perm_rep::GRASP_p(Solution s)
+Solution perm_rep::GRASP_p(Solution s, int maxIt, int maxRunTime)
 {
-	cout << "GRASP\n";
+	//cout << "GRASP\n";
 	int n = inst->set_R().size();
 	if (n >= 2) {
 		n = floor(double(n) * 0.2) + 2;
@@ -4125,24 +4689,24 @@ Solution perm_rep::GRASP_p(Solution s)
 	Solution best;
 	best.FO = INT_MAX;
 
-	int it = 20;
-	int i = 0;
-	while (i < it) {
+	int it = 0;
+	while (it < maxIt) {
+		//cout << "it: " << it << endl;
 		//cout << "a" << endl;
-		Solution sl = addStations(s, n);
+		//Solution sl = addStations(s, n);
+		Solution sl = addStationsAlt(s);
 		//cout << "b" << endl;
-		sl = procSol(sl);
-
 		// local search
-		//cout << "c" << endl;
 		sl = bVNS_r(sl);
-		//cout << "d" << endl;
+		//sl = localSearch_r(sl, "2opt");
+		//cout << "c" << endl;
 		if (sl.FO < best.FO && sl.inf.size() == 0) {
+			//cout << "improvment grasp: " << best.FO << " --> " << sl.FO << endl;
 			best = sl;
-			i = 0;
+			it = 0;
 		}
 		else {
-			i++;
+			it++;
 		}
 
 		auto t2 = std::chrono::high_resolution_clock::now();
@@ -4152,59 +4716,54 @@ Solution perm_rep::GRASP_p(Solution s)
 			break;
 		}
 	}
-	
-	cout << "GRASP_END\n";
+	best = procSol(best);
+	//cout << "GRASP_END\n";
 	return best;
 }
 
 Solution perm_rep::bVNS_r(Solution s)
 {
-	cout << "VNS\n";
+	//cout << "VNS\n";
 	Solution best = s;
 
 	int it = 0;
-	int itMax = 20;
+	int itMax = 5;
 	int n = 1;
-	int maxN = 4;
+	int maxN = 3;
 
 	//auto t1 = std::chrono::high_resolution_clock::now();
 
 	do {
-		cout << "it: " << it << endl;
-		Solution sl;
+		//cout << "it: " << it << endl;
 		try {
-			cout << 1 << endl;
-			cout << "shake " << n << endl;
+			//cout << 1 << endl;
+			//cout << "shake " << n << endl;
 			
-			if (getNumD(s) == 1) {
-				maxN = 3;
-			}
-			else {
-				maxN = 4;
-			}
-
-			sl = shakeRandom_r(s, n);
+			Solution sl = shakeRandom_r(best, n);
+			//cout << fixed << "before shake: " << best.FO << endl;
+			//cout << fixed << "after shake : " << sl.FO << endl;
 			//cout << 2 << endl;
 			sl = localSearch_r(sl, "2opt");
+			//sl = localSearch_r(sl, "shiftC");
 			//cout << 3 << endl;
+
+			if (sl.FO < best.FO && sl.inf.size() == 0) {
+				//cout << fixed << setprecision(2) << "improvment: " << best.FO << " --> " << sl.FO << endl;
+				best = sl;
+				s = sl;
+				it = 0;
+				n = 1;
+			}
+			else {
+				it++;
+				n++;
+				if (n > maxN) {
+					n = maxN;
+				}
+			}
 		}
 		catch (string str) {
 			cout << str << endl;
-		}		
-
-		if (sl.FO < best.FO && s.inf.size() == 0) {
-			cout << fixed << setprecision(2) << "improvment: " << best.FO << " --> " << s.FO << endl;
-			best = s;
-			s = sl;
-			it = 0;
-			n = 1;
-		}
-		else {
-			it++;
-			n++;
-			if (n > maxN) {
-				n = maxN;
-			}
 		}
 
 		// measure runtime
@@ -4218,7 +4777,7 @@ Solution perm_rep::bVNS_r(Solution s)
 
 	} while (it < itMax);
 
-	cout << "VNS_END\n";
+	//cout << "VNS_END\n";
 	return best;
 }
 
@@ -4302,49 +4861,64 @@ Solution perm_rep::localSearch_r(Solution s, string n)
 	p2 = customers.at(p2);
 	*/
 	
-	//cout << "localSearch_r\n";
+	#ifdef DEBUG
+	cout << "localSearch_r\n";
+	#endif // DEBUG
+	
+	float FO = s.FO;
 	Solution best = s;
+	//Solution curr = best;
 	best = procSol(best);
 	bool improv = true;
 	
 	int count = 0;
 	while (improv == true) {
-		count++;
+		//cout << count << endl;
 		improv = false;
-		Solution curr = best;
 		if (n == "2opt") {
 			for (int i = 0; i < s.routes.size(); i++) {
-				vector<int> customers = getListC(curr.routes.at(i));
+				vector<int> customers = getListC(s.routes.at(i));
 				if (customers.size() < 2) {
 					continue;
-				}
-				
-				for (int a = 0; a < customers.size() - 1; a++) {
-					for (int b = a + 1; b < customers.size(); b++) {
+				}		
+				//for (int a = 0; a < customers.size() - 1; a++) {
+					//for (int b = a + 1; b < customers.size(); b++) {
+				for (int b = customers.size() - 1; b >= 1; b--) {
+					for (int a = 0; a < b - 1; a++) {
+					
 						try {
-							//cout << "aqui1\n";
-							/*
-							cout << "Route: ";
-							for (auto c : s.routes.at(i)) {
-								cout << c.key << " ";
-							}
-							cout << endl;
-							cout << "C    : ";
-							for (auto c : getListC(s.routes.at(i))) {
-								cout << c << " ";
-							}
-							cout << endl;
-							*/
-							Solution sl = opt2_route_r(curr, i, customers.at(a), customers.at(b));
-							//cout << "aqui2\n";
-						
+
+							Solution sl = opt2_route_r(s, i, customers.at(a), customers.at(b));
+
+							//#ifdef DEBUG
+							auto t2 = std::chrono::high_resolution_clock::now();
+							long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+							if (duration - prevTime > 5) {
+								cout << "time: " << duration << endl;
+								prevTime = duration;
+							}							
+							//#endif // DEBUG
+
 							if (sl.FO < best.FO && sl.inf.size() == 0) {
-								cout << "improvment: " << sl.FO << " - " << curr.FO << endl;
+								#ifdef DEBUG
+								cout << fixed << "improvment local search: " << best.FO << " - " << sl.FO << endl;
+								#endif // DEBUG
+
+								//
 								best = sl;
 								improv = true;
+
+								// measure runtime
+								auto t2 = std::chrono::high_resolution_clock::now();
+								long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+								// stop if max runtime is reached
+								if (duration >= maxRuntime) {
+									return best;
+								}
+
 								break;
 							}
-							//cout << "aqui3\n";
 						}
 						catch (string str) {
 							cout << str << endl;
@@ -4364,47 +4938,67 @@ Solution perm_rep::localSearch_r(Solution s, string n)
 					break;
 				}
 			}
-			curr = best;
-			//cout << "end\n";
+			s = best;
 		}
 		else if (n == "shiftC") {
 
 			for(int r = 0; r < s.routes.size(); r++) {
-				vector<int> c = getListC(s.routes.at(r));
+				vector<int> customers = getListC(s.routes.at(r));
+				if (customers.size() < 2) {
+					continue;
+				}
 
-				for (int i = 0; i < c.size() - 1; i++) {
-					for (int j = i + 1; j < c.size(); j++) {
-						Solution sl;
+				for (int i = 0; i < customers.size() - 1; i++) {
+					for (int j = i + 1; j < customers.size(); j++) {
+
+						int a = customers.at(i);
+						int b = customers.at(j) - customers.at(i);
 
 						try {
-							sl = shiftCustomer_r(curr, r, i, j);
+							Solution sl = shiftCustomer_r(s, r, a, b);
+
+							if (sl.FO < best.FO && sl.inf.size() == 0) {
+								cout << fixed << "improvment: " << sl.FO << " --> " << best.FO << endl;
+								best = sl;
+								improv = true;
+
+								// measure runtime
+								auto t2 = std::chrono::high_resolution_clock::now();
+								long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+								// stop if max runtime is reached
+								if (duration >= maxRuntime) {
+									return best;
+								}
+
+								break;
+							}
 						}
 						catch (string s) {
 							cout << s << endl;
 						}
-
-						if (sl.FO < curr.FO) {
-							cout << "improvment: " << sl.FO << " - " << curr.FO << endl;
-							best = sl;
-							improv = true;
-							break;
-						}
-						
 					}
-				}
+					if (improv == true) {
+						break;
+					}
+				}				
 				if (improv == true) {
 					break;
 				}
 			}
-			if (improv == true) {
-				break;
-			}
+			//s = best;
 		}
 		else {
 			throw "invalid neighborhood structure " + n;
 		}
+		s = best;
+		count++;
 	}
-	//cout << "end_localSearch_r\n";
+	//cout << FO << " - " << best.FO << endl;
+	#ifdef DEBUG
+	cout << "end_localSearch_r\n";
+	#endif // DEBUG
+	
 	return best;
 }
 
@@ -4773,7 +5367,6 @@ Solution perm_rep::opt2_route_r(Solution s, int j, int beg, int end)
 		}
 
 		route rt = s.routes.at(j);
-		//cout << 1 << endl;
 		route prev, next, subr;
 
 		int i = 0;
@@ -4795,18 +5388,17 @@ Solution perm_rep::opt2_route_r(Solution s, int j, int beg, int end)
 			}
 			next.push_back(rt.at(i));
 		}
-		//cout << 12 << endl;
+
 		prev = removeBSS(prev);
 		subr = removeBSS(subr);// remove bss
 		next = removeBSS(next);
 
-		//cout << 2 << endl;
 		if (next.size() == 0) {
 			next.push_back(subr.back());
 			subr.erase(subr.begin() + subr.size() - 1);
 			//throw "error";
 		}
-		//cout << 3 << endl;
+
 		// invert subroute
 		int a = 0, b = subr.size() - 1;
 		while (a < b) {
@@ -4815,14 +5407,7 @@ Solution perm_rep::opt2_route_r(Solution s, int j, int beg, int end)
 			subr.at(b) = v;
 			a++; b--;
 		}
-		/*
-		for (int i = 0; i < int(subr.size() / 2); i++) {
-			vertex v = subr.at(i);
-			subr.at(i) = subr.at(subr.size() - 1 - i);
-			subr.at(subr.size() - 1 - i) = v;
-		}
-		*/
-		//cout << 4 << endl;
+
 		// build new route
 		rt.clear();
 		for (int j = 0; j < prev.size(); j++) {
@@ -4834,28 +5419,28 @@ Solution perm_rep::opt2_route_r(Solution s, int j, int beg, int end)
 		for (int j = 0; j < next.size(); j++) {
 			rt.push_back(next.at(j));
 		}
-		//cout << 5 << endl;
+
 		rt = addStations(rt);
-		//cout << 6 << endl;
+
 		if (inst->getNodeByKey(rt.back().key).type != "a") {
 			//cout << "fudeu\n";
 		}
-		//cout << 7 << endl;
+
 		if (inst->getNodeByKey(rt.back().key).type != "a") {
 			while (inst->getNodeByKey(rt.back().key).type != "a") {
 				rt.erase(rt.end() - 1);
 			}
 
 		}
-		//cout << 8 << endl;
+
 		if (inst->getNodeByKey(s.routes.at(j).back().key).type != "a") {
 			throw "error";
 		}
-		//cout << 9 << endl;
-		s.routes.at(j) = rt;
-		//cout << 10 << endl;
+
+		//s = fixSol(s, rt, j);
+		s.routes.at(j) = rt; /////////////////////////////
 		s = procSol(s);
-		//cout << 11 << endl;
+
 		//cout << "end\n";
 		return s;
 	}
@@ -5266,6 +5851,8 @@ Solution perm_rep::greedDD()
 
 	Solution s = permutationToSolution(p);
 
+	//s = localSearch_r(s, "2opt");
+
 	return s;
 }
 
@@ -5285,9 +5872,42 @@ Solution perm_rep::greedRT()
 	return s;
 }
 
-int perm_rep::test_permutationToSolution()
+int perm_rep::test_permutationToSolutionAlt()
 {
 	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK100_01.txt", 3);
+	printInstance();
+
+	try {
+
+		//Solution init = permutationToSolution({ 9, 11, 6, 10, 7, 8, 5 }); // UK10_01.txt // optmal
+
+		//Solution init = permutationToSolution({ 5, 10, 6, 8, 11, 9, 7 });
+		//Solution init = permutationToSolution({ 11, 8, 10, 6, 7, 5, 9 }); 
+
+		//Solution init = permutationToSolution({ 92, 43, 50, 48, 100, 88, 85, 66, 77, 58, 52, 49, 70, 47, 87, 63, 59, 99, 86, 83, 37, 54, 74, 97, 72, 73, 45, 96, 65, 79, 67, 60, 89, 94, 61, 41, 30, 31, 36, 35, 78, 102, 38, 62, 55, 75, 56, 104, 40, 81, 84, 68, 34, 82, 29, 44, 98, 91, 71, 39, 46, 32, 93, 33, 101, 51, 80, 90, 64, 69, 53, 76, 103, 95, 42, 57 });
+
+		permutation p;// = randomPermutation();
+		p = { 55, 83, 41, 50, 87, 34, 68, 52, 102, 66, 44, 45, 101, 33, 56, 38, 95, 80, 48, 100, 82, 71, 93, 58, 29, 30, 92, 81, 47, 59, 54, 99, 53, 39, 65, 88, 49, 75, 72, 57, 104, 67, 84, 89, 64, 43, 78, 40, 98, 73, 32, 61, 96, 35, 77, 79, 42, 62, 103, 76, 85, 31, 51, 74, 91, 94, 97, 63, 46, 69, 90, 60, 70, 37, 86, 36 };
+		for (auto i : p) {
+			cout << i << ", ";
+		}
+		cout << endl;
+		
+		Solution init = permutationToSolutionAlt(p);
+		getArcsNodes(init);
+		init.debug(cout);
+
+	}
+	catch (PermutationInf e) {
+		cout << e.what() << endl;
+	}
+
+	return 0;
+}
+
+int perm_rep::test_permutationToSolution()
+{
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK10_01.txt", 3);
 	printInstance();
 
 	try {
@@ -5664,19 +6284,22 @@ int perm_rep::test_neigh()
 
 int perm_rep::test_localSearch_r()
 {
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK100_01.txt", 3);
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_01.txt", 3);
 	printInstance();
 
 	
 	//Solution init = permutationToSolution({ 9, 11, 6, 10, 7, 8, 5 }); // good
 	//Solution init = permutationToSolution({ 7, 9, 5, 11, 6, 10, 8 });
+	cout << 1 << endl;
 	Solution init = permutationToSolution(randomPermutation());
+	cout << 2 << endl;
 
-	Solution ls = localSearch_r(init, "2opt");
-
+	Solution ls = localSearch_r(init, "shiftC");
+	//Solution ls = localSearch_r(init, "2opt");
+	cout << 3 << endl;
 	getArcsNodes(ls);
 
-	ls.debug(cout);
+	//ls.debug(cout);
 
 	cout << "FO1: " << fixed << init.FO << endl;
 	cout << "FO2: " << fixed << ls.FO << endl;
@@ -5691,14 +6314,17 @@ int perm_rep::test_localSearch_r()
 
 int perm_rep::test_VNS()
 {
-	maxRuntime = 300;
+	maxRuntime = 300;// 300;
 	start = std::chrono::high_resolution_clock::now();
 
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK100_01.txt", 3);
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_01.txt", 3);
 	printInstance();
 
 	//Solution init = permutationToSolution({ 9, 11, 6, 10, 7, 8, 5 }); 
-	Solution init = permutationToSolution(randomPermutation());
+	//Solution init = permutationToSolution(randomPermutation());
+	Solution init = greedDD();
+	//getArcsNodes(init);
+	//init.debug(cout);
 	//Solution init = permutationToSolution({ 11, 8, 10, 6, 7, 5, 9 });
 
 	Solution vns = bVNS_r(init);
@@ -5713,24 +6339,68 @@ int perm_rep::test_VNS()
 
 int perm_rep::test_GRASP()
 {
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_11.txt", 3);
+	maxRuntime = 300;
+	start = std::chrono::high_resolution_clock::now();
+
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_01.txt", 3);
 	printInstance();
+
 
 	//Solution init = permutationToSolution({ 9, 11, 6, 10, 7, 8, 5 }); 0 10 9 7 5 11 8 12
 	//Solution init = permutationToSolution({ 5, 6, 10, 7, 8, 11, 9 });
 	//Solution init = permutationToSolution({ 10, 9, 7, 5, 11, 8, 6 });
 	//Solution init = permutationToSolution({ 8, 11, 10, 7, 9 });
 	// Solution init = permutationToSolution({ 7, 10, 11, 8, 9 });
-	Solution init = permutationToSolution(randomPermutation());
-	cout << "FO INIT: " << fixed << init.FO << endl;
-
-	init = GRASP_p(init);
-
+	//Solution init = permutationToSolution(randomPermutation());
+	Solution init = greedDD();
 	getArcsNodes(init);
-
+	init.debug(cout);
+	
+	init = GRASP_p(init, 10, INT_MAX);
+	getArcsNodes(init);
 	init.debug(cout);
 
 	return 0;
+}
+
+int perm_rep::test_new_evaluation()
+{
+	
+
+	try {
+		loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_01.txt", 3);
+		printInstance();
+
+		//init = testPermutation({ 9, 11, 6, 10, 7, 8, 5 }); // UK10_01.txt // optmal
+		//permutation p = randomPermutation();
+		permutation p = { 192, 92, 115, 158, 78, 68, 83, 153, 144, 180, 60, 165, 151, 155, 206, 64, 87, 99, 184, 62, 162, 103, 58, 127, 193, 85, 187, 96, 131, 159, 104, 86, 108, 128, 175, 149, 176, 95, 139, 112, 133, 66, 121, 100, 202, 148, 110, 170, 105, 174, 84, 73, 168, 181, 111, 123, 195, 164, 147, 163, 90, 130, 189, 138, 93, 137, 116, 145, 188, 171, 77, 199, 182, 74, 207, 63, 88, 152, 61, 142, 57, 69, 129, 113, 169, 126, 173, 106, 114, 141, 190, 120, 208, 198, 67, 160, 81, 79, 178, 122, 89, 156, 177, 179, 186, 82, 97, 109, 59, 197, 70, 205, 136, 75, 172, 203, 118, 140, 200, 76, 72, 117, 146, 132, 167, 94, 91, 101, 143, 191, 65, 154, 161, 107, 196, 135, 201, 124, 125, 204, 102, 166, 134, 194, 98, 157, 71, 185, 150, 80, 183, 119 };
+		Solution init = permutationToSolution(p);
+
+		getArcsNodes(init);
+
+		init.debug(cout);
+
+		int i, j, k;
+		i = 0;
+		j = 2;
+		k = 9;
+		//cin >> i;
+		//cin >> j;
+		//cin >> k;
+
+		Solution n = opt2_route_r(init, i, j, k);
+
+		getArcsNodes(n);
+
+		n.debug(cout);
+
+		cout << init.FO << " - " << n.FO << endl;
+	}
+	catch (PermutationInf e) {
+		cout << e.what() << endl;
+	}
+
+	return 1;
 }
 
 int perm_rep::test2()

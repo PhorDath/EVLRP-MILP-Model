@@ -60,6 +60,8 @@ public:
 	vector<float> FOp;
 	vector<string> inf;
 	vector<vector<vertex>> routes;
+	vector<float> routeCost;
+	set<int> stations;
 	permutation perm;
 	double runtime;
 	double FOINIT;

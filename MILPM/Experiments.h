@@ -19,6 +19,7 @@ string getDate();
 void exp_model(string dir);
 void exp_sa(string dir1);
 void exp_brkga(string dir1);
+void exp_grasp(string dir1);
 
 void test1();
 

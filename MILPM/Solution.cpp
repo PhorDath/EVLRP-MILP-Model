@@ -220,6 +220,7 @@ void Solution::insertArc(int beg, int end, int value)
 
 void Solution::debug(ostream& strm)
 {
+	float sum = 0;
 	strm << fixed << setprecision(2);
 	strm << "Runtime: " << runtime << endl;
 	strm << "Objective function    : " << FOp.front() << endl;
@@ -424,7 +425,7 @@ void Solution::debug(ostream& strm)
 	}
 	strm << endl;
 
-	strm << "Recharged: " << endl;
+	strm << "Recharged: " << endl;	
 	for (route r : routes) {
 		for (vertex v : r) {
 			strm << v.recharged << " ";

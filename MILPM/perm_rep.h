@@ -3,6 +3,8 @@
 #include <MTRand.h>
 #include "Algorithms.h"
 
+//#define DEBUG
+
 typedef pair<double, unsigned> ValueKeyPair;
 
 class perm_rep : public Algorithms
@@ -12,33 +14,35 @@ private:
 
 	Solution permutationToSolution(permutation p);
 	Solution permutationToSolution(permutation p, int cn); // cn is the cendidate`s list`s size
+	Solution permutationToSolutionAlt(permutation p);
 	Solution permutationToSolutionGrasp(permutation p);
 
 	Solution choosePermutationToSolution(permutation p, int n);
 
 	Solution addDepots(Solution s);
+	Solution addDepotsN(Solution s, int n);
 	Solution addStations_(Solution s); // add stations to the solution by a greedy criteria (closest ) 
 	Solution addStations(Solution s); // add stations to the solution by a greedy criteria (closest ) 
-	route addStations(route rt);
+	route addStations(route rt);	
+	Solution addStations(Solution s, int n); // add stations to the solution. it uses a greedy criteria and a candidate list
+	Solution addStationsAlt(Solution s); // add stations in the route, 	
+	route addStations(route rt, int n); // choose a bss to be sited
+	route addStationsAlt(route rt); // choose a place to sit a bss
+
+	Solution addStations_OLD(Solution s, int n);
 	route addStations_OLD(route rt); // add stations to the solution by a greedy criteria (closest ) 
 	Solution addStations_model(Solution s); // add stations to the solution by a greedy criteria (closest ) 
-	Solution addStations(Solution s, int n); // add stations to the solution. it uses a greedy criteria and a candidate list
-	Solution addStations_OLD(Solution s, int n);
-	route addStations(route rt, int n);
-	Solution addStationsGrasp(Solution s); // grasp
 
 	bool rechargeSchedule(route &r, int beg, int end, int energy);
 	vector<int> knapSack(route r, int beg, int end);
-
-	int getNumC(route r);
-	vector<int> getListC(route r);
-	int getNumD(Solution s);
 
 	//
 	pair<int, int> closestBSS(Solution& s, int route, int key); // search for the closest bss of a node with a given key, return the pair (bss key, distance)
 	pair<int, int> closestBSS(route& r, int key); // search for the closest bss of a node with a given key, return the pair (bss key, distance)
 	pair<int, int> closestBSS(route& r, int key, int n); // search for the closest bss of a node with a given key, return the pair (bss key, distance)
 	pair<int, int> closestBSS(Solution& s, int route, int key, int m); // search for the closest bss of a node with a given key and given a candidate list determined by the parameter m (list size), return the pair (bss key, distance)
+	int minimalDeviationBSS(route r, int v);
+	int minimalDeviationBSS(int v1, int v2);
 
 	permutation randomPermutation();
 	route computeRoute(Solution s, int r);
@@ -55,6 +59,7 @@ private:
 	route removeBSS(route r, int pos);
 
 	Solution localSearch(permutation p);
+	Solution localSearch_light(permutation p);
 	Solution localSearch2(permutation p);
 	//solution greed();
 	permutation opt2(permutation p, int beg, int end);
@@ -70,7 +75,7 @@ private:
 
 	// GRASP
 	// this GRASP algorithm is responsible to improve the addDepot method
-	Solution GRASP_p(Solution s);
+	Solution GRASP_p(Solution s, int maxIt, int maxRunTime);
 	Solution bVNS_r(Solution s); // VNS // localSearch_GRASP
 	Solution rVNS_r(Solution s); // VNS // localSearch_GRASP
 
@@ -82,7 +87,6 @@ private:
 	Solution shiftCustomer_r(Solution s, int j, int c, int q);	
 	Solution changeDepot(Solution s, int r, int keyDPT);
 	Solution swapDepot(Solution s, int kDPTA, int kDPTB);
-
 	Solution shakeRandom_r(Solution s, int n);
 
 	// BGKGA	
@@ -93,7 +97,7 @@ private:
 	Solution greedRT();
 
 public:
-
+	Solution GRASP(int maxIt, int maxRuntime);
 	Solution GA(int popSize, int eliteP, int maxGen);
 	Solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
 	Solution BRKGA_();
@@ -102,6 +106,7 @@ public:
 	void setOutputDir(string dir);
 	bool getArcsNodes(Solution& s);
 
+	int test_permutationToSolutionAlt();
 	int test_permutationToSolution();
 	int test_addStations();
 	int test_shakeRandom_r(int i);
@@ -113,6 +118,7 @@ public:
 	int test_localSearch_r();
 	int test_VNS();
 	int test_GRASP();
+	int test_new_evaluation();
 	
 	int test2();
 	int test3();

@@ -79,22 +79,33 @@ public:
 	vector<float> fo_parcels;
 	string row = "";
 	chrono::steady_clock::time_point start;
+	int prevTime = 0;
 
 	// aux	
 	Solution procSol(Solution s); // processes solution
 	vector<vector<vertex>> getAllRoutesByBSS(vector<vector<vertex>> sol);
 	float FO(vector<vector<vertex>> sol);
 	int routeFO(route r);
-	vector<float> FOComplete(vector<vector<vertex>> sol);
+	vector<float> FOComplete(routes sol);
+	Solution fixSol(Solution s, route r, int pos);
 	vector<float> FOComplete_old(vector<vector<vertex>> sol);
 	int FOP(vector<vector<vertex>> sol);
 	int eval(vector<vector<vertex>> sol);
 	vector<string> fullEval(vector<vector<vertex>> sol);
 	vector<string> fullEval(Solution s);
+	vector<string> evalRoute(route r);
 	vector<vertex> fixRoute(vector<vertex> sol);
 	route optRoute(route r);
 	
 	bool tcCoverage(vector<bool> coverage); // check if all customers are already beeing supplied by a route
+
+	set<int> getListBSS(Solution s);
+
+	// permrep
+	int getNumC(route r);
+	vector<int> getListC(route r);
+	int getNumD(Solution s);
+	int getPreviousStatioPos(route& r, int n);
 
 	// extra	
 	void printPartialRoute(vector<vertex> r);

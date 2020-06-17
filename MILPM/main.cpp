@@ -14,7 +14,7 @@ const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK100_11.txt";
-const string file = "UK200_11.txt";
+const string file = "UK10_20.txt";
 
 int main() {
 	int op = 0;
@@ -31,12 +31,15 @@ int main() {
 		//alg.test_addStations();
 		//alg.test_swapDepot();
 		alg.test_permutationToSolution();
+		//alg.test_permutationToSolutionAlt();
+		//alg.test_new_evaluation();
 	}
 	if (op == 1) {
-		//exp_sa(dir3);
-		//exp_model(dir3);
-		exp_brkga(dir3);
 		exp_sa(dir3);
+		//exp_model(dir3);
+		//exp_brkga(dir3);
+		//exp_sa(dir3);
+		//exp_grasp(dir3);
 
 	}	
 	else if (op == 2) {
@@ -105,7 +108,7 @@ int main() {
 		perm_rep alg;
 		alg.loadInstance(dir3, file, 3);
 		alg.printInstance();
-		Solution s = alg.sA(1000, 100, 100, 50, 600);
+		Solution s = alg.sA(1000, 100, 100, 10, 600);
 
 		s.debug(cout);
 		cout << endl;

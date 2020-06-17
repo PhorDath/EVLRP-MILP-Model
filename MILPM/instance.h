@@ -85,7 +85,7 @@ public:
 	float bssLifetime;
 	float brsLifetime;
 	float vehicleLifetime;
-	float bssUseCost = 400; // cost of using the bss
+	float bssUseCost = 50; // cost of using the bss
 
 
 	void setDefaultParameters();
