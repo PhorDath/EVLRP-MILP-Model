@@ -7,7 +7,7 @@
 #include "Util.h"
 #include "perm_rep.h"
 
-#define TMAX 7200
+#define TMAX 300
 
 using namespace std;
 
@@ -208,7 +208,6 @@ private:
 
 public:
 	string	row = "";
-
 			Model	(string fileName);
 			Model	(string dir, string fileName);
 			Model	(string dir, string fileName, int w);
@@ -221,6 +220,7 @@ public:
 	Solution	optmize();
 	Solution	optmize(int model);
 	void		setIS(Solution s);
+	void		setInitialStations();
 	Solution	analyze(Solution s);
 	void		printInst();
 	bool fileOpened();

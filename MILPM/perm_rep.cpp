@@ -4479,8 +4479,9 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 			try {
 				
 				Solution nSol;
-				nSol = localSearch_light(pl);
-				/*
+				//nSol = localSearch_light(pl);
+				
+				
 				if (temp <= initTemp * 0.3) {
 					//nSol = localSearch(pl);
 					nSol = permutationToSolutionGrasp(pl);
@@ -4488,8 +4489,7 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 				else {
 					nSol = localSearch_light(pl);				
 				}
-				*/
-				
+								
 				//Solution nSol = permutationToSolution(pl);
 				//nSol = bVNS_r(nSol);
 
@@ -4611,7 +4611,12 @@ Solution perm_rep::BRKGA_()
 
 Solution perm_rep::testPermutation(permutation p)
 {
-	Solution s = permutationToSolutionGrasp(p);
+	p = randomPermutation();
+	for (auto i : p) {
+		cout << i << " ";
+	}
+	cout << endl;
+	Solution s = permutationToSolution(p);
 	s = procSol(s);
 
 	// get nodes
@@ -4697,11 +4702,26 @@ Solution perm_rep::GRASP_p(Solution s, int maxIt, int maxRunTime)
 		Solution sl = addStationsAlt(s);
 		//cout << "b" << endl;
 		// local search
+		#ifdef DEBUG_GRASP
+		cout << "Grasp local search" << endl;
+		auto t1_ = std::chrono::high_resolution_clock::now();
+		#endif
+
 		sl = bVNS_r(sl);
+		//sl = hillDescent_r(sl);
+
+		#ifdef DEBUG_GRASP
+		auto t2_ = std::chrono::high_resolution_clock::now();
+		long long duration_ = std::chrono::duration_cast<std::chrono::seconds>(t2_ - t1_).count();
+		cout << "Grasp local search time = " << duration_ << endl;
+		#endif
+
 		//sl = localSearch_r(sl, "2opt");
 		//cout << "c" << endl;
 		if (sl.FO < best.FO && sl.inf.size() == 0) {
-			//cout << "improvment grasp: " << best.FO << " --> " << sl.FO << endl;
+			#ifdef DEBUG_GRASP
+			cout << "improvment grasp: " << best.FO << " --> " << sl.FO << endl;		
+			#endif			
 			best = sl;
 			it = 0;
 		}
@@ -4717,7 +4737,10 @@ Solution perm_rep::GRASP_p(Solution s, int maxIt, int maxRunTime)
 		}
 	}
 	best = procSol(best);
-	//cout << "GRASP_END\n";
+	#ifdef DEBUG_GRASP
+		cout << "GRASP_END\n";
+	#endif
+	//
 	return best;
 }
 
@@ -4740,15 +4763,29 @@ Solution perm_rep::bVNS_r(Solution s)
 			//cout << "shake " << n << endl;
 			
 			Solution sl = shakeRandom_r(best, n);
-			//cout << fixed << "before shake: " << best.FO << endl;
-			//cout << fixed << "after shake : " << sl.FO << endl;
 			//cout << 2 << endl;
+			#ifdef DEBUG_VNS
+			cout << "VNS local search" << endl;
+			auto t1_ = std::chrono::high_resolution_clock::now();
+			#endif
+
 			sl = localSearch_r(sl, "2opt");
 			//sl = localSearch_r(sl, "shiftC");
+
+			#ifdef DEBUG_VNS
+			auto t2_ = std::chrono::high_resolution_clock::now();
+			long long duration_ = std::chrono::duration_cast<std::chrono::seconds>(t2_ - t1_).count();
+			cout << "VNS local search time = " << duration_ << endl;
+			#endif
+			
 			//cout << 3 << endl;
 
 			if (sl.FO < best.FO && sl.inf.size() == 0) {
-				//cout << fixed << setprecision(2) << "improvment: " << best.FO << " --> " << sl.FO << endl;
+
+				#ifdef DEBUG_VNS
+				cout << fixed << setprecision(2) << "VNS improvement: " << best.FO << " --> " << sl.FO << endl;
+				#endif
+
 				best = sl;
 				s = sl;
 				it = 0;
@@ -4834,34 +4871,8 @@ Solution perm_rep::rVNS_r(Solution s)
 }
 
 Solution perm_rep::localSearch_r(Solution s, string n)
-{
-	/*
-	vector<int> rts;
-	int i = 0;
-	for (auto r : s.routes) {
-		int tc = getNumC(r);
-		if (tc >= 2) {
-			rts.push_back(i);
-		}
-		i++;
-	}
-	if (rts.size() == 0) {
-		throw "error";
-	}
-	int r = Random::get<int>(0, rts.size() - 1);
-	r = rts.at(r);
-
-	vector<int> customers = getListC(s.routes.at(r));
-
-	int p1 = Random::get<int>(0, customers.size() - 2);
-	int p = p1;
-	p1 = customers.at(p1);
-
-	int p2 = Random::get<int>(p + 1, customers.size() - 1);
-	p2 = customers.at(p2);
-	*/
-	
-	#ifdef DEBUG
+{	
+	#ifdef DEBUG_HILL_DESCENT
 	cout << "localSearch_r\n";
 	#endif // DEBUG
 	
@@ -4890,17 +4901,17 @@ Solution perm_rep::localSearch_r(Solution s, string n)
 
 							Solution sl = opt2_route_r(s, i, customers.at(a), customers.at(b));
 
-							//#ifdef DEBUG
+							#ifdef DEBUG_HILL_DESCENT
 							auto t2 = std::chrono::high_resolution_clock::now();
 							long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
 							if (duration - prevTime > 5) {
 								cout << "time: " << duration << endl;
 								prevTime = duration;
 							}							
-							//#endif // DEBUG
+							#endif // DEBUG
 
 							if (sl.FO < best.FO && sl.inf.size() == 0) {
-								#ifdef DEBUG
+								#ifdef DEBUG_HILL_DESCENT
 								cout << fixed << "improvment local search: " << best.FO << " - " << sl.FO << endl;
 								#endif // DEBUG
 
@@ -4995,10 +5006,93 @@ Solution perm_rep::localSearch_r(Solution s, string n)
 		count++;
 	}
 	//cout << FO << " - " << best.FO << endl;
-	#ifdef DEBUG
+	#ifdef DEBUG_HILL_DESCENT
 	cout << "end_localSearch_r\n";
 	#endif // DEBUG
 	
+	return best;
+}
+
+Solution perm_rep::hillDescent_r(Solution s)
+{
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "localSearch_r\n";
+	#endif // DEBUG
+
+	float FO = s.FO;
+	Solution best = s;
+	best = procSol(best);
+	bool improv = true;
+
+	while (improv == true) {
+		improv = false;
+		
+		for (int i = 0; i < s.routes.size(); i++) {
+			vector<int> customers = getListC(s.routes.at(i));
+			if (customers.size() < 2) {
+				continue;
+			}
+			for (int b = customers.size() - 1; b >= 1; b--) {
+				for (int a = 0; a < b - 1; a++) {
+					try {
+
+						Solution sl = opt2_route_r(s, i, customers.at(a), customers.at(b));
+
+						#ifdef DEBUG
+						auto t2 = std::chrono::high_resolution_clock::now();
+						long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+						if (duration - prevTime > 5) {
+							cout << "time: " << duration << endl;
+							prevTime = duration;
+						}
+						#endif // DEBUG
+
+						if (sl.FO < best.FO && sl.inf.size() == 0) {
+							#ifdef DEBUG_HILL_DESCENT
+							cout << fixed << "improvment local search: " << best.FO << " - " << sl.FO << endl;
+							#endif // DEBUG
+
+							//
+							best = sl;
+							improv = true;
+
+							// measure runtime
+							auto t2 = std::chrono::high_resolution_clock::now();
+							long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+							// stop if max runtime is reached
+							if (duration >= maxRuntime) {
+								return best;
+							}
+
+							break;
+						}
+					}
+					catch (string str) {
+						cout << str << endl;
+						continue;
+					}
+					catch (exception e) {
+						cout << e.what() << endl;
+						continue;
+					}
+
+				}
+				if (improv == true) {
+					break;
+				}
+			}
+			if (improv == true) {
+				break;
+			}
+		}
+		s = best;
+	}
+
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "end_localSearch_r\n";
+	#endif // DEBUG
+
 	return best;
 }
 
@@ -6356,6 +6450,32 @@ int perm_rep::test_GRASP()
 	getArcsNodes(init);
 	init.debug(cout);
 	
+	init = GRASP_p(init, 10, INT_MAX);
+	getArcsNodes(init);
+	init.debug(cout);
+
+	return 0;
+}
+
+int perm_rep::test_SA()
+{
+	maxRuntime = 300;
+	start = std::chrono::high_resolution_clock::now();
+
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_01.txt", 3);
+	printInstance();
+
+
+	//Solution init = permutationToSolution({ 9, 11, 6, 10, 7, 8, 5 }); 0 10 9 7 5 11 8 12
+	//Solution init = permutationToSolution({ 5, 6, 10, 7, 8, 11, 9 });
+	//Solution init = permutationToSolution({ 10, 9, 7, 5, 11, 8, 6 });
+	//Solution init = permutationToSolution({ 8, 11, 10, 7, 9 });
+	// Solution init = permutationToSolution({ 7, 10, 11, 8, 9 });
+	//Solution init = permutationToSolution(randomPermutation());
+	Solution init = greedDD();
+	getArcsNodes(init);
+	init.debug(cout);
+
 	init = GRASP_p(init, 10, INT_MAX);
 	getArcsNodes(init);
 	init.debug(cout);

@@ -14,10 +14,10 @@ const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK100_11.txt";
-const string file = "UK10_20.txt";
+const string file = "UK50_01.txt";
 
 int main() {
-	int op = 0;
+	int op = 3;
 	if (op == 0) {
 		perm_rep alg;
 		//alg.test_routePartition();
@@ -27,16 +27,18 @@ int main() {
 		//alg.test_localSearch_r();
 		//alg.test_shakeRandom_r(4);
 		//alg.test_VNS();		
-		//alg.test_GRASP();
+		alg.test_GRASP();
+		//alg.test_SA();
 		//alg.test_addStations();
 		//alg.test_swapDepot();
-		alg.test_permutationToSolution();
+		//alg.test_permutationToSolution();
 		//alg.test_permutationToSolutionAlt();
 		//alg.test_new_evaluation();
 	}
 	if (op == 1) {
 		exp_sa(dir3);
 		//exp_model(dir3);
+			
 		//exp_brkga(dir3);
 		//exp_sa(dir3);
 		//exp_grasp(dir3);
@@ -51,6 +53,9 @@ int main() {
 		try {
 			
 			init = alg.testPermutation({ 9, 11, 6, 10, 7, 8, 5 }); // UK10_01.txt // optmal
+			//init = alg.testPermutation(); // UK10_01.txt // optmal
+
+
 			//init = alg.testPermutation({ 6, 11, 5, 9, 8, 7, 10 }); // UK10_11.txt // optmal
 			//init = alg.testPermutation({ 7, 10, 8, 11, 9, 5, 6 }); // UK10_11.txt
 			//init = alg.testPermutation({ 10, 7, 8, 5, 11, 9, 6 }); // UK10_11.txt			
@@ -102,7 +107,6 @@ int main() {
 		s1.debug(cout);
 		cout << endl;
 		return 0;
-
 	}
 	else if (op == 4) {
 		perm_rep alg;

@@ -610,7 +610,7 @@ Solution Model::model()
 
 		//double d = model.get(GRB_DoubleAttr_Runtime);
 		//cout << d << endl << endl << endl;
-
+		model.write("sol.sol");
 		return solu;
 	}
 	catch (GRBException e) {
@@ -912,6 +912,11 @@ void Model::setIS(Solution s)
 {
 	init = s;
 	initProv = true;
+}
+
+void Model::setInitialStations()
+{
+	
 }
 
 Solution Model::analyze(Solution s)

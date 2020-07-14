@@ -147,6 +147,7 @@ public:
 	void print3(ostream & strm);
 	void print(ostream &stream);
 	void printSet(vector<node> set);
+	node getNodeByKeyN(int key);
 	node getNodeByKey(int key);
 
 	void adaptAll();

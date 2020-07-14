@@ -3,7 +3,10 @@
 #include <MTRand.h>
 #include "Algorithms.h"
 
-//#define DEBUG
+#define DEBUG
+//#define DEBUG_GRASP
+//#define DEBUG_VNS
+//#define DEBUG_HILL_DESCENT
 
 typedef pair<double, unsigned> ValueKeyPair;
 
@@ -78,8 +81,9 @@ private:
 	Solution GRASP_p(Solution s, int maxIt, int maxRunTime);
 	Solution bVNS_r(Solution s); // VNS // localSearch_GRASP
 	Solution rVNS_r(Solution s); // VNS // localSearch_GRASP
-
 	Solution localSearch_r(Solution s, string n);
+	Solution hillDescent_r(Solution s);
+
 	Solution routeSplit_r(Solution s, int n, int m); // split route n in two in a given position m (m < s.route.at(n).size() - 2)
 	Solution bssReplacement_r(Solution s, int key); // Replace a bss defined by n and swap  it for others, aready placed, bss
 	Solution routePartition_r(Solution s, int r1, int p1, int r2, int p2);
@@ -118,6 +122,7 @@ public:
 	int test_localSearch_r();
 	int test_VNS();
 	int test_GRASP();
+	int test_SA();
 	int test_new_evaluation();
 	
 	int test2();

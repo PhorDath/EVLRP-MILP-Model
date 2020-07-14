@@ -327,7 +327,7 @@ void instance::printSet(vector<node> set)
 	}
 }
 
-node instance::getNodeByKey(int key)
+node instance::getNodeByKeyN(int key)
 {
 	for (auto i : nodes) {
 		if (i.key == key) {
@@ -336,6 +336,12 @@ node instance::getNodeByKey(int key)
 	}
 	throw NodeNotFound(key);
 }
+
+node instance::getNodeByKey(int key)
+{
+	return nodes.at(key);
+}
+
 
 void instance::adaptAll()
 {
@@ -1171,22 +1177,15 @@ void instance::readUKAdapt()
 	bssLifetime *= 365;
 	brsLifetime *= 365;
 	vehicleLifetime *= 365;
-	//depotCost /= depotLifetime;
-	//bssCost /= bssLifetime;
-	//brsCost /= brsLifetime;
-	//vehicleCost /= vehicleLifetime;
 	vehicleRange *= 1000;
 	bssEnergyCost /= 1000;
 	brsEnergyCost /= 1000;
-	Q = vehicleRange; // battery capacity
-	ct; // battery swap time
-	//g = 54;//4; // recharging rate
-	C; // vehicle load capacity
-	//Q *= 1000;// *60 * 60;// The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40]. // the conversion between KWh to KWs was done
-	//o = numC + numF;
+	Q = vehicleRange;
 	LB = 0; // wrong
 	UB = numC + numF;
 	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
+
+	sort(nodes.begin(), nodes.end(), [](node a, node b){return a.key < b.key; }); // we sort the nodes because its not garuanteed that they will be sorted during the file reading, by ordering the nodes by key, we can retrieve data in the nodes o(1)
 	
 }
 
