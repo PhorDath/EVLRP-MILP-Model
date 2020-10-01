@@ -70,6 +70,42 @@ public:
 	}
 };
 
+class OutOfBSS : public exception {
+
+private:
+	string msg;
+
+public:
+	OutOfBSS() {
+		msg = "out_of_stations";
+	}
+
+	const char* what() const throw () {
+		return msg.c_str();
+	}
+};
+
+class SplitRoute : public exception {
+
+private:
+	string msg;
+	int point;
+
+public:
+	SplitRoute(int point) {
+		this->point = point;
+		msg = "split_route";
+	}
+
+	int getPoint() {
+		return point;
+	}
+
+	const char* what() const throw () {
+		return msg.c_str();
+	}
+};
+
 class Algorithms
 {
 public:

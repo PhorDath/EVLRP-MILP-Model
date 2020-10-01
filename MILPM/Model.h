@@ -7,7 +7,7 @@
 #include "Util.h"
 #include "perm_rep.h"
 
-#define TMAX 300
+#define TMAX 3600
 
 using namespace std;
 
@@ -196,11 +196,14 @@ private:
 	void model3_indC(GRBModel& model);
 	void model3_bigM(GRBModel& model);
 	void model4(GRBModel& model);
+	void model_SBPO(GRBModel& model);
+	void model_test(GRBModel& model);
 	void setup(GRBModel& model);
 	void result(GRBModel& model);
 	Solution model();
 	Solution model(Solution s);
 	void setInitialSolution(GRBModel& model, Solution s);
+	void setInitialStations(GRBModel& model);
 
 	// aux 
 	int getArcs(GRBModel& model);
@@ -220,7 +223,6 @@ public:
 	Solution	optmize();
 	Solution	optmize(int model);
 	void		setIS(Solution s);
-	void		setInitialStations();
 	Solution	analyze(Solution s);
 	void		printInst();
 	bool fileOpened();

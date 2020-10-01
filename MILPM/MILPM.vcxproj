@@ -137,6 +137,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MCLPModel.cpp" />
     <ClCompile Include="Model.cpp" />
+    <ClCompile Include="Model_setAdapt.cpp" />
     <ClCompile Include="perm_rep.cpp" />
     <ClCompile Include="routes_rep.cpp" />
     <ClCompile Include="Solution.cpp" />
@@ -148,8 +149,10 @@
     <ClInclude Include="Decoder.h" />
     <ClInclude Include="Experiments.h" />
     <ClInclude Include="instance.h" />
+    <ClInclude Include="main.h" />
     <ClInclude Include="MCLPModel.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="Model_setAdapt.h" />
     <ClInclude Include="perm_rep.h" />
     <ClInclude Include="routes_rep.h" />
     <ClInclude Include="Solution.h" />

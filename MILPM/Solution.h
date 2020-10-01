@@ -5,7 +5,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 //#include "instance.h"
-#include "Util.h"
+//#include "Util.h"
 
 using namespace std;
 using boost::property_tree::ptree;
@@ -62,6 +62,9 @@ public:
 	vector<vector<vertex>> routes;
 	vector<float> routeCost;
 	set<int> stations;
+	set<string> sStations;
+	set<int> depots;
+	set<string> sDepots;
 	permutation perm;
 	double runtime;
 	double FOINIT;

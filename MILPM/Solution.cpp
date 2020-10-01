@@ -249,11 +249,12 @@ void Solution::debug(ostream& strm)
 		strm << i << ", ";
 	}
 	strm << endl;
-	std::set<int> depots;
+	//std::set<int> depots;
 	for (route r : routes) {
 		for (vertex v : r) {
 			if (v.n.type == "d") {
 				depots.insert(v.n.ref2);
+				sDepots.insert(v.n.id);
 			}
 		}
 	}
@@ -263,11 +264,12 @@ void Solution::debug(ostream& strm)
 		strm << i << " ";
 	}
 	strm << endl << endl;
-	std::set<int> stations;
+	//std::set<int> stations;
 	for (route r : routes) {
 		for (vertex v : r) {
 			if (v.n.type == "f" || v.n.type == "f_d") {
 				stations.insert(v.n.ref2);
+				sStations.insert(v.n.id);
 			}			
 		}
 	}

@@ -46,7 +46,7 @@ public:
 	int numF = 0;
 	int numC = 0;
 	float Q; // battery capacity
-	float C; // Vehicle load capacity
+	float c; // Vehicle load capacity
 	double r; // battery consumption rate
 	float g; // inverse refueling rate
 	float v; // average Velocity
@@ -57,6 +57,7 @@ public:
 	vector<edge> edges;
 	float maxDist, minDist;
 	set<int> st;
+	set<int> dp;
 
 	// extra parameters
 	int revis = 1; // number of dummy nodes
@@ -87,6 +88,17 @@ public:
 	float vehicleLifetime;
 	float bssUseCost = 50; // cost of using the bss
 
+	vector<node> UD0;
+	vector<node> UD1;
+	vector<node> UD;
+	vector<node> C;
+	vector<node> R;
+	vector<node> S;
+	vector<node> V;
+	vector<node> C0;
+	vector<node> V0;
+	vector<node> V1;
+	vector<node> V01;
 
 	void setDefaultParameters();
 	void readInstace();
@@ -130,6 +142,19 @@ public:
 	vector<node> set_V1();
 	vector<node> set_V01();
 
+	vector<node> set_UD0_();
+	vector<node> set_UD1_();
+	vector<node> set_UD_();
+	vector<node> set_C_();
+	vector<node> set_R_();
+	vector<node> set_SK_(int n);
+	vector<node> set_S_();
+	vector<node> set_V_();
+	vector<node> set_C0_();
+	vector<node> set_V0_();
+	vector<node> set_V1_();
+	vector<node> set_V01_();
+
 	vector<node> sortSet(vector<node> set);
 
 	float dist(int a, int b);
@@ -149,17 +174,19 @@ public:
 	void printSet(vector<node> set);
 	node getNodeByKeyN(int key);
 	node getNodeByKey(int key);
-
 	void adaptAll();
 	void adaptUKInstance(); // uk instances
-
+	void adaptUKInstance_n();
 	bool isDepot(int key);
 	int getArrival(int key);
+	void removeBSS(vector<string> BSS);
+	void removeDPT(vector<string> DPT);
 
 	~instance();
 
 	
 };
 
-void adaptAll();
+void adaptAll(string dir);
+void adaptAll_n();
 #endif

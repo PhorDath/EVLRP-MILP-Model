@@ -140,6 +140,410 @@ void exp_sa(string dir1)
 	return;
 }
 
+void exp_vns(string dir1) {
+	fstream all;
+	all.open(dir1 + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	// prepare the output directory
+	string date = getDate();
+	string dirOutput = dir1;
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	// csv file
+	fstream csv;
+	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir1 << endl;
+		return;
+	}
+
+	// header
+	csv << "model,status,fo,fo_init,time\n";
+
+	csv.close();
+
+	int count = 0;
+	string line;
+	while (getline(all, line)) {
+		cout << line << endl;
+
+		// csv file
+		fstream csv;
+		csv.open(dirOutput + "result.csv", ios::out | ios::app);
+		if (csv.is_open() == false) {
+			cout << "Error opening file result.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		perm_rep alg;
+		alg.loadInstance(dir1, line, 3);
+		alg.setOutputDir(dirOutput);
+		alg.printInstance();
+		Solution s = alg.bVNS(25, 600);
+
+
+		csv << alg.row << endl;
+		csv.close();
+
+		count++;
+	}
+
+	all.close();
+
+	return;
+}
+
+void exp_vnsl(string dir1) {
+	fstream all;
+	all.open(dir1 + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	// prepare the output directory
+	string date = getDate();
+	string dirOutput = dir1;
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	// csv file
+	fstream csv;
+	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir1 << endl;
+		return;
+	}
+
+	// header
+	csv << "model,status,fo,fo_init,time\n";
+	csv.close();
+
+	map<string, set<int>> occurency;
+
+	int count = 1;
+	string line;
+	while (getline(all, line)) {
+		cout << line << endl;
+
+		fstream stations;
+		stations.open(dirOutput + "stations.txt", ios::out | ios::app);
+		if (stations.is_open() == false) {
+			cout << "Error opening file stations.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		fstream depots;
+		depots.open(dirOutput + "depots.txt", ios::out | ios::app);
+		if (stations.is_open() == false) {
+			cout << "Error opening file depots.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		// csv file
+		fstream csv;
+		csv.open(dirOutput + "result.csv", ios::out | ios::app);
+		if (csv.is_open() == false) {
+			cout << "Error opening file result.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		perm_rep alg;
+		alg.loadInstance(dir1, line, 3);
+		alg.printInstance();
+		alg.setOutputDir(dirOutput);
+		vector<string> BSSs = { "Conisbrough",
+								"Doncaster",
+								"Pontefract",
+								"Staveley",
+								"Ilkeston",
+								"Warsop",
+								"Shipley",
+								"Newcastle_under_Lyme",
+								"Ossett",
+								"Burnley",
+								"Knaresborough",
+								"Radcliffe_on_Trent",
+								"Brighouse",
+								"Shepshed",
+								"Stalybridge",
+								"Pinxton",
+								"Warrington",
+								"Hawarden",
+								"Barton_upon_Humber",
+								"Keighley" };
+		Solution s = alg.VNSL(BSSs, 25, 300);
+
+		csv << alg.row << endl;
+
+		for (auto i : s.sStations) {
+			stations << i << " ";
+
+			auto c = occurency.find(i);
+			if (c == occurency.end()) {
+				occurency.insert(pair<string, set<int>>(i, { count }));
+			}
+			else {
+				occurency[i].insert(count);
+			}
+		}
+		stations << endl;
+
+		for (auto i : occurency) {
+			cout << i.first << " ";
+			for (auto j : i.second) {
+				cout << j << " ";
+			}
+			cout << endl;
+		}
+
+
+		for (auto i : s.sDepots) {
+			depots << i << " ";
+		}
+		depots << endl;
+
+		csv.close();
+		stations.close();
+		depots.close();
+
+		count++;
+	}
+
+	all.close();
+
+	return;
+}
+
+void exp_vns2(string dir1) {
+	fstream all;
+	all.open(dir1 + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	// prepare the output directory
+	string date = getDate();
+	string dirOutput = dir1;
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	// csv file
+	fstream csv;
+	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir1 << endl;
+		return;
+	}
+
+	// header
+	csv << "model,status,fo,fo_init,time\n";	
+	csv.close();
+
+	map<string, set<int>> occurency;
+	vector<Solution> sols;
+
+	int count = 1;
+	string line;
+	while (getline(all, line)) {
+		cout << line << endl;
+
+		fstream stations;
+		stations.open(dirOutput + "stations.txt", ios::out | ios::app);
+		if (stations.is_open() == false) {
+			cout << "Error opening file stations.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		fstream depots;
+		depots.open(dirOutput + "depots.txt", ios::out | ios::app);
+		if (stations.is_open() == false) {
+			cout << "Error opening file depots.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		// csv file
+		fstream csv;
+		csv.open(dirOutput + "result.csv", ios::out | ios::app);
+		if (csv.is_open() == false) {
+			cout << "Error opening file result.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		perm_rep alg;
+		alg.loadInstance(dir1, line, 3);
+		alg.printInstance();
+		alg.setOutputDir(dirOutput);
+		Solution s = alg.VNS(25, 300);
+		sols.push_back(s);
+
+		csv << alg.row << endl;
+
+		for (auto i : s.sStations) {			
+			stations << i << " ";
+
+			auto c = occurency.find(i);
+			if (c == occurency.end()) {
+				occurency.insert(pair<string, set<int>>(i, {count}) );
+			}
+			else {
+				occurency[i].insert(count);
+			}
+		}
+		stations << endl;
+
+		for (auto i : occurency) {
+			cout << i.first << " ";
+			for (auto j : i.second) {
+				cout << j << " ";
+			}
+			cout << endl;
+		}
+
+
+		for (auto i : s.sDepots) {
+			depots << i << " ";
+		}
+		depots << endl;
+
+		csv.close();
+		stations.close();
+		depots.close();
+
+		count++;
+	}
+	totalCost(sols, dirOutput);
+	all.close();
+
+	return;
+}
+
+void exp_vns3(string dir1) {
+	fstream all;
+	all.open(dir1 + "all2.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	// prepare the output directory
+	string date = getDate();
+	string dirOutput = dir1;
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	// csv file
+	fstream csv;
+	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir1 << endl;
+		return;
+	}
+
+	// header
+	csv << "model,status,fo,fo_init,time\n";
+	csv.close();
+
+	map<string, set<int>> occurency;
+
+	int count = 1;
+	string line;
+	while (getline(all, line)) {
+		cout << line << endl;
+
+		fstream stations;
+		stations.open(dirOutput + "stations.txt", ios::out | ios::app);
+		if (stations.is_open() == false) {
+			cout << "Error opening file stations.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		fstream depots;
+		depots.open(dirOutput + "depots.txt", ios::out | ios::app);
+		if (stations.is_open() == false) {
+			cout << "Error opening file depots.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		// csv file
+		fstream csv;
+		csv.open(dirOutput + "result.csv", ios::out | ios::app);
+		if (csv.is_open() == false) {
+			cout << "Error opening file result.csv\n";
+			cout << "On directory " << dir1 << endl;
+			return;
+		}
+
+		perm_rep alg;
+		alg.loadInstance(dir1, line, 3);
+		alg.printInstance();
+		alg.setOutputDir(dirOutput);
+		Solution s = alg.VNS(25, 600);
+
+		csv << alg.row << endl;
+
+		for (auto i : s.sStations) {
+			stations << i << " ";
+
+			auto c = occurency.find(i);
+			if (c == occurency.end()) {
+				occurency.insert(pair<string, set<int>>(i, { count }));
+			}
+			else {
+				occurency[i].insert(count);
+			}
+		}
+		stations << endl;
+
+		for (auto i : occurency) {
+			cout << i.first << " ";
+			for (auto j : i.second) {
+				cout << j << " ";
+			}
+			cout << endl;
+		}
+
+
+		for (auto i : s.sDepots) {
+			depots << i << " ";
+		}
+		depots << endl;
+
+		csv.close();
+		stations.close();
+		depots.close();
+
+		count++;
+	}
+
+	all.close();
+
+	return;
+}
+
 void exp_brkga(string dir1)
 {
 	fstream all;
@@ -259,10 +663,144 @@ void exp_grasp(string dir1)
 	return;
 }
 
+void exp_instances(string dir1)
+{
+	map<string, set<int>> cities;
+
+	vector<int> ls = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+	vector<instance> insts;
+	for (auto i : ls) {
+
+		if (i < 10) {
+			instance i(dir1, "UK200_0" + to_string(i) + ".txt", 4);
+			insts.push_back(i);
+		}
+		else {
+			instance i(dir1, "UK200_" + to_string(i) + ".txt", 4);
+			insts.push_back(i);
+		}				
+		insts.back().print(cout);
+		//string s;
+		//getline(cin, s);
+
+		for (auto n : insts.back().nodes) {
+			auto c = cities.find(n.id);
+			if (c == cities.end()) {
+				cities.insert(pair<string, set<int>>(n.id, set<int>({ i })));
+			}
+			else {
+				cities[n.id].insert(i);
+			}
+		}
+	}
+
+	fstream file;
+	file.open("ocurrency200.txt", ios::app | ios::in);
+	if (file.is_open() == false) {
+		cout << "Error creating file ocurrency200.txt\n";
+		return;
+	}
+
+	for (auto i : cities) {
+		file << i.first << " " << i.second.size() << " ";
+		for (auto j : i.second) {
+			file << j << " ";
+		}
+		file << endl;		
+	}
+
+	file.close();
+}
+
+void genBigMatrix(string dir1) {
+	map<pair<string, string>, int> dists;
+	set<string> cities;
+
+	vector<int> ls = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+	for (auto i : ls) {
+		cout << i << endl;
+		instance *inst;
+
+		if (i < 10) {
+			inst = new instance(dir1, "UK200_0" + to_string(i) + ".txt", 4);
+		}
+		else {
+			inst = new instance(dir1, "UK200_" + to_string(i) + ".txt", 4);
+		}
+		//string s;
+		//getline(cin, s);
+
+		int i = 0;
+		for (auto n : inst->nodes) {
+			cities.insert(n.id);
+			int j = 0;
+			for (auto m : inst->nodes) {
+				auto c = dists.find({ n.id, m.id });
+
+				if (c == dists.end()) {
+					dists.insert(pair<pair<string, string>, int>({ n.id, m.id }, inst->distanceMatrix[i][j]));
+				}
+				else {
+					dists[{ n.id, m.id }] = inst->distanceMatrix[i][j];
+				}
+				j++;
+			}
+			i++;
+		}
+	}
+
+	fstream file;
+	file.open("dists200.txt", ios::ate | ios::in);
+	if (file.is_open() == false) {
+		cout << "error creating file dists200.txt\n";
+		return;
+	}
+
+	file << cities.size() << endl;
+	for (auto i : cities) {
+		file << i << endl;
+	}
+	for (auto i : cities) {
+		for (auto j : cities) {
+			file << dists[{i, j}] << " ";
+		}
+		file << endl;
+	}
+
+	file.close();
+
+	while (true) {
+		string c1, c2;
+		cout << "enter a city: ";
+		cin >> c1;
+		cout << "enter a city: ";
+		cin >> c2;
+
+		cout << "Distance between " << c1 << " and " << c2 << " is " << dists[{c1, c2}] << endl;
+
+		if (c1 == "" && c2 == "") {
+			break;
+		}
+
+	}
+
+	/*
+	for (auto i : dists) {
+		cout << "( " << i.first.first << ", " << i.first.second << " )" << " - " << i.second << endl;
+	}
+	*/
+
+}
+
+void adapt_model(string dir)
+{
+	Model_SA m(dir, 200);
+	m.model();
+}
+
 void test1()
 {
 	
-
 }
 
 void exp1(string dir1, string dir2) {
@@ -565,4 +1103,68 @@ string menuInstance(string curDir) {
 	}
 
 	return fileName;
+}
+
+float totalCost(vector<Solution> sols, string dir) {
+	string fName = "cost.txt";
+	fstream file;
+	file.open(dir + fName, ios::out);
+	while (file.is_open() == false) {
+		cout << "Error creating file cost.txt in directory " << dir << endl;
+		cout << "enter a new file to store the cost\n";
+		cin >> fName;
+		file.open(dir + fName, ios::out);
+	}
+
+	set<string> stations;
+
+	float cost = 0;
+
+	float depotCost = 0;
+	float bssCost = 0;
+	float vehicleCost = 0;
+	float drivingCost = 0;	
+	float brsEnergyCost = 0;
+	float bssEnergyCost = 0;
+	float bssUseCost = 0;	
+
+	int cont = 0;
+	for (auto s : sols) {
+		vehicleCost = s.FOp.at(3);
+		drivingCost = s.FOp.at(4);
+		brsEnergyCost = s.FOp.at(5);
+		bssEnergyCost = s.FOp.at(6);
+		bssUseCost = s.FOp.at(7);
+
+		file << cont << ": " << vehicleCost << " " << drivingCost << " " << brsEnergyCost << " " << bssEnergyCost << " " << bssUseCost << endl;
+
+		for (route r : s.routes) {
+			for (vertex v : r) {
+				if (v.n.type == "f") {
+					stations.insert(v.n.id);
+				}
+			}
+		}		
+		
+		if (cont == 0) {
+			bssCost = s.FOp.at(2) / stations.size();
+		}		
+
+		cost += vehicleCost + drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
+		cont++;
+	}
+	
+	bssCost *= stations.size();
+	file << "bss cost: " << bssCost << endl;
+	cost += bssCost;	
+
+	depotCost += sols.front().FOp.at(1); // depot cost;
+	file << "depot cost: " << depotCost << endl;
+	cost += depotCost;
+
+	file << "total cost: " << cost << endl;
+
+	file.close();
+
+	return cost;
 }

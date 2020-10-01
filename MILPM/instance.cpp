@@ -33,8 +33,68 @@ void instance::test()
 	print(cout);
 }
 
-// this functions can be optimized if nodes are read always in the same order (DFC)
 vector<node> instance::set_UD0()
+{
+	return UD0;
+}
+
+vector<node> instance::set_UD1()
+{
+	return UD1;
+}
+
+vector<node> instance::set_UD()
+{
+	return UD;
+}
+
+vector<node> instance::set_C()
+{
+	return C;
+}
+
+vector<node> instance::set_R()
+{
+	return R;
+}
+
+vector<node> instance::set_SK(int n)
+{
+	return set_SK_(n);
+}
+
+vector<node> instance::set_S()
+{
+	return S;
+}
+
+vector<node> instance::set_V()
+{
+	return V;
+}
+
+vector<node> instance::set_C0()
+{
+	return C0;
+}
+
+vector<node> instance::set_V0()
+{
+	return V0;
+}
+
+vector<node> instance::set_V1()
+{
+	return V1;
+}
+
+vector<node> instance::set_V01()
+{
+	return V01;
+}
+
+// this functions can be optimized if nodes are read always in the same order (DFC)
+vector<node> instance::set_UD0_()
 {
 	vector<node> aux;
 	for (auto i : nodes) {
@@ -45,7 +105,7 @@ vector<node> instance::set_UD0()
 	return aux;
 }
 
-vector<node> instance::set_UD1()
+vector<node> instance::set_UD1_()
 {
 	vector<node> aux;
 	for (auto i : nodes) {
@@ -56,7 +116,7 @@ vector<node> instance::set_UD1()
 	return aux;
 }
 
-vector<node> instance::set_UD()
+vector<node> instance::set_UD_()
 {
 	vector<node> UD0 = set_UD0();
 	vector<node> UD1 = set_UD1();
@@ -64,7 +124,7 @@ vector<node> instance::set_UD()
 	return UD0;
 }
 
-vector<node> instance::set_C()
+vector<node> instance::set_C_()
 {
 	vector<node> aux;
 	for (auto i : nodes) {
@@ -75,7 +135,7 @@ vector<node> instance::set_C()
 	return aux;
 }
 
-vector<node> instance::set_R()
+vector<node> instance::set_R_()
 {
 	vector<node> aux;
 	for (auto i : nodes) {
@@ -86,7 +146,7 @@ vector<node> instance::set_R()
 	return aux;
 }
 
-vector<node> instance::set_SK(int n)
+vector<node> instance::set_SK_(int n)
 {
 	vector<node> temp;
 	for (int i = 0; i < nodes.size(); i++) {
@@ -97,7 +157,7 @@ vector<node> instance::set_SK(int n)
 	return temp;
 }
 
-vector<node> instance::set_S()
+vector<node> instance::set_S_()
 {
 	vector<node> temp;
 	int total = 2 * numD + numF + numC;
@@ -109,7 +169,7 @@ vector<node> instance::set_S()
 	return temp;
 }
 
-vector<node> instance::set_V()
+vector<node> instance::set_V_()
 {
 	vector<node> C = set_C();
 	vector<node> R = set_R();
@@ -120,7 +180,7 @@ vector<node> instance::set_V()
 }
 
 
-vector<node> instance::set_C0()
+vector<node> instance::set_C0_()
 {
 	vector<node> C = set_C();
 	vector<node> UD0 = set_UD0();
@@ -128,7 +188,7 @@ vector<node> instance::set_C0()
 	return C;
 }
 
-vector<node> instance::set_V0()
+vector<node> instance::set_V0_()
 {
 	vector<node> V = set_V();
 	vector<node> UD0 = set_UD0();
@@ -136,7 +196,7 @@ vector<node> instance::set_V0()
 	return V;
 }
 
-vector<node> instance::set_V1()
+vector<node> instance::set_V1_()
 {
 	vector<node> V = set_V();
 	vector<node> UD1 = set_UD1();
@@ -144,7 +204,7 @@ vector<node> instance::set_V1()
 	return V;
 }
 
-vector<node> instance::set_V01()
+vector<node> instance::set_V01_()
 {
 	vector<node> V = set_V();
 	vector<node> UD0 = set_UD0();
@@ -187,7 +247,7 @@ void instance::print2(ostream & strm)
 	strm << "battery_swap_time        second  " << ct << endl;
 	strm << "battery_consumption_rate    x    " << r << endl;
 	strm << "recharging_rate             x    " << g << endl;
-	strm << "vehicle_load               kg    " << C << endl;
+	strm << "vehicle_load               kg    " << c << endl;
 	strm << "vehicle_speed             km/h   " << v << endl << endl;
 
 	int bigger = 0;
@@ -242,7 +302,7 @@ void instance::print3(ostream & strm)
 	strm << "battery_swap_time        second  " << ct << endl;
 	strm << "battery_consumption_rate    x    " << r << endl;
 	strm << "recharging_rate             x    " << g << endl;
-	strm << "vehicle_load               kg    " << C << endl;
+	strm << "vehicle_load               kg    " << c << endl;
 	strm << "vehicle_speed             km/h   " << v << endl << endl;
 
 	int bigger = 0;
@@ -275,7 +335,7 @@ void instance::print(ostream &stream)
 	stream << endl;
 
 	int esp = 4;
-	stream << "Freight capacity of the vehicle (C)              : " << C << endl;
+	stream << "Freight capacity of the vehicle (C)              : " << c << endl;
 	stream << "Battery capacity (Q)                             : " << Q << endl;
 	stream << "Swap time of battery (ct)                        : " << ct << endl;
 	stream << "Consumption rate of energy per distance unit (r) : " << r << endl;
@@ -517,6 +577,9 @@ void instance::readInstace()
 	if (type == 3) {
 		readUKAdapt();
 	}
+	if (type == 4) {
+		readprplib();
+	}
 	maxDist = 0;
 	minDist = 9999999;
 	for (int i = 0; i < distanceMatrix.size(); i++) {
@@ -621,7 +684,7 @@ void instance::readPaz()
 	// getting C
 	file >> ig >> ig >> ig >> ig >> ig;
 	ig.erase(std::remove(ig.begin(), ig.end(), '/'), ig.end());
-	this->C = stof(ig);
+	this->c = stof(ig);
 
 	// getting r
 	file >> ig >> ig >> ig >> ig >> ig;
@@ -663,7 +726,7 @@ void instance::readprplib()
 	int ig;
 
 	file >> numC;
-	file >> ig >> C;
+	file >> ig >> c;
 	file >> ig >> v;
 
 	//vector<vector<int>> m;
@@ -688,21 +751,16 @@ void instance::readprplib()
 	file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
 
 
-	// convert seconds to hours
-	/*
-	a.readyTime /= (60 * 60);
-	a.dueDate /= (60 * 60);
-	a.serviceTime /= (60 * 60);
-	*/
+	
 	a.ogKey = a.key;
 	this->nodes.push_back(a);
-
+	/*
 	
 	// create the duplicated depot node as a siting place
 	a.type = "f";
 	a.id_n = -1;
 	nodes.push_back(a);
-	
+	*/
 
 	// read customers nodes
 	vector<node> customers;
@@ -731,23 +789,25 @@ void instance::readprplib()
 	}
 	
 	// create the nodes of stations with selected customers. the customersNodes is modified without the stations
-	vector<node> stations = chooseStationsLocationMCLP(customers);
+	//vector<node> stations = chooseStationsLocationMCLP(customers);
 
 	// insert the stations nodes
-	nodes.insert(nodes.end(), stations.begin(), stations.end());
+	//nodes.insert(nodes.end(), stations.begin(), stations.end());
 
 	// insert the customers nodes
 	nodes.insert(nodes.end(), customers.begin(), customers.end());
 
 	// adding depot arrival nodes
+	/*
 	for (auto i : nodes) {
-		if (i.type == "d") {
-			i.ref2 = i.key; // modification
-			i.type = "a";
-			nodes.push_back(i);
+		node j = i;
+		if (j.type == "d") {
+			j.ref2 = j.key; // modification
+			j.type = "a";
+			nodes.push_back(j);
 		}		
 	}
-
+	*/
 	// organize intial nodes key
 	for (int i = 0; i < nodes.size(); i++) {
 		nodes.at(i).key = i;
@@ -756,7 +816,7 @@ void instance::readprplib()
 		//nodes.at(i).id_n = i;
 	}
 
-	addDummyNodes();
+	//addDummyNodes();
 
 	// get number of clients, depots and stations
 	numC = 0;
@@ -788,7 +848,11 @@ void instance::readprplib()
 	o = numC + numF;
 	LB = 0; // wrong
 	UB = numC + numF;
-	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
+
+
+	auto UD0 = set_UD0();
+	auto C = set_C();
+	//M = 2 * (Q + C.size() + UD0[0].dueDate);
 }
 
 void instance::adaptUKInstance()
@@ -805,7 +869,7 @@ void instance::adaptUKInstance()
 	int ig;
 
 	file >> numC;
-	file >> ig >> C;
+	file >> ig >> c;
 	file >> ig >> v;
 
 	//vector<vector<int>> m;
@@ -821,8 +885,10 @@ void instance::adaptUKInstance()
 		}
 	}
 
+	
 	// read depot node
 	node a;
+	/*
 	a.type = "d";
 	a.x = -1;
 	a.y = -1;
@@ -830,16 +896,26 @@ void instance::adaptUKInstance()
 	file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
 	a.ogKey = a.key;
 	this->nodes.push_back(a);
+	*/
 
 	// read customers nodes
 	vector<node> customers;
-	for (int i = 0; i < numC; i++) {
+	for (int i = 0; i < numC + 1; i++) {
 		a.type = "c";
 		file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
 		a.ogKey = a.key;
 		customers.push_back(a);
 	}
 	numC = customers.size();
+	
+	// read depots
+	int numDepots;
+	file >> numDepots;
+	for (int i = 0; i < numDepots; i++) {
+		int aux;
+		file >> aux;
+		dp.insert(aux);
+	}
 
 	// read facilities
 	int numFacilities;
@@ -849,9 +925,25 @@ void instance::adaptUKInstance()
 		file >> aux;
 		st.insert(aux);
 	}
+	
 
 	// create the nodes of stations with selected customers. the customersNodes is modified without the stations
-	vector<node> stations = chooseStationsLocationMCLP2(customers);
+	//vector<node> stations = chooseStationsLocationMCLP2(customers);
+	vector<node> stations;
+
+	for (int i : st) {
+		node n = customers.at(i);
+		n.type = "f";
+		n.demand = 0;
+		n.dueDate = 32400;
+		n.readyTime = 0;
+		n.serviceTime = 0;
+		stations.push_back(n);
+	}
+
+	// remove the selecteds customers from the customer vector
+	customers = removeNodesByIndex(customers, st);
+
 
 	if (stations.size() == 0) {
 		cout << "no candidates\n";
@@ -859,6 +951,40 @@ void instance::adaptUKInstance()
 		return;
 	}
 
+
+	vector<node> dpts;
+	for (int i : dp) {
+		int a = 0;
+		for (node c : customers) {
+			if (c.key == i) {
+				c.type = "d";
+				c.demand = 0;
+				c.dueDate = 32400;
+				c.readyTime = 0;
+				c.serviceTime = 0;
+				dpts.push_back(c);
+				customers.erase(customers.begin() + a);
+			}
+			//customers.erase(customers.begin() + a);
+			a++;
+		}
+	}
+	nodes.insert(nodes.end(), dpts.begin(), dpts.end());
+
+	/*
+	vector<node> dpts;
+	for (int d : dp) {
+		node c = customers.at(d);
+		c.type = "d";
+		c.demand = 0;
+		c.dueDate = 32400;
+		c.readyTime = 0;
+		c.serviceTime = 0;
+		dpts.push_back(c);
+		//customers.erase(customers.begin() + d);
+	}
+	*/
+	/*
 	// choose additional depots
 	if (numC >= 50) {
 		vector<pair<int, long long int>> dists;
@@ -923,7 +1049,320 @@ void instance::adaptUKInstance()
 		// insert extra depots
 		nodes.insert(nodes.end(), dpts.begin(), dpts.end());
 	}
+	*/
+	// duplicate depots nodes as bss
+	int s = nodes.size();
+	for (int i = 0; i < s; i++) {
+		node n = nodes.at(i);
+		n.type = "f";
+		n.serviceTime = 0;
+		n.id_n = -1;
+		nodes.push_back(n);
+	}
 
+	// insert the stations nodes
+	nodes.insert(nodes.end(), stations.begin(), stations.end());
+
+	// insert the customers nodes
+	nodes.insert(nodes.end(), customers.begin(), customers.end());
+
+	/*
+	// adding depot arrival nodes
+	for(int i = 0; i < nodes.size(); i++){
+	//for (auto i : nodes) {
+		if (nodes.at(i).type == "d") {
+			node n = nodes.at(i);
+			n.ref2 = nodes.at(i).key; // modification
+			n.type = "a";
+			nodes.push_back(n);
+		}
+	}
+	*/
+
+	// organize intial nodes key
+	for (int i = 0; i < nodes.size(); i++) {
+		nodes.at(i).key = i;
+		nodes.at(i).ref = -1;
+		nodes.at(i).ref2 = i;
+		nodes.at(i).x = -1;
+		nodes.at(i).y = -1;
+		//nodes.at(i).id_n = i;
+	}
+
+	//addDummyNodes();
+
+	// get number of clients, depots and stations
+	numC = 0;
+	numD = 0;
+	numF = 0;
+	for (node n : nodes) {
+		if (n.type == "d") {
+			numD++;
+		}
+		else if (n.type == "f") {
+			numF++;
+		}
+		else if (n.type == "c") {
+			numC++;
+		}
+	}
+
+	// create a vector of edges to becames easier to get distances in this type of instance
+	//createEdgesVector();
+
+	// calculating extra parameters
+	Q = 80;// *60 * 60;// The battery capacity of the vehicle is set to 80 kWh, as in the work of Davis et al. [40]. // the conversion between KWh to KWs was done
+	v = v;// / 3.6; // convert the speed to m/s;
+	vehicleRange = 161; // meters
+	r = 1;// (vehicleRange / Q); // vehicleRange
+	g = 14;
+	fullRechargeTime = Q / g;
+	ct = 600;
+	o = numC + numF;
+	LB = 0; // wrong
+	UB = numC + numF;
+	M = 2 * (Q + set_C_().size() + set_UD0_()[0].dueDate);
+	mDim = distanceMatrix.size();
+	this->depotCost = 92000000;
+	this->bssCost = 500000;
+	this->brsCost = 126500;
+	this->bssEnergyCost = 0.15;
+	this->brsEnergyCost = 0.32;
+	this->vehicleCost = 70000;
+	this->driverWage = 13.14;
+	this->depotLifetime = 40;
+	this->bssLifetime = 20;
+	this->brsLifetime = 10;
+	this->vehicleLifetime = 20;
+
+	// determine the maximum number of depots
+	if (numD >= 2){
+		int min = int(1);
+		int max = int(numD / 2) + 1;
+		maxD = Random::get(min, max);
+	}
+	else {
+		maxD = numD;
+	}
+
+	// determine the maximum number of vehicles
+	maxV = ceil(double(numC) * 0.1) + 1;
+
+	// determine the maximum number of bss
+	maxB = ceil(double(numF) * 0.2) + 1;
+	o = maxB;
+
+	fstream out;
+	out.open(dir + fileName + ".ukelrp", ios::ate | ios::out);
+	if (out.is_open() == false) {
+		throw "error creating adapted instance for file " + fileName + "\n";
+	}
+	else{
+		writeAdapt(out);
+		out.close();
+	}
+
+}
+
+// consider all instances
+void instance::adaptUKInstance_n()
+{
+	fstream oc;
+	oc.open(dir + "UK200.txt", ios::in);
+	if (oc.is_open() == false) {
+		cout << "Error opening file UK200.txt\n";
+		exit(1);
+	}
+
+	int numCities;
+	map<string, vector<int>> cities;
+	map<pair<string, string>, int> distances;
+	vector<string> sCities;
+
+	oc >> numCities;
+
+	for (int i = 0; i < numCities; i++) {
+		string city;
+		vector<int> ls;
+		int qt;
+		oc >> city >> qt;
+		sCities.push_back(city);
+		for (int j = 0; j < qt; j++) {
+			int aux;
+			oc >> aux;
+			ls.push_back(aux);
+		}
+		cities.insert({ city, ls });
+	}
+
+	for (int i = 0; i < numCities; i++) {
+		for (int j = 0; j < numCities; j++) {
+			int aux;
+			oc >> aux;
+			pair<string, string> arc(sCities.at(i), sCities.at(j));
+			distances.insert({ arc, aux });
+		}
+	}
+
+	oc.close();
+
+	fstream file;
+	file.open(dir + fileName, ios::in);
+	if (file.is_open() == false) {
+		cout << "Error opening file " << fileName << endl;
+		cout << "In directory " << dir << endl;
+		exit(1);
+	}
+
+	int ig;
+
+	file >> numC;
+	file >> ig >> c;
+	file >> ig >> v;
+
+	//vector<vector<int>> m;
+	//m.resize(numC + 1);
+	distanceMatrix.resize(numC + 1);
+	for (int i = 0; i < numC + 1; i++) {
+		distanceMatrix.at(i).resize(numC + 1);
+		for (int j = 0; j < numC + 1; j++) {
+			float d;
+			file >> d;
+			d = d;// / 1000; // convert from meters to kilometers
+			distanceMatrix.at(i).at(j) = d;
+		}
+	}
+
+	// read depot node
+	node a;
+	a.type = "d";
+	a.x = -1;
+	a.y = -1;
+	a.id_n = 1;
+	file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
+	a.ogKey = a.key;
+	this->nodes.push_back(a);
+
+	// read customers nodes
+	vector<node> customers;
+	for (int i = 0; i < numC; i++) {
+		a.type = "c";
+		file >> a.key >> a.id >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime;
+		a.ogKey = a.key;
+		customers.push_back(a);
+	}
+	numC = customers.size();
+
+	// read facilities
+	int numFacilities;
+	file >> numFacilities;
+	for (int i = 0; i < numFacilities; i++) {
+		int aux;
+		file >> aux;
+		st.insert(aux);
+	}
+
+	// create the nodes of stations with selected customers. the customersNodes is modified without the stations
+	//vector<node> stations = chooseStationsLocationMCLP2(customers);
+	vector<pair<string, vector<int>>> vCities;
+	for (pair<string, vector<int>> i : cities) {
+		for (auto j : customers) {
+			if (j.id == i.first) {
+				vCities.push_back(i);
+				break;
+			}
+		}		
+	}
+	sort(vCities.begin(), vCities.end(), [](pair<string, vector<int>> a, pair<string, vector<int>> b) -> bool {return a.second.size() > b.second.size(); });
+	
+	vector<node> stations;
+
+	for (int i = 0; i < vCities.size() * 0.15; i++) {
+		
+
+		bool find = false;
+		int count = 0;
+		for (auto j : customers) {
+			if (j.id == vCities.at(i).first) {
+				node n;
+				n = j;
+				n.type = "f";
+				n.serviceTime = nodes.front().serviceTime;
+				n.dueDate = nodes.front().dueDate;
+				n.readyTime = nodes.front().readyTime;
+				stations.push_back(n);
+				customers.erase(customers.begin() + count);
+				break;
+			}
+			count++;
+		}
+	}
+	/*
+	// choose additional depots
+	if (numC >= 50) {
+		vector<pair<int, long long int>> dists;
+		int i = 0;
+
+		vector<node> C = customers;
+
+		for (node n1 : C) {
+			if (n1.type != "d" && n1.type != "a") {
+				long long int sum = 0;
+				for (node n2 : C) {
+					int mean = floor(distanceMatrix.at(n1.key).at(n2.key) + distanceMatrix.at(n2.key).at(n1.key) / 2);
+					sum += mean;
+				}
+				pair<int, long long int> aux = { n1.key, sum };
+				dists.push_back(aux);
+			}
+		}
+
+		sort(dists.begin(), dists.end(), [](pair<int, long long int> a, pair<int, long long int> b)-> bool {return a.second < b.second; });
+
+		vector<int> idpts;
+		int d = numC / (25) - 1;
+		int num = 0;
+		// choose d depots		
+		for (auto i : dists) {
+			if (num == d) {
+				break;
+			}
+
+			bool isBSS = false;
+			for (node j : stations) {
+				if (j.ogKey == i.first) {
+					isBSS = true;
+					break;
+				}
+			}
+			if (isBSS == false) {
+				num++;
+				idpts.push_back(i.first);
+			}
+		}
+
+		vector<node> dpts;
+		for (int i : idpts) {
+			int a = 0;
+			for (node c : customers) {
+				if (c.key == i) {
+					c.type = "d";
+					c.demand = 0;
+					c.dueDate = 32400;
+					c.readyTime = 0;
+					c.serviceTime = 0;
+					dpts.push_back(c);
+					customers.erase(customers.begin() + a);
+				}
+				//customers.erase(customers.begin() + a);
+				a++;
+			}
+		}
+
+		// insert extra depots
+		nodes.insert(nodes.end(), dpts.begin(), dpts.end());
+	}
+	*/
 	// duplicate depots nodes as bss
 	int s = nodes.size();
 	for (int i = 0; i < s; i++) {
@@ -992,7 +1431,7 @@ void instance::adaptUKInstance()
 	o = numC + numF;
 	LB = 0; // wrong
 	UB = numC + numF;
-	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
+	M = 2 * (Q + set_C_().size() + set_UD0_()[0].dueDate);
 	mDim = distanceMatrix.size();
 	this->depotCost = 92000000;
 	this->bssCost = 500000;
@@ -1007,7 +1446,7 @@ void instance::adaptUKInstance()
 	this->vehicleLifetime = 20;
 
 	// determine the maximum number of depots
-	if (numD >= 2){
+	if (numD >= 2) {
 		int min = int(1);
 		int max = int(numD / 2) + 1;
 		maxD = Random::get(min, max);
@@ -1028,7 +1467,7 @@ void instance::adaptUKInstance()
 	if (out.is_open() == false) {
 		throw "error creating adapted instance for file " + fileName + "\n";
 	}
-	else{
+	else {
 		writeAdapt(out);
 		out.close();
 	}
@@ -1062,6 +1501,88 @@ int instance::getArrival(int key)
 	else {
 		throw to_string(key) + " is not a depot";
 	}
+}
+
+void instance::removeBSS(vector<string> BSS)
+{
+	vector<node> new_R;
+	// define the list of BSSs
+	int pos = 0;
+	for (auto n : R) {
+		bool find = false;
+		for (string bss : BSS) {
+			if (bss == n.id) {
+				find = true;
+				break;
+			}
+		}
+		if (find == true) {
+			new_R.push_back(n);
+		}
+		/*
+		if (find == false) {
+			R.erase(R.begin() + pos);
+		}
+		else {
+			pos++;
+		}
+		*/
+	}
+	R = new_R;
+}
+
+void instance::removeDPT(vector<string> DPT)
+{
+	vector<node> new_UD;
+	// define the list of BSSs
+	int pos = 0;
+	for (auto n : UD) {
+		bool find = false;
+		for (string bss : DPT) {
+			if (bss == n.id) {
+				find = true;
+				break;
+			}
+		}
+		if (find == true) {
+			new_UD.push_back(n);
+		}
+	}
+	UD = new_UD;
+
+	vector<node> new_UD0;
+	// define the list of BSSs
+	pos = 0;
+	for (auto n : UD0) {
+		bool find = false;
+		for (string bss : DPT) {
+			if (bss == n.id) {
+				find = true;
+				break;
+			}
+		}
+		if (find == true) {
+			new_UD0.push_back(n);
+		}
+	}
+	UD0 = new_UD0;
+
+	vector<node> new_UD1;
+	// define the list of BSSs
+	pos = 0;
+	for (auto n : UD1) {
+		bool find = false;
+		for (string bss : DPT) {
+			if (bss == n.id) {
+				find = true;
+				break;
+			}
+		}
+		if (find == true) {
+			new_UD1.push_back(n);
+		}
+	}
+	UD1 = new_UD1;
 }
 
 void instance::readUKAdapt()
@@ -1109,7 +1630,7 @@ void instance::readUKAdapt()
 	file >> str >> str >> ct; // battery swap time
 	file >> str >> str >> r; // battery consumption rate
 	file >> str >> str >> g; // recharging rate
-	file >> str >> str >> C; // vehicle load capacity
+	file >> str >> str >> c; // vehicle load capacity
 	file >> str >> str >> v; // speed
 
 	int numNodes = numD + numF + numC;
@@ -1131,7 +1652,6 @@ void instance::readUKAdapt()
 			distanceMatrix.at(i).at(j) = d;
 		}
 	}
-
 	
 	// give all depot nodes a specific id
 	int id = 1;
@@ -1143,7 +1663,7 @@ void instance::readUKAdapt()
 	}
 
 	// adding depot arrival nodes
-	vector<node> UD0 = set_UD0();
+	vector<node> UD0 = set_UD0_();
 	node n;
 	for (int i = 0; i < UD0.size(); i++) {
 		UD0.at(i).ref2 = i;
@@ -1161,6 +1681,18 @@ void instance::readUKAdapt()
 	}
 
 	addDummyNodes();
+
+	this->UD0 = set_UD0_();
+	this->UD1 = set_UD1_();
+	this->UD = set_UD_();
+	this->C = set_C_();
+	this->R = set_R_();
+	this->S = set_S_();
+	this->V = set_V_();
+	this->C0 = set_C0_();
+	this->V0 = set_V0_();
+	this->V1 = set_V1_();
+	this->V01 = set_V01_();
 
 	// create a vector of edges to becames easier to get distances in this type of instance
 	createEdgesVector();
@@ -1187,6 +1719,7 @@ void instance::readUKAdapt()
 
 	sort(nodes.begin(), nodes.end(), [](node a, node b){return a.key < b.key; }); // we sort the nodes because its not garuanteed that they will be sorted during the file reading, by ordering the nodes by key, we can retrieve data in the nodes o(1)
 	
+
 }
 
 void instance::addDummyNodes()
@@ -1274,7 +1807,7 @@ vector<node> instance::chooseStationsLocationMCLP2(vector<node>& customers)
 	vector<node> stations;
 
 	for (int i : st) {
-		node n = customers.at(i - 1);
+		node n = customers.at(i);
 		n.type = "f";
 		n.demand = 0;
 		n.dueDate = 32400;
@@ -1363,7 +1896,7 @@ void instance::writeAdapt(ostream &file)
 	file << "battery_swap_time          " << "second   " << ct << endl; // battery swap time
 	file << "battery_consumption_rate   " << "x        " << r << endl; // battery consumption rate
 	file << "recharging_rate            " << "x        " << g << endl; // recharging rate
-	file << "vehicle_load               " << "kg       " << C << endl; // vehicle load capacity
+	file << "vehicle_load               " << "kg       " << c << endl; // vehicle load capacity
 	file << "vehicle_speed              " << "km/h     " << v << endl; // speed
 	file << endl;
 
@@ -1557,7 +2090,7 @@ void instance::readSSG14()
 
 		// getting C
 		if (v.first == "Parameters") {
-			C = v.second.get<float>("StorageCapacity");
+			c = v.second.get<float>("StorageCapacity");
 		}
 
 		// getting r
@@ -1621,9 +2154,10 @@ instance::~instance()
 {
 }
 
-void adaptAll()
+// this function adapts the instances considering the result from the 
+void adaptAll(string dir)
 {
-	string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
+	string dir3 = dir;
 	fstream all;
 	all.open(dir3 + "all.txt", ios::in);
 	if (all.is_open() == false) {
@@ -1636,6 +2170,31 @@ void adaptAll()
 		instance i(dir3, line);
 		try {
 			i.adaptUKInstance();
+		}
+		catch (string s) {
+			cout << s << endl;
+		}
+	}
+
+	all.close();
+}
+
+// this function adapts the instances considering the set of instances of same size
+void adaptAll_n()
+{
+	string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/";
+	fstream all;
+	all.open(dir3 + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw "error opening file all.txt";
+	}
+
+	string line;
+	while (getline(all, line)) {
+		cout << line << endl;
+		instance i(dir3, line);
+		try {
+			i.adaptUKInstance_n();
 		}
 		catch (string s) {
 			cout << s << endl;

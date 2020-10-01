@@ -14,6 +14,7 @@ class perm_rep : public Algorithms
 {
 private:
 	string dirOutput;
+	vector<string> neighbors = { "insertR", "2opt", "shiftC", "swapD", "changeD"}; //  "swapD" 
 
 	Solution permutationToSolution(permutation p);
 	Solution permutationToSolution(permutation p, int cn); // cn is the cendidate`s list`s size
@@ -76,22 +77,29 @@ private:
 	//SA
 	// solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
 
-	// GRASP
 	// this GRASP algorithm is responsible to improve the addDepot method
 	Solution GRASP_p(Solution s, int maxIt, int maxRunTime);
-	Solution bVNS_r(Solution s); // VNS // localSearch_GRASP
+	Solution bVNS_r(Solution s, int itMax); // VNS // localSearch_GRASP
 	Solution rVNS_r(Solution s); // VNS // localSearch_GRASP
+	Solution localSearch_r_old(Solution s, string n);
 	Solution localSearch_r(Solution s, string n);
+	Solution hillDescent_r_2opt(Solution s);
+	Solution hillDescent_r_shiftC(Solution s);
+	Solution hillDescent_r_insertR(Solution s);
+	Solution hillDescent_r_changeD(Solution s);
+	Solution hillDescent_r_swapD(Solution s);
 	Solution hillDescent_r(Solution s);
+	Solution VNS(Solution s, int itMax, int maxTime);
 
-	Solution routeSplit_r(Solution s, int n, int m); // split route n in two in a given position m (m < s.route.at(n).size() - 2)
-	Solution bssReplacement_r(Solution s, int key); // Replace a bss defined by n and swap  it for others, aready placed, bss
-	Solution routePartition_r(Solution s, int r1, int p1, int r2, int p2);
-	Solution opt2_route_r(Solution s, int j, int beg, int end); // i = route, j = beg, i = end
+	Solution routeSplit_r(Solution s, int rt, int pos); // split route n in two in a given position m (m < s.route.at(n).size() - 2)
+	Solution routeUnion_r(Solution s, int r1, int r2);
+	Solution routeInsertion_r(Solution s, int r1, int p1, int r2, int p2);	
+	Solution opt2_route_r(Solution s, int j, int beg, int end);
 	Solution shiftCustomer_r(Solution s, int j, int c, int q);	
-	Solution changeDepot(Solution s, int r, int keyDPT);
+	Solution changeDepot(Solution s, int keyDPT);
 	Solution swapDepot(Solution s, int kDPTA, int kDPTB);
-	Solution shakeRandom_r(Solution s, int n);
+	Solution bssReplacement_r(Solution s, int key); // Replace a bss defined by n and swap  it for others, aready placed, bss
+	Solution shakeRandom_r(Solution s, string n);
 
 	// BGKGA	
 	vector<ValueKeyPair> v;
@@ -100,16 +108,24 @@ private:
 	Solution greedDD();
 	Solution greedRT();
 
+	// aux
+	vector<pair<int, int>> getCustomersPos(vector<vertex> route);
+	vector<vertex> getCustomers(vector<vertex> route);
+
 public:
 	Solution GRASP(int maxIt, int maxRuntime);
 	Solution GA(int popSize, int eliteP, int maxGen);
 	Solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
+	Solution bVNS(int itMax, int maxTime);
+	Solution VNS(int itMax, int maxTime);
+	Solution VNSL(vector<string> BSS, int itMax, int maxTime); // this version of the VNS will limit the BSSs according to the specified ones
+		
 	Solution BRKGA_();
-	Solution testPermutation(permutation p);
 	float decode(vector<double> chromosome);
 	void setOutputDir(string dir);
 	bool getArcsNodes(Solution& s);
 
+	Solution testPermutation(permutation p);
 	int test_permutationToSolutionAlt();
 	int test_permutationToSolution();
 	int test_addStations();
@@ -118,13 +134,14 @@ public:
 	int test_opt2_route();
 	int test_shiftCustomer();
 	int test_swapDepot();
+	int test_changeDepot();
+	int test_splitRoute();
 	int test_neigh();
 	int test_localSearch_r();
 	int test_VNS();
 	int test_GRASP();
 	int test_SA();
-	int test_new_evaluation();
-	
+	int test_new_evaluation();	
 	int test2();
 	int test3();
 	int test4();
@@ -133,4 +150,3 @@ public:
 	// aux
 	float getTravelCost(Solution s);
 };
-

@@ -460,8 +460,76 @@ void Model::model4(GRBModel & model)
 	*/
 }
 
+void Model::model_SBPO(GRBModel& model)
+{
+	string newName = "model4_" + fileName;
+	model.set(GRB_StringAttr_ModelName, newName);
+
+	var_x(model);
+	var_y_model3(model);
+	var_t(model);
+	var_d(model);
+	var_q(model);
+	var_u(model);
+	var_w_model3(model); // var_w_model3(model);
+	var_z(model);
+	var_v(model);
+
+	depotCostFO(model);	// depot cost
+	bssCostFO(model);	// bss cost
+	vehicleFixedCostFO(model);	// vehicle fixed cost
+	drivingCostFO(model);	// driving cost
+	brsEnergyCostFO(model);	// energy cost in brs
+	bssEnergyCostFO(model);	// energy cost in bss
+	bssUseCostFO(model);
+	fo_cost_3(model);
+
+	//fo_cost(model);
+
+	c2(model); // 2
+	c3(model); // 3
+	c4(model); // 4
+	c5(model); // 5
+	c7_M(model); // 6
+	c8_M(model); // 7
+	c9_M(model); // 8
+	c11_M(model); // 9
+	c12(model); // 10
+	c14_M(model); // 11
+	c15(model); // 12
+	c16_M(model); // 13
+	c17(model); // 14
+	c18_M(model); // 15
+	c19_M(model); // 16
+	c20_M(model); // 17
+	c21_M(model); // 18
+	c22(model); // 19
+	c43(model); // 20
+	c44(model); // 21
+	c27_model4(model); // 22
+	c36_M_model4(model); // 23
+	c37_M_model4(model); // 24
+	c38_M(model); // 25
+	c39_M(model); // 26
+	c40_M(model); // 27
+	c41(model); // 28
+	c45(model);
+	c48(model);
+	c50(model);
+}
+
+void Model::model_test(GRBModel& model)
+{
+	model_SBPO(model);
+	setInitialStations(model);
+
+}
+
 void Model::setup(GRBModel &model)
 {
+	if (w == -1) {
+		model_test(model);
+	}
 	if (w == 0) {
 		model4(model);
 	}
@@ -597,20 +665,23 @@ Solution Model::model()
 
 		auto t1 = std::chrono::high_resolution_clock::now();
 
-		//model.write("lp.lp");
+		model.write("lp.lp");
 		model.getEnv().set(GRB_DoubleParam_TimeLimit, TMAX);
 		model.optimize();
 
 		auto t2 = std::chrono::high_resolution_clock::now();
 		duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
 
-		// save solution	
-		result(model);
-		//model.write("sol.sol");
-
-		//double d = model.get(GRB_DoubleAttr_Runtime);
-		//cout << d << endl << endl << endl;
-		model.write("sol.sol");
+		// save solution
+		try{
+			result(model);
+			model.write("sol.sol");
+		}
+		catch (GRBException& e) {
+			cout << e.getErrorCode() << endl;
+			cout << e.getMessage() << endl;
+		}
+		
 		return solu;
 	}
 	catch (GRBException e) {
@@ -747,10 +818,10 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 
 		for (int i = 0; i < r.size() - 1; i++) {
 		//for (vertex v : r) {
-			v = r.at(i);
-			vertex v2 = r.at(i + 1);
-			di = getD(model, v2.key);
-			di.set(GRB_DoubleAttr_Start, v.vLoad);
+v = r.at(i);
+vertex v2 = r.at(i + 1);
+di = getD(model, v2.key);
+di.set(GRB_DoubleAttr_Start, v.vLoad);
 		}
 
 		v = r.back();
@@ -775,7 +846,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 				if (i.key == v.key) {
 					ui.set(GRB_DoubleAttr_Start, n.id_n);
 				}
-				
+
 			}
 		}
 	}
@@ -783,7 +854,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 	// set variable q
 	for (route r : s.routes) {
 		//for (vertex v : r) {
-		for(int i = 0; i < r.size() - 1; i++){
+		for (int i = 0; i < r.size() - 1; i++) {
 			vertex v = r.at(i);
 			GRBVar qi = getQ(model, v.key);
 			qi.set(GRB_DoubleAttr_Start, v.bLevel);
@@ -823,7 +894,7 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 			}
 		}
 	}
-	
+
 	/*
 	GRBVar p1 = model.getVarByName("depotCost");
 	p1.set(GRB_DoubleAttr_Start, s.FOp.at(1));
@@ -838,6 +909,135 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 	GRBVar p6 = model.getVarByName("bssEnergyCost");
 	p6.set(GRB_DoubleAttr_Start, s.FOp.at(6));
 	*/
+	model.update();
+}
+
+void Model::setInitialStations(GRBModel& model)
+{	
+	vector<int> UK15_BSS = { 5 };
+	vector<int> UK15_DPT = { 0 };
+	vector<int> UK20_BSS = { 7 };
+	vector<int> UK20_DPT = { 0 };
+	vector<int> UK25_BSS = { 7 };
+	vector<int> UK25_DPT = { 0 };
+	vector<int> UK50_BSS = { 2, 4, 7 };
+	vector<int> UK50_DPT = { 0, 1 };
+	vector<int> UK75_BSS = { 6, 8, 9, 14, 18, 19 };
+	vector<int> UK75_DPT = { 0 };
+	vector<int> UK100_BSS = { 4, 7, 14, 18, 22, 28 };
+	vector<int> UK100_DPT = { 0 };
+	vector<int> UK150_BSS = { 14, 16, 22, 25, 30, 32, 34, 42 };
+	vector<int> UK150_DPT = { 0 };
+	vector<int> UK200_BSS = { 19, 22, 28, 31, 32, 33, 41, 43, 47 };
+	vector<int> UK200_DPT = { 0 };
+
+	vector<int> fixed;
+	vector<int> fixed2;
+	if (inst->fileName == "UK15_01.txt") {
+		fixed = UK15_BSS;
+		fixed2 = UK15_DPT;
+	}
+	else if (inst->fileName == "UK20_01.txt") {
+		fixed = UK20_BSS;
+		fixed2 = UK20_DPT;
+	}
+	else if (inst->fileName == "UK25_01.txt") {
+		fixed = UK25_BSS;
+		fixed2 = UK25_DPT;
+	}
+	else if (inst->fileName == "UK50_01.txt") {
+		fixed = UK50_BSS;
+		fixed2 = UK50_DPT;
+	}
+	else if (inst->fileName == "UK75_01.txt") {
+		fixed = UK75_BSS;
+		fixed2 = UK75_DPT;
+	}
+	else if (inst->fileName == "UK100_01.txt") {
+		fixed = UK100_BSS;
+		fixed2 = UK100_DPT;
+	}
+	else if (inst->fileName == "UK150_01.txt") {
+		fixed = UK150_BSS;
+		fixed2 = UK150_DPT;
+	}
+	else if (inst->fileName == "UK200_01.txt") {
+		fixed = UK200_BSS;
+		fixed2 = UK200_DPT;
+	}
+
+	// fix bss
+	auto V1 = inst->set_V1();
+	auto R = inst->set_R();
+	/*
+	for (int f : fixed) {
+		GRBLinExpr c = 0;
+		for (auto n : V1) {
+			if (f != n.key){
+				GRBVar x = getX(model, f, n.key);
+				c += x;
+			}
+		}
+		model.addConstr(c >= 1, "f(" + to_string(f) + ")");
+		//GRBVar y = model.getVarByName("y(" + to_string(r) + ")");
+		//model.addConstr(y == 1, "f1(" + to_string(r) + ")");
+	}
+	*/	
+	for (auto r : R) {
+		bool found = false;		
+		for (auto f : fixed) {
+			if (f == r.key) {
+				found = true;
+				break;
+			}
+		}
+		if (found == true) {
+			continue;
+		}
+		GRBLinExpr c = 0;
+		for (auto n : V1) {
+			if (r.key != n.key) {
+				GRBVar x = getX(model, r.key, n.key);
+				c += x;
+			}
+		}
+		model.addConstr(c == 0, "f2(" + to_string(r.key) + ")");
+	}
+
+	// fix depots
+	/*
+	for (int f : fixed2) {
+		GRBLinExpr c = 0;
+		for (auto n : V1) {
+			if (f != n.key) {
+				GRBVar x = getX(model, f, n.key);
+				c += x;
+			}
+		}
+		model.addConstr(c >= 1, "f3(" + to_string(f) + ")");
+	}
+	*/
+	for (auto r : R) {
+		bool found = false;
+		for (auto f : fixed2) {
+			if (f == r.key) {
+				found = true;
+				break;
+			}
+		}
+		if (found == true) {
+			continue;
+		}
+		GRBLinExpr c = 0;
+		for (auto n : V1) {
+			if (r.key != n.key) {
+				GRBVar x = getX(model, r.key, n.key);
+				c += x;
+			}
+		}
+		model.addConstr(c == 0, "f4(" + to_string(r.key) + ")");
+	}
+
 	model.update();
 }
 
@@ -912,11 +1112,6 @@ void Model::setIS(Solution s)
 {
 	init = s;
 	initProv = true;
-}
-
-void Model::setInitialStations()
-{
-	
 }
 
 Solution Model::analyze(Solution s)
@@ -1394,7 +1589,7 @@ vector<string> Model::eval(Solution s)
 			}
 
 			// checking vehicle load
-			if (v.vLoad < 0 || v.vLoad > inst->C) {
+			if (v.vLoad < 0 || v.vLoad > inst->c) {
 				// cout << v.key << endl;
 				ret.insert("vehicle_load");
 			}
@@ -2427,7 +2622,7 @@ void Model::c16_M(GRBModel & model)
 				GRBVar xij = getX(model, i.key, j.key);
 				float pi = i.demand; // inst->nodes.at(i.key).demand; // may cause problem at some point
 
-				model.addConstr(dj <= di - pi * xij + inst->C * (1 - xij), "c16_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
+				model.addConstr(dj <= di - pi * xij + inst->c * (1 - xij), "c16_M(" + to_string(i.key) + "," + to_string(j.key) + ")");
 			}
 		}
 	}
@@ -2459,7 +2654,7 @@ void Model::c17(GRBModel & model)
 	for (auto i : UD0) {
 		GRBVar di = getD(model, i.key);
 
-		model.addConstr(di <= inst->C, "c17(" + to_string(i.key) + ")");
+		model.addConstr(di <= inst->c, "c17(" + to_string(i.key) + ")");
 	}
 	model.update();
 }
@@ -3239,7 +3434,7 @@ void Model::r1(GRBModel& model)
 	for (node i : UD0) {
 		GRBVar di = getD(model, i.key);
 
-		model.addConstr(di <= inst->C, "r1(" + to_string(i.key) + ")");
+		model.addConstr(di <= inst->c, "r1(" + to_string(i.key) + ")");
 	}
 	model.update();
 }

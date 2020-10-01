@@ -47,7 +47,7 @@ Solution perm_rep::permutationToSolution(permutation p)
 			vertex back = s.routes.at(j).back();
 			int time = back.lTime + inst->getTD(back.key, n.key);
 
-			if (n.demand + weight.at(j) <= inst->C && time <= n.dueDate) { // check the route total freight and stipulated time windows
+			if (n.demand + weight.at(j) <= inst->c && time <= n.dueDate) { // check the route total freight and stipulated time windows
 
 				// create the new vertex
 				new_v.key = n.key;
@@ -89,34 +89,10 @@ Solution perm_rep::permutationToSolution(permutation p)
 
 		}
 	}
-	/*
-	Solution curr;
-	s.FO = INT_MAX;
-	for (auto n : inst->set_UD0()) {
-		curr = addDepotsN(s, n.key);
-
-		try {
-			//curr = GRASP_p(curr);
-			curr = addStations(curr); 
-
-			curr = procSol(curr);
-
-			if (curr.FO < s.FO && curr.inf.size() == 0) {
-				s = curr;
-			}
-		}
-		catch (IsolatedNode& e) {
-			cout << e.what() << endl;
-		}
-		catch (exception e) {
-			cout << e.what() << endl;
-			throw PermutationInf(s.perm);
-		}
-	}
-	*/
 
 	Solution best;
 	best.FO = INT_MAX;
+	bool improv = false;
 	for (auto n : inst->set_UD0()) {
 		Solution curr = addDepotsN(s, n.key);
 
@@ -126,6 +102,7 @@ Solution perm_rep::permutationToSolution(permutation p)
 
 			if (curr.FO < best.FO && curr.inf.size() == 0) {
 				best = curr;
+				improv = true;
 			}
 		}
 		catch (IsolatedNode& e) {
@@ -136,15 +113,9 @@ Solution perm_rep::permutationToSolution(permutation p)
 			throw PermutationInf(s.perm);
 		}
 	}
-
-	/*
-	for (vertex v : best.routes.at(0)) {
-		if (inst->getNodeByKey(v.key).type == "f") {
-			cout << v.recharged << " ";
-		}
+	if (improv == false) {
+		throw "infeasible_solution";
 	}
-	cout << endl;
-	*/
 
 	return best;
 }
@@ -198,7 +169,7 @@ Solution perm_rep::permutationToSolution(permutation p, int cn)
 			vertex back = s.routes.at(j).back();
 			int time = back.lTime + inst->getTD(back.key, n.key);
 
-			if (n.demand + weight.at(j) <= inst->C && time <= n.dueDate) { // check the route total freight and stipulated time windows
+			if (n.demand + weight.at(j) <= inst->c && time <= n.dueDate) { // check the route total freight and stipulated time windows
 
 				// create the new vertex
 				new_v.key = n.key;
@@ -356,7 +327,7 @@ Solution perm_rep::permutationToSolutionAlt(permutation p)
 			vertex back = s.routes.at(j).back();
 			int time = back.lTime + inst->getTD(back.key, n.key);
 
-			if (n.demand + weight.at(j) <= inst->C && time <= n.dueDate) { // check the route total freight and stipulated time windows
+			if (n.demand + weight.at(j) <= inst->c && time <= n.dueDate) { // check the route total freight and stipulated time windows
 
 				// create the new vertex
 				new_v.key = n.key;
@@ -476,7 +447,7 @@ Solution perm_rep::permutationToSolutionGrasp(permutation p)
 			vertex back = s.routes.at(j).back();
 			int time = back.lTime + inst->getTD(back.key, n.key);
 
-			if (n.demand + weight.at(j) <= inst->C && time <= n.dueDate) { // check the route total freight and stipulated time windows
+			if (n.demand + weight.at(j) <= inst->c && time <= n.dueDate) { // check the route total freight and stipulated time windows
 
 				// create the new vertex
 				new_v.key = n.key;
@@ -673,7 +644,7 @@ Solution perm_rep::addDepots(Solution s)
 	for (int i = 0; i < s.routes.size(); i++) {
 		s.routes.at(i).front().bLevel = inst->Q;
 		s.routes.at(i).front().lTime = 0;
-		s.routes.at(i).front().vLoad = inst->C;
+		s.routes.at(i).front().vLoad = inst->c;
 		s.routes.at(i).front().aTime = 0;
 		s.routes.at(i).front().wTime = 0;
 	}
@@ -709,7 +680,7 @@ Solution perm_rep::addDepotsN(Solution s, int n)
 	for (int i = 0; i < s.routes.size(); i++) {
 		s.routes.at(i).front().bLevel = inst->Q;
 		s.routes.at(i).front().lTime = 0;
-		s.routes.at(i).front().vLoad = inst->C;
+		s.routes.at(i).front().vLoad = inst->c;
 		s.routes.at(i).front().aTime = 0;
 		s.routes.at(i).front().wTime = 0;
 	}
@@ -803,7 +774,7 @@ Solution perm_rep::addStations_(Solution s)
 					// add depot in the route
 					dpt.bLevel = inst->Q;
 					dpt.lTime = 0;
-					dpt.vLoad = inst->C;
+					dpt.vLoad = inst->c;
 					dpt.aTime = 0;
 					dpt.wTime = 0;
 
@@ -1210,7 +1181,30 @@ Solution perm_rep::addStations(Solution s)
 	for (int j = 0; j < s.routes.size(); j++) {
 		int curr = 1;		
 		try {
-			s.routes.at(j) = addStations(s.routes.at(j));
+			try {
+				s.routes.at(j) = addStations(s.routes.at(j));
+			}
+			catch (SplitRoute e) { // if the route has an adjacent pair of nodes that cant be linked by the availabes BSSs we will split the route in those two points
+				route r1, r2;
+
+				for (int i = 0; i <= e.getPoint(); i++) {
+					r1.push_back(s.routes.at(j).at(i));					
+				}
+
+				r2.push_back(r1.front()); // insert arrival node
+				for (int i = e.getPoint() + 1; i < s.routes.at(j).size(); i++) {
+					r2.push_back(s.routes.at(j).at(i));
+				}
+
+				r1.push_back(r2.back()); // insert departure node
+
+				s.routes.at(j) = r1;
+				s.routes.push_back(r2);
+
+				//j--;
+
+				continue;
+			}			
 			
 			while (inst->getNodeByKey(s.routes.at(j).back().key).type != "a") {
 				vertex v = s.routes.at(j).back();
@@ -1332,8 +1326,7 @@ route perm_rep::addStations(route rt)
 				rt.erase(rt.begin() + curr);
 				temp.push_back(v);
 				curr--;
-			}
-			
+			}			
 		}
 
 		if (rt.at(curr).bLevel < 0) {
@@ -1376,9 +1369,18 @@ route perm_rep::addStations(route rt)
 					//vector<node> R = inst->set_R(); // get all stations
 
 					// search for the closest bss from the stop node
-					pair<int, int> ret = closestBSS(rt, curr);
-					bss = ret.first;
-					minBU = ret.second;
+					try {
+						pair<int, int> ret = closestBSS(rt, curr);
+						bss = ret.first;
+						minBU = ret.second;
+					}
+					catch (OutOfBSS e) {
+						while (inst->getNodeByKey(rt.at(curr).key).type == "f") {
+							curr--;
+						}
+
+						throw SplitRoute(curr);
+					}				
 
 				}
 				// if the current node is a bss we have to watch out for a possible loop of bss
@@ -1449,9 +1451,18 @@ route perm_rep::addStations(route rt)
 					}
 
 					// search for the closest bss from the stop node
-					pair<int, int> ret = closestBSS(rt, curr);
-					bss = ret.first;
-					minBU = ret.second;
+					try {
+						pair<int, int> ret = closestBSS(rt, curr);
+						bss = ret.first;
+						minBU = ret.second;
+					}
+					catch (OutOfBSS e) {
+						while (inst->getNodeByKey(rt.at(curr).key).type == "f") {
+							curr--;
+						}
+
+						throw SplitRoute(curr);
+					}
 				}
 
 				// compute the amount of energy the vehcile can recharge during service time in the current routes segment
@@ -2102,7 +2113,7 @@ Solution perm_rep::addStations_model(Solution s)
 					// add depot in the route
 					dpt.bLevel = inst->Q;
 					dpt.lTime = 0;
-					dpt.vLoad = inst->C;
+					dpt.vLoad = inst->c;
 					dpt.aTime = 0;
 					dpt.wTime = 0;
 
@@ -2632,7 +2643,7 @@ Solution perm_rep::addStations_OLD(Solution s, int n)
 					// add depot in the route
 					dpt.bLevel = inst->Q;
 					dpt.lTime = 0;
-					dpt.vLoad = inst->C;
+					dpt.vLoad = inst->c;
 					dpt.aTime = 0;
 					dpt.wTime = 0;
 
@@ -3619,7 +3630,7 @@ pair<int, int> perm_rep::closestBSS(route& rt, int key)
 		}
 
 		if (usedStations.size() == R.size()) {
-			throw "error";
+			throw OutOfBSS();
 		}
 
 		sort(stations.begin(), stations.end(), [](pair<int, int> a, pair<int, int> b) {return a.second < b.second; });
@@ -3808,7 +3819,7 @@ route perm_rep::computeRoute(route sol)
 	// fix the route
 	sol.front().bLevel = inst->Q;
 	sol.front().lTime = 0;
-	sol.front().vLoad = inst->C;
+	sol.front().vLoad = inst->c;
 	sol.front().wTime = 0;
 	sol.front().aTime = 0;
 
@@ -4476,11 +4487,9 @@ Solution perm_rep::sA(int initTemp, int finalTemp, float coolingRate, int maxIt,
 			//cout << "a1" << endl;
 			pl = opt2(pl, beg, end);
 			//cout << "a2" << endl;
-			try {
-				
+			try {				
 				Solution nSol;
 				//nSol = localSearch_light(pl);
-				
 				
 				if (temp <= initTemp * 0.3) {
 					//nSol = localSearch(pl);
@@ -4609,6 +4618,183 @@ Solution perm_rep::BRKGA_()
 	return Solution();
 }
 
+Solution perm_rep::bVNS(int itMax, int maxTime)
+{
+	maxRuntime = maxTime;// 300;
+	start = std::chrono::high_resolution_clock::now();
+
+	Solution init;
+	try {
+		init = greedDD();
+
+		Solution best = bVNS_r(init, 25);
+		getArcsNodes(best);
+
+		auto t2 = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+		best.runtime = duration;
+		best.FOINIT = init.FO;
+
+		if (best.inf.size() == 0) {
+			best.status = 1;
+		}
+		else {
+			best.status = -1;
+		}
+
+		row = "";
+		row = getRow(best);
+
+		fstream op;
+		op.open(dirOutput + inst->fileName, ios::app);
+		if (op.is_open() == false) {
+			cout << "error creating output file\n";
+			return best;
+		}
+		else {
+			best.debug(op);
+		}
+
+		best.saveXML(dirOutput + inst->fileName + ".xml");
+
+		return best;
+	}
+	catch (string e) {
+		cout << e << endl;
+		exit(1);
+	}
+}
+
+Solution perm_rep::VNS(int itMax, int maxTime)
+{
+	Solution init = greedDD();
+	cout << "Initial objective: " << init.FO << endl;
+	return VNS(init, itMax, maxTime);
+}
+
+Solution perm_rep::VNSL(vector<string> BSS, int itMax, int maxTime)
+{
+
+	inst->removeBSS(BSS); // remove unwanted BSSs
+	//inst->removeDPT({ "Stretford" });
+	Solution init = greedDD();
+
+	//auto p = randomPermutation();
+	//Solution init = permutationToSolution(p);
+
+	cout << "Initial objective: " << init.FO << endl;
+	return VNS(init, itMax, maxTime);
+	return Solution();
+}
+
+Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
+{
+	start = std::chrono::high_resolution_clock::now();
+
+	//neighbors = { "insertR", "2opt", "shiftC" };
+	neighbors = { "shiftC", "changeD", "2opt", "insertR" };
+	// neighbors = { "partR", "2opt", "shiftC", "swapD", "changeD", "splitR", "joinR" }; 
+	//neighbors = { "insertR", "2opt", "shiftC", "swapD", "changeD", "splitR", "unionR" }; // "swapD"
+
+	maxRuntime = maxTime;
+	Solution init = s;
+	Solution best = s;
+
+	int it = 0;
+	int n = 1;
+	int maxN = neighbors.size();
+	do {
+		try {
+			long long duration_;
+
+			Solution sl = shakeRandom_r(best, this->neighbors.at(n - 1));
+
+			#ifdef DEBUG_VNS
+			cout << "VNS local search" << endl;
+			auto t1_ = std::chrono::high_resolution_clock::now();
+			#endif
+
+			sl = localSearch_r(sl, this->neighbors.at(n - 1)); // "2opt"
+
+			#ifdef DEBUG_VNS
+			auto t2_ = std::chrono::high_resolution_clock::now();
+			duration_ = std::chrono::duration_cast<std::chrono::seconds>(t2_ - t1_).count();
+			cout << "VNS local search time = " << duration_ << endl;
+			#endif
+
+			auto currTime = std::chrono::high_resolution_clock::now();
+			duration_ = std::chrono::duration_cast<std::chrono::seconds>(currTime - start).count();
+			cout << fixed << setprecision(2) << best.FO << " - " << duration_ << endl;
+
+			if (sl.FO < best.FO && sl.inf.size() == 0) {
+
+				#ifdef DEBUG_VNS
+				cout << fixed << setprecision(2) << "VNS improvement: " << best.FO << " --> " << sl.FO << endl;
+				#endif
+				cout << fixed << setprecision(2) << "VNS improvement: " << best.FO << " --> " << sl.FO << endl;
+
+				best = sl;
+				s = sl;
+				it = 0;
+				n = 1;
+			}
+			else {
+				it++;
+				n++;
+				//n = Random::get<int>(1, maxN + 1);
+				if (n > maxN) {
+					n = maxN;
+					//n = Random::get<int>(1, maxN + 1);
+				}
+			}
+		}
+		catch (string str) {
+			cout << str << endl;
+		}
+
+		// measure runtime
+		auto t2 = std::chrono::high_resolution_clock::now();
+		long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+		// stop if max runtime is reached
+		if (duration >= maxRuntime) {
+			break;
+		}
+
+	} while (it < itMax);
+
+	getArcsNodes(best);
+
+	auto t2 = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+	best.runtime = duration;
+	best.FOINIT = init.FO;
+
+	if (best.inf.size() == 0) {
+		best.status = 1;
+	}
+	else {
+		best.status = -1;
+	}
+
+	row = "";
+	row = getRow(best);
+
+	fstream op;
+	op.open(dirOutput + inst->fileName, ios::app);
+	if (op.is_open() == false) {
+		cout << "error creating output file\n";
+		return best;
+	}
+	else {
+		best.debug(op);
+	}
+
+	best.saveXML(dirOutput + inst->fileName + ".xml");
+
+	return best;
+}
+
 Solution perm_rep::testPermutation(permutation p)
 {
 	p = randomPermutation();
@@ -4707,7 +4893,7 @@ Solution perm_rep::GRASP_p(Solution s, int maxIt, int maxRunTime)
 		auto t1_ = std::chrono::high_resolution_clock::now();
 		#endif
 
-		sl = bVNS_r(sl);
+		sl = bVNS_r(sl, 5);
 		//sl = hillDescent_r(sl);
 
 		#ifdef DEBUG_GRASP
@@ -4744,13 +4930,14 @@ Solution perm_rep::GRASP_p(Solution s, int maxIt, int maxRunTime)
 	return best;
 }
 
-Solution perm_rep::bVNS_r(Solution s)
+Solution perm_rep::bVNS_r(Solution s, int itMax)
 {
 	//cout << "VNS\n";
 	Solution best = s;
+	neighbors = { "insertR", "2opt", "shiftC" };
 
 	int it = 0;
-	int itMax = 5;
+	//int itMax = 5;
 	int n = 1;
 	int maxN = 3;
 
@@ -4762,7 +4949,7 @@ Solution perm_rep::bVNS_r(Solution s)
 			//cout << 1 << endl;
 			//cout << "shake " << n << endl;
 			
-			Solution sl = shakeRandom_r(best, n);
+			Solution sl = shakeRandom_r(best, neighbors.at(n - 1));
 			//cout << 2 << endl;
 			#ifdef DEBUG_VNS
 			cout << "VNS local search" << endl;
@@ -4833,7 +5020,7 @@ Solution perm_rep::rVNS_r(Solution s)
 	do {
 		try {
 
-			s = shakeRandom_r(s, n);
+			s = shakeRandom_r(s, neighbors.at(n - 1));
 			s = localSearch_r(s, "2opt");
 		}
 		catch (string s) {
@@ -4870,7 +5057,7 @@ Solution perm_rep::rVNS_r(Solution s)
 	return best;
 }
 
-Solution perm_rep::localSearch_r(Solution s, string n)
+Solution perm_rep::localSearch_r_old(Solution s, string n)
 {	
 	#ifdef DEBUG_HILL_DESCENT
 	cout << "localSearch_r\n";
@@ -4898,7 +5085,6 @@ Solution perm_rep::localSearch_r(Solution s, string n)
 					for (int a = 0; a < b - 1; a++) {
 					
 						try {
-
 							Solution sl = opt2_route_r(s, i, customers.at(a), customers.at(b));
 
 							#ifdef DEBUG_HILL_DESCENT
@@ -5013,6 +5199,421 @@ Solution perm_rep::localSearch_r(Solution s, string n)
 	return best;
 }
 
+Solution perm_rep::localSearch_r(Solution s, string n)
+{
+	if (n == "2opt") {
+		return hillDescent_r_2opt(s);
+	}
+	else if (n == "shiftC") {
+		return hillDescent_r_shiftC(s);
+	}
+	else if (n == "insertR") {
+		return hillDescent_r_insertR(s);
+	}
+	else if (n == "changeD") {
+		return hillDescent_r_changeD(s);
+	}
+	else {
+		throw n + " is not a valid neighborhood structure";
+	}
+}
+
+Solution perm_rep::hillDescent_r_2opt(Solution s)
+{
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "hillDescent_r_2opt\n";
+	#endif // DEBUG
+
+	float FO = s.FO;
+	Solution best = s;
+	//Solution curr = best;
+	best = procSol(best);
+	bool improv = true;
+
+	int count = 0;
+	while (improv == true) {
+		//cout << count << endl;
+		improv = false;
+		for (int i = 0; i < s.routes.size(); i++) {
+			vector<int> customers = getListC(s.routes.at(i));
+			if (customers.size() < 2) {
+				continue;
+			}
+			//for (int a = 0; a < customers.size() - 1; a++) {
+				//for (int b = a + 1; b < customers.size(); b++) {
+			for (int b = customers.size() - 1; b >= 1; b--) {
+				for (int a = 0; a < b - 1; a++) {
+
+					try {
+						Solution sl = opt2_route_r(s, i, customers.at(a), customers.at(b));
+
+						#ifdef DEBUG_HILL_DESCENT
+						auto t2 = std::chrono::high_resolution_clock::now();
+						long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+						if (duration - prevTime > 5) {
+							cout << "time: " << duration << endl;
+							prevTime = duration;
+						}
+						#endif // DEBUG
+
+						if (sl.FO < best.FO && sl.inf.size() == 0) {
+							#ifdef DEBUG_HILL_DESCENT
+							cout << fixed << "improvment local search: " << best.FO << " - " << sl.FO << endl;
+							#endif // DEBUG
+
+							//
+							best = sl;
+							improv = true;
+
+							// measure runtime
+							auto t2 = std::chrono::high_resolution_clock::now();
+							long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+							// stop if max runtime is reached
+							if (duration >= maxRuntime) {
+								return best;
+							}
+
+							break;
+						}
+					}
+					catch (string str) {
+						cout << str << endl;
+						continue;
+					}
+					catch (exception e) {
+						cout << e.what() << endl;
+						continue;
+					}
+
+				}
+				if (improv == true) {
+					break;
+				}
+			}
+			if (improv == true) {
+				break;
+			}
+		}
+		s = best;
+		count++;
+	}
+
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "end_localSearch_r\n";
+	#endif // DEBUG
+
+	return best;
+}
+
+Solution perm_rep::hillDescent_r_shiftC(Solution s)
+{
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "hillDescent_r_shiftC\n";
+	#endif // DEBUG
+
+	float FO = s.FO;
+	Solution best = s;
+	//Solution curr = best;
+	best = procSol(best);
+	bool improv = true;
+
+	int count = 0;
+	while (improv == true) {
+		improv = false;		
+		for (int r = 0; r < s.routes.size(); r++) {
+			vector<int> customers = getListC(s.routes.at(r));
+			if (customers.size() < 2) {
+				continue;
+			}
+
+			for (int i = 0; i < customers.size() - 1; i++) {
+				for (int j = i + 1; j < customers.size(); j++) {
+
+					int a = customers.at(i);
+					int b = customers.at(j) - customers.at(i);
+
+					try {
+						Solution sl = shiftCustomer_r(s, r, a, b);
+
+						if (sl.FO < best.FO && sl.inf.size() == 0) {
+							#ifdef DEBUG_HILL_DESCENT
+							cout << fixed << "improvment: " << sl.FO << " --> " << best.FO << endl;
+							#endif // DEBUG
+							best = sl;
+							improv = true;
+
+							// measure runtime
+							auto t2 = std::chrono::high_resolution_clock::now();
+							long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+							// stop if max runtime is reached
+							if (duration >= maxRuntime) {
+								return best;
+							}
+
+							break;
+						}
+					}
+					catch (string s) {
+						cout << s << endl;
+					}
+				}
+				if (improv == true) {
+					break;
+				}
+			}
+			if (improv == true) {
+				break;
+			}
+		}
+		s = best;
+		count++;
+	}
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "end_hillDescent_r_shiftC\n";
+	#endif // DEBUG
+
+	return best;
+}
+
+Solution perm_rep::hillDescent_r_insertR(Solution s)
+{
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "hillDescent_r_insertR\n";
+	#endif // DEBUG
+
+	float FO = s.FO;
+	Solution best = s;
+	best = procSol(best);
+	bool improv = true;
+
+	int count = 0;
+	while (improv == true) {
+		improv = false;
+
+			
+		for (int a = 0; a < s.routes.size(); a++) {
+			vector<int> customersA = getListC(s.routes.at(a));
+			if (customersA.size() < 2) {
+				continue;
+			}
+			for (int b = 0; b < s.routes.size(); b++) {
+				vector<int> customersB = getListC(s.routes.at(b));
+				if (a != b) {
+					for (int k = 1; k < customersA.size(); k++) {
+						for (int l = 0; l < customersB.size(); l++) {
+							try {
+								Solution sl = routeInsertion_r(s, a, customersA.at(k), b, customersB.at(l));
+
+								#ifdef DEBUG_HILL_DESCENT
+								auto t2 = std::chrono::high_resolution_clock::now();
+								long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+								if (duration - prevTime > 5) {
+									cout << "time: " << duration << endl;
+									prevTime = duration;
+								}
+								#endif // DEBUG
+
+								if (sl.FO < best.FO && sl.inf.size() == 0) {
+									#ifdef DEBUG_HILL_DESCENT
+									cout << fixed << "improvment local search: " << best.FO << " - " << sl.FO << endl;
+									#endif // DEBUG
+
+									//
+									best = sl;
+									improv = true;
+
+									// measure runtime
+									auto t2 = std::chrono::high_resolution_clock::now();
+									long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+									// stop if max runtime is reached
+									if (duration >= maxRuntime) {
+										return best;
+									}
+
+									break;
+						}
+					}
+							catch (string str) {
+								cout << str << endl;
+								continue;
+							}
+							catch (exception e) {
+								cout << e.what() << endl;
+								continue;
+							}
+						
+						}
+						
+					}
+					
+				}
+					
+
+			}
+			if (improv == true) {
+				break;
+			}
+		}
+		s = best;
+		count++;
+		
+	}
+
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "end_localSearch_r\n";
+	#endif // DEBUG
+
+	return best;
+}
+
+Solution perm_rep::hillDescent_r_changeD(Solution s)
+{
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "hillDescent_r_changeD\n";
+	#endif // DEBUG
+
+	float FO = s.FO;
+	Solution best = s;
+	best = procSol(best);
+	bool improv = true;
+
+	int count = 0;
+	while (improv == true) {
+		improv = false;
+
+		for (node n : inst->set_UD0()){
+			try {
+				Solution sl = changeDepot(s, n.key);
+
+				#ifdef DEBUG_HILL_DESCENT
+				auto t2 = std::chrono::high_resolution_clock::now();
+				long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+				if (duration - prevTime > 5) {
+					cout << "time: " << duration << endl;
+					prevTime = duration;
+				}
+				#endif // DEBUG
+
+				if (sl.FO < best.FO && sl.inf.size() == 0) {
+					#ifdef DEBUG_HILL_DESCENT
+					cout << fixed << "improvment local search: " << best.FO << " - " << sl.FO << endl;
+					#endif // DEBUG
+
+					//
+					best = sl;
+					improv = true;
+
+					// measure runtime
+					auto t2 = std::chrono::high_resolution_clock::now();
+					long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+					// stop if max runtime is reached
+					if (duration >= maxRuntime) {
+						return best;
+					}
+
+					break;
+				}
+			}
+			catch (string str) {
+				cout << str << endl;
+				continue;
+			}
+			catch (exception e) {
+				cout << e.what() << endl;
+				continue;
+			}
+
+
+		}
+		s = best;
+		count++;
+
+	}
+
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "end_localSearch_r\n";
+	#endif // DEBUG
+
+	return best;
+}
+
+Solution perm_rep::hillDescent_r_swapD(Solution s)
+{
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "hillDescent_r_swapD\n";
+	#endif // DEBUG
+
+	float FO = s.FO;
+	Solution best = s;
+	best = procSol(best);
+	bool improv = true;
+
+	int count = 0;
+	while (improv == true) {
+		improv = false;
+
+
+		for (int a = 0; a < s.routes.size(); a++) {			
+			try {
+				Solution sl = swapDepot(s, a, a);
+
+				#ifdef DEBUG_HILL_DESCENT
+				auto t2 = std::chrono::high_resolution_clock::now();
+				long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+				if (duration - prevTime > 5) {
+					cout << "time: " << duration << endl;
+					prevTime = duration;
+				}
+				#endif // DEBUG
+
+				if (sl.FO < best.FO && sl.inf.size() == 0) {
+					#ifdef DEBUG_HILL_DESCENT
+					cout << fixed << "improvment local search: " << best.FO << " - " << sl.FO << endl;
+					#endif // DEBUG
+
+					//
+					best = sl;
+					improv = true;
+
+					// measure runtime
+					auto t2 = std::chrono::high_resolution_clock::now();
+					long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+					// stop if max runtime is reached
+					if (duration >= maxRuntime) {
+						return best;
+					}
+
+					break;
+				}
+			}
+			catch (string str) {
+				cout << str << endl;
+				continue;
+			}
+			catch (exception e) {
+				cout << e.what() << endl;
+				continue;
+			}
+
+
+		}
+		s = best;
+		count++;
+
+	}
+
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "end_localSearch_r\n";
+	#endif // DEBUG
+
+	return best;
+}
+
 Solution perm_rep::hillDescent_r(Solution s)
 {
 	#ifdef DEBUG_HILL_DESCENT
@@ -5096,8 +5697,9 @@ Solution perm_rep::hillDescent_r(Solution s)
 	return best;
 }
 
-Solution perm_rep::routeSplit_r(Solution s, int n, int m)
+Solution perm_rep::routeSplit_r(Solution s, int rt, int pos)
 {
+	/*
 	if (m > s.routes.at(n).size() - 3) {
 		throw "cant split the route with parameter m = " + to_string(m) + "\n" + "routes size is " + to_string(s.routes.at(n).size());
 	}
@@ -5107,259 +5709,80 @@ Solution perm_rep::routeSplit_r(Solution s, int n, int m)
 	if (s.routes.at(n).size() < 4) {
 		throw "route cant be splitted due to its size (" + to_string(s.routes.at(n).size()) + ")";
 	}
+	*/
 	
 
-	route r = s.routes.at(n);
+	route r;
 	route new_r;
 
-	// copy part of the route to the new route
-	for (int i = m; i < r.size(); i++) {
-		new_r.push_back(r.at(i));
-	}
-	// delete the part copied
-	int qt = r.size() - m;
-	for (int i = 0; i < qt; i++) {
-		r.erase(r.end() - 1);
-	}
+	r.push_back(s.routes.at(rt).front());
+	new_r.push_back(s.routes.at(rt).front());
 
-	// checking if both routes has at least one customer
-	int numC1 = 0;
-	for (int i = 0; i < r.size(); i++) {
-		node curr = inst->getNodeByKey(r.at(i).key);
-		if (curr.type == "c" || curr.type == "c_d") {
-			numC1++;
+	for (int i = 0; i < pos; i++) {
+		vertex v = s.routes.at(rt).at(i);
+		if (inst->getNodeByKey(v.key).type == "c") {
+			r.push_back(v);
+		}		
+	}
+	for (int i = pos; i < s.routes.at(rt).size(); i++) {
+		vertex v = s.routes.at(rt).at(i);
+		if (inst->getNodeByKey(v.key).type == "c") {
+			new_r.push_back(v);
 		}
 	}
 
-	int numC2 = 0;
-	for (int i = 0; i < new_r.size(); i++) {
-		node curr = inst->getNodeByKey(new_r.at(i).key);
-		if (curr.type == "c" || curr.type == "c_d") {
-			numC2++;
-		}
-	}
+	vertex arrival = r.front();
+	arrival.key = inst->getArrival(r.front().key);
+	arrival.n = inst->getNodeByKey(arrival.key);
 
-	if (numC1 < 1 || numC2 <1) {
-		throw "route cant be splitted due to the number of customers one (or both) new routes be less than 1";
-	}
-	else if (numC1 < 1 && numC2 < 1) {
-		throw "route cant be splitted due to the number of customers be less than 2";
-	}
-	
-	// route r treatment
-	// need to add the final arrival node and remove any unnecessary bss
+	r.push_back(arrival);
+	new_r.push_back(arrival);
 
-	// remove all bss from the end of the route
-	int i = r.size() - 1;
-	while (inst->getNodeByKey(r.at(i).key).type == "f" || inst->getNodeByKey(r.at(i).key).type == "f_d") {
-		r.erase(r.begin() + i);
-		i--;
-	}
+	r = addStations(r);
+	new_r = addStations(new_r);
 
-	// insert arrival node
-	vertex arrival;
-	arrival.key = r.at(0).key + inst->numC + inst->numF + 1; // set key
-	//r.push_back(arrival);
-
-	int last = r.size() - 1;
-	arrival.aTime = r.at(last).lTime + inst->getTD(r.at(last).key, arrival.key); // arrival time
-	arrival.bLevel = r.at(last).bLevel + r.at(last).recharged - inst->dist(r.at(last).key, arrival.key);  // battery level
-	arrival.vLoad = r.at(last).vLoad - inst->getNodeByKey(r.at(last).key).demand; // vehicle load
-	arrival.lTime = 0;
-
-	// if battery level is negative we shall try to add a bss in the route to adress this problem
-	if (arrival.bLevel < 0) {
-
-		pair<int, int> b = closestBSS(r, last); // get the battery usage from the last customer node and the closest bss
-
-		// prepare the bss to insertion
-		vertex bss;
-		bss.key = b.first;
-		bss.aTime = r.at(last).lTime + inst->getTD(r.at(last).key, bss.key);
-		bss.lTime = bss.aTime + inst->ct;
-		bss.bLevel = r.at(last).bLevel + r.at(last).recharged - inst->dist(r.at(last).key, bss.key);
-		bss.recharge = true;
-		bss.recharged = inst->Q - bss.bLevel;
-		bss.vLoad = r.at(last).vLoad;
-
-		if (bss.recharged > inst->Q) {
-			throw "error recharging the battery in the bss";
-		}
-
-		int TD1 = inst->getTD(b.first, arrival.key); // get the battery usage from the bss and the arrival node
-		if (bss.bLevel + bss.recharged > 0) {
-			r.push_back(bss);
-			last++;
-
-			// recompute the arrival node parameter
-			arrival.aTime = r.at(last).lTime + inst->getTD(r.at(last).key, arrival.key); // arrival time
-			arrival.bLevel = r.at(last).bLevel + r.at(last).recharged - inst->dist(r.at(last).key, arrival.key);  // battery level
-			arrival.vLoad = r.at(last).vLoad - inst->getNodeByKey(r.at(last).key).demand; // vehicle load
-			arrival.lTime = 0;
-
-			r.push_back(arrival);
-
-			s.routes.at(n) = r; // put route in the solution
-		}
-		else {
-			throw "error allocating a bss to the new route";
-		}
-
-	}
-	else {
-		r.push_back(arrival);
-	}
-
-	s.routes.at(n) = r; // insert in the solution
-
-	// new route treatment
-
-	// remove every bss from the start of the route
-	i = 0;
-	while (inst->getNodeByKey(new_r.at(i).key).type == "f" || inst->getNodeByKey(new_r.at(i).key).type == "f_d") {
-		new_r.erase(new_r.begin() + i);
-		i++;
-	}
-
-	
-	// create depot
-	vertex depot;
-	depot.key = new_r.back().key - (inst->numC + inst->numF + 1);
-	depot.bLevel = inst->Q;
-	depot.vLoad = inst->C;
-	depot.aTime = 0;
-	depot.wTime = 0;
-	depot.lTime = 0;
-
-	new_r.insert(new_r.begin() + 0, depot);
-
-	for (int i = 1; i < new_r.size(); i++) {
-		node curr = inst->getNodeByKey(new_r.at(i).key); // get current node
-
-		new_r.at(i).vLoad = new_r.at(i - 1).vLoad - curr.demand; // calculate demand
-		new_r.at(i).aTime = new_r.at(i - 1).lTime + inst->getTD(new_r.at(i).key, new_r.at(i - 1).key); // calculate arrival time
-		new_r.at(i).wTime = 0;
-		if (new_r.at(i).aTime < curr.readyTime) { // verify if vehicles arrives too early
-			new_r.at(i).wTime = curr.readyTime - new_r.at(i).aTime;
-		}
-		new_r.at(i).lTime = new_r.at(i).aTime + curr.serviceTime; // calculate departure time
-		new_r.at(i).bLevel = new_r.at(i - 1).bLevel + new_r.at(i - 1).recharged - inst->dist(new_r.at(i).key, new_r.at(i - 1).key);
-
-		if (curr.type == "f" || curr.type == "f_d") {
-			new_r.at(i).recharge = true;
-			new_r.at(i).recharged = inst->Q - new_r.at(i).bLevel;
-		}
-		else {
-			new_r.at(i).recharge = false;
-			new_r.at(i).recharged = 0;
-		}
-
-		if (new_r.at(i).bLevel < 0) {
-			cout << "ERROR!\n";
-			exit(1);
-		}
-	}
-
-	s.routes.push_back(new_r); // insert new route in the solution
+	s.routes.at(rt) = r;
+	s.routes.push_back(new_r);	
 
 	s = procSol(s);
 
 	return s;
 }
 
-Solution perm_rep::bssReplacement_r(Solution s, int key)
+Solution perm_rep::routeUnion_r(Solution s, int r1, int r2)
 {
-	bool found = false;
-	set<int> bss;
-	// get a list of all bss beeing used
-	for (route r : s.routes) {
-		for (vertex v : r) {
-			node curr = inst->getNodeByKey(v.key);
-			if ((curr.type == "f" || curr.type == "f_d") && curr.key != key) {
-				bss.insert(v.key);
-			}
-			if (curr.key == key) {
-				found = true;
-			}
-		}
+	route r;
+	vector<vertex> a_ = getCustomers(s.routes.at(r1));
+	vector<vertex> b_ = getCustomers(s.routes.at(r2));
+
+	r.push_back(s.routes.at(r1).front());
+
+	for (auto v : a_) {
+		r.push_back(v);
 	}
-	if (found == false) {
-		throw "bss " + to_string(key) + " is not used in the given solution";
+	for (auto v : b_) {
+		r.push_back(v);
 	}
 
-	for (int i = 0; i < s.routes.size(); i++) {
-		for (int j = 1; j < s.routes.at(i).size() - 1; j++) {
-			if (s.routes.at(i).at(j).key == key) { // try to replace the bss
-			
-				// search for a replacement 
-				for (int b : bss) {					
-					// check if the bss can fit the route
-					vertex prev = s.routes.at(i).at(j - 1);
-					vertex next = s.routes.at(i).at(j + 1);
+	r.push_back(s.routes.at(r1).back());
 
-					int dist_prev_repl = inst->dist(prev.key, b);
-					int time_prev_repl = inst->getTD(s.routes.at(i).at(j - 1).key, b);
-
-					vertex repl;
-					repl.key = b;
-					repl.bLevel = prev.bLevel + prev.recharged - dist_prev_repl;
-					repl.aTime = prev.lTime + time_prev_repl;
-					repl.wTime = 0;
-					if (repl.aTime < inst->getNodeByKey(repl.key).readyTime) {
-						repl.wTime = inst->getNodeByKey(repl.key).readyTime - repl.aTime;
-					}
-					repl.lTime = repl.wTime + repl.wTime + inst->ct;
-					repl.recharge = true;
-					repl.recharged = inst->Q - repl.bLevel;
-					repl.vLoad = s.routes.at(i).at(j).vLoad;
-					//
-
-					int dist_repl_next = inst->dist(b, s.routes.at(i).at(j + 1).key);
-					int time_repl_next = inst->getTD(b, s.routes.at(i).at(j + 1).key);
-
-					// checking battery level and time windows
-					if (repl.bLevel > 0 && (repl.bLevel + repl.recharged) - dist_repl_next >= next.bLevel && repl.lTime + time_repl_next > inst->getNodeByKey(next.key).dueDate) {
-						
-						// replace bss
-						s.routes.at(i).at(j) = repl;
-
-						// compute the rest of the route to  carrie the changes to the other nodes
-						for (int k = j + 1; k < s.routes.at(i).size(); k++) {
-							node curr = inst->getNodeByKey(s.routes.at(i).at(k).key);
-
-							s.routes.at(i).at(k).bLevel = s.routes.at(i).at(k - 1).bLevel + s.routes.at(i).at(k - 1).recharged - inst->dist(s.routes.at(i).at(k - 1).key, s.routes.at(i).at(k).key); // compute battery level
-							s.routes.at(i).at(k).aTime = s.routes.at(i).at(k - 1).lTime + inst->getTD(s.routes.at(i).at(k - 1).key, s.routes.at(i).at(k).key); // arrival time
-							s.routes.at(i).at(k).wTime = 0; // waiting time
-							if (s.routes.at(i).at(k).aTime < curr.readyTime) {
-								s.routes.at(i).at(k).wTime = curr.readyTime - s.routes.at(i).at(k - 1).aTime;
-							}
-							
-							if (curr.type == "f" || curr.type == "f_d") {
-								s.routes.at(i).at(k).lTime = s.routes.at(i).at(k).wTime + s.routes.at(i).at(k).wTime + inst->ct; // departure time
+	r = addStations(r);
+	Solution sl = procSol(s);
 
 
-								s.routes.at(i).at(k).recharged = inst->Q - s.routes.at(i).at(k).bLevel; // amount recharged
-							}
-							else {
-								s.routes.at(i).at(k).lTime = s.routes.at(i).at(k).wTime + s.routes.at(i).at(k).wTime + curr.serviceTime; // departure time
-
-								// s.routes.at(i).at(k).recharged = inst->Q - s.routes.at(i).at(k).bLevel; // amount recharged
-							}			
-						}
-					}
-				}
-			}
-		}
+	if (sl.inf.size() == 0) {
+		return sl;
+	}
+	else {
+		return s;
 	}
 
-	return s;
+	
 }
 
-// takes part of a route a and insert it in route b
-Solution perm_rep::routePartition_r(Solution s, int a, int pa, int b, int pb)
+// takes part of route a and insert into route b
+Solution perm_rep::routeInsertion_r(Solution s, int a, int pa, int b, int pb)
 {
-	//cout << "route_partition\n";
-	
 	try {
 		if (a == b) {
 			throw "same_route";
@@ -5442,9 +5865,10 @@ Solution perm_rep::routePartition_r(Solution s, int a, int pa, int b, int pb)
 	catch (exception e) {
 		cout << e.what() << endl;
 		throw "error generating 2opt neighborhood with parameteres " + to_string(a) + " " + to_string(pa) + " " + to_string(b) + " " + to_string(pb);
-	}	
+	}
 }
 
+// 2opt
 Solution perm_rep::opt2_route_r(Solution s, int j, int beg, int end)
 {
 	try {
@@ -5548,6 +5972,7 @@ Solution perm_rep::opt2_route_r(Solution s, int j, int beg, int end)
 	}
 }
 
+// shift a customer by a given number of positions in the route
 Solution perm_rep::shiftCustomer_r(Solution s, int j, int c, int q)
 {
 	try {
@@ -5592,26 +6017,39 @@ Solution perm_rep::shiftCustomer_r(Solution s, int j, int c, int q)
 		cout << e.what() << endl;
 		throw "error generating 2opt neighborhood with parameteres " + to_string(j) + " " + to_string(c) + " " + to_string(q);
 	}
-	
+
 }
 
-Solution perm_rep::changeDepot(Solution s, int r, int keyDPT)
+// change the solutions depot
+Solution perm_rep::changeDepot(Solution s, int keyDPT)
 {
-	if (!inst->isDepot(keyDPT)) {
-		throw to_string(keyDPT) + " is not a depot";
+	try {
+		auto UD0 = inst->set_UD0();
+		if (UD0.size() == 1) {
+			throw "only onde depot";
+		}
+		if (!inst->isDepot(keyDPT)) {
+			throw to_string(keyDPT) + " is not a depot";
+		}
+
+		for (route& rt : s.routes) {
+			rt.front().key = keyDPT;
+			rt.back().key = inst->getArrival(keyDPT);
+			rt = removeBSS(rt);
+			rt = addStations(rt);			
+		}
+
+		s = procSol(s);
+
+		return s;
 	}
-
-	route rt = s.routes.at(r);
-
-	rt.front().key = keyDPT;
-	rt.back().key = inst->getArrival(keyDPT);
-	rt = removeBSS(rt);
-
-	s.routes.at(r) = rt;
-
-	return s;
+	catch (exception e) {
+		cout << e.what() << endl;
+		throw "error generating chageDepot neighborhood with parametere " + to_string(keyDPT);
+	}
 }
 
+//
 Solution perm_rep::swapDepot(Solution s, int kDPTA, int kDPTB)
 {
 	try {
@@ -5619,11 +6057,9 @@ Solution perm_rep::swapDepot(Solution s, int kDPTA, int kDPTB)
 		if (UD0.size() == 1) {
 			throw "only onde depot";
 		}
-
 		if (!inst->isDepot(kDPTA)) {
 			throw to_string(kDPTA) + " is not a depot";
 		}
-
 		if (!inst->isDepot(kDPTB)) {
 			throw to_string(kDPTB) + " is not a depot";
 		}
@@ -5659,12 +6095,98 @@ Solution perm_rep::swapDepot(Solution s, int kDPTA, int kDPTB)
 	}
 }
 
-Solution perm_rep::shakeRandom_r(Solution s, int n)
+Solution perm_rep::bssReplacement_r(Solution s, int key)
 {
-	switch (n) 
-	{
-	case 1: {
-		// route partition
+	bool found = false;
+	set<int> bss;
+	// get a list of all bss beeing used
+	for (route r : s.routes) {
+		for (vertex v : r) {
+			node curr = inst->getNodeByKey(v.key);
+			if ((curr.type == "f" || curr.type == "f_d") && curr.key != key) {
+				bss.insert(v.key);
+			}
+			if (curr.key == key) {
+				found = true;
+			}
+		}
+	}
+	if (found == false) {
+		throw "bss " + to_string(key) + " is not used in the given solution";
+	}
+
+	for (int i = 0; i < s.routes.size(); i++) {
+		for (int j = 1; j < s.routes.at(i).size() - 1; j++) {
+			if (s.routes.at(i).at(j).key == key) { // try to replace the bss
+
+				// search for a replacement 
+				for (int b : bss) {
+					// check if the bss can fit the route
+					vertex prev = s.routes.at(i).at(j - 1);
+					vertex next = s.routes.at(i).at(j + 1);
+
+					int dist_prev_repl = inst->dist(prev.key, b);
+					int time_prev_repl = inst->getTD(s.routes.at(i).at(j - 1).key, b);
+
+					vertex repl;
+					repl.key = b;
+					repl.bLevel = prev.bLevel + prev.recharged - dist_prev_repl;
+					repl.aTime = prev.lTime + time_prev_repl;
+					repl.wTime = 0;
+					if (repl.aTime < inst->getNodeByKey(repl.key).readyTime) {
+						repl.wTime = inst->getNodeByKey(repl.key).readyTime - repl.aTime;
+					}
+					repl.lTime = repl.wTime + repl.wTime + inst->ct;
+					repl.recharge = true;
+					repl.recharged = inst->Q - repl.bLevel;
+					repl.vLoad = s.routes.at(i).at(j).vLoad;
+					//
+
+					int dist_repl_next = inst->dist(b, s.routes.at(i).at(j + 1).key);
+					int time_repl_next = inst->getTD(b, s.routes.at(i).at(j + 1).key);
+
+					// checking battery level and time windows
+					if (repl.bLevel > 0 && (repl.bLevel + repl.recharged) - dist_repl_next >= next.bLevel && repl.lTime + time_repl_next > inst->getNodeByKey(next.key).dueDate) {
+
+						// replace bss
+						s.routes.at(i).at(j) = repl;
+
+						// compute the rest of the route to  carrie the changes to the other nodes
+						for (int k = j + 1; k < s.routes.at(i).size(); k++) {
+							node curr = inst->getNodeByKey(s.routes.at(i).at(k).key);
+
+							s.routes.at(i).at(k).bLevel = s.routes.at(i).at(k - 1).bLevel + s.routes.at(i).at(k - 1).recharged - inst->dist(s.routes.at(i).at(k - 1).key, s.routes.at(i).at(k).key); // compute battery level
+							s.routes.at(i).at(k).aTime = s.routes.at(i).at(k - 1).lTime + inst->getTD(s.routes.at(i).at(k - 1).key, s.routes.at(i).at(k).key); // arrival time
+							s.routes.at(i).at(k).wTime = 0; // waiting time
+							if (s.routes.at(i).at(k).aTime < curr.readyTime) {
+								s.routes.at(i).at(k).wTime = curr.readyTime - s.routes.at(i).at(k - 1).aTime;
+							}
+
+							if (curr.type == "f" || curr.type == "f_d") {
+								s.routes.at(i).at(k).lTime = s.routes.at(i).at(k).wTime + s.routes.at(i).at(k).wTime + inst->ct; // departure time
+
+
+								s.routes.at(i).at(k).recharged = inst->Q - s.routes.at(i).at(k).bLevel; // amount recharged
+							}
+							else {
+								s.routes.at(i).at(k).lTime = s.routes.at(i).at(k).wTime + s.routes.at(i).at(k).wTime + curr.serviceTime; // departure time
+
+								// s.routes.at(i).at(k).recharged = inst->Q - s.routes.at(i).at(k).bLevel; // amount recharged
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return s;
+}
+
+Solution perm_rep::shakeRandom_r(Solution s, string n)
+{
+	//cout << "shaking " << n << endl;
+	if (n == "insertR") { // route partition
 		if (s.routes.size() <= 1) { // cant use this neighborhood in solutions with only one route
 			return s;
 		}
@@ -5700,20 +6222,20 @@ Solution perm_rep::shakeRandom_r(Solution s, int n)
 
 		try {
 			//cout << "partitioning route " << r1 << " in " << p1 << " and inserting subr in route " << r2 << " in position " << p2 << endl;
-			return routePartition_r(s, r1, p1, r2, p2);
+			return routeInsertion_r(s, r1, p1, r2, p2);
 		}
 		catch (string e) {
 			cout << e << endl;
-			throw "error generating neighbor " + to_string(n);
+			throw "error generating neighbor " + n;
 		}
 		catch (exception e) {
 			cout << e.what() << endl;
-			throw "error generating neighbor " + to_string(n);
+			throw "error generating neighbor " + n;
 		}
 		
-		break;
-	}		
-	case 2: {
+		//break;
+	}
+	else if (n == "2opt") {
 		vector<int> rts;
 		int i = 0;
 		for (auto r : s.routes) {
@@ -5739,21 +6261,20 @@ Solution perm_rep::shakeRandom_r(Solution s, int n)
 		p2 = customers.at(p2);
 
 		try{
-			//cout << "2opt on route " << r << " in subr " << p1 << " - " << p2 << endl;
 			return opt2_route_r(s, r, p1, p2);
 		}
 		catch (string e) {
 			cout << e << endl;
-			throw "error generating neighbor " + to_string(n);
+			throw "error generating neighbor " + n;
 		}
 		catch (exception e) {
 			cout << e.what() << endl;
-			throw "error generating neighbor " + to_string(n);
+			throw "error generating neighbor " + n;
 		}
 
-		break;
+		//break;
 	}
-	case 3: {
+	else if (n == "shiftC") {
 		vector<int> rts;
 		int i = 0;
 		for (auto r : s.routes) {
@@ -5781,78 +6302,61 @@ Solution perm_rep::shakeRandom_r(Solution s, int n)
 		}
 		catch (string e) {
 			cout << e << endl;
-			throw "error generating neighbor " + to_string(n);
+			throw "error generating neighbor " + n;
 		}
 		catch (exception e) {
 			cout << e.what() << endl;
-			throw "error generating neighbor " + to_string(n);
+			throw "error generating neighbor " + n;
 		}
 
-		break;
+		//break;
 	}
-	case 4: {
+	else if (n == "swapD") {
 		set<int> dpts;
 		for (route& r : s.routes) {
 			dpts.insert(r.front().key);
 		}
 
-		if (dpts.size() > 1) {
-			
-
+		if (dpts.size() > 0) {
+			// get a vector with all depots
 			vector<int> vdpts;
 			vdpts.assign(dpts.begin(), dpts.end());
 
+			// choose randomly a depot
 			int dptA = Random::get<int>(0, vdpts.size() - 1);
-			int a = dptA;
 			dptA = vdpts[dptA];
-			vdpts.erase(vdpts.begin() + a);
-			int dptB = Random::get<int>(0, vdpts.size() - 1);
-			dptB = vdpts[dptB];
 
-			/*
-			int i = 0;
-			for (auto n : UD0) {
-				if (n.key == dptA) {
-					break;
-				}
-				i++;
+			// choose randomly a new depot
+			int newDpt = Random::get<int>(0, inst->set_UD0().size() - 1);
+			while (inst->set_UD().at(newDpt).key == dptA) {
+				newDpt = Random::get<int>(0, inst->set_UD0().size() - 1);
 			}
-			UD0.erase(UD0.begin() + i);
+			int dptB = inst->set_UD().at(newDpt).key;
 
-			int dptB = Random::get<int>(0, UD0.size() - 1);
-			dptB = UD0[dptB].key;
-			*/
 
 			try {
 				return swapDepot(s, dptA, dptB);
 			}
 			catch (string e) {
 				cout << e << endl;
-				throw "error generating neighbor " + to_string(n);
+				throw "error generating neighbor " + n;
 			}
 			catch (exception e) {
 				cout << e.what() << endl;
-				throw "error generating neighbor " + to_string(n);
+				throw "error generating neighbor " + n;
 			}
 		}
 		else {
 			return s;
 		}
 
-		break;
+		//break;
 	}
-	case 5: {
+	else if (n == "changeD") {
 		auto UD0 = inst->set_UD0();
 
 		if (UD0.size() > 1) {
 			int rt = Random::get<int>(0, s.routes.size() - 1);
-
-			/*
-			vector<int> dpts;
-			for (auto r : s.routes) {
-				dpts.push_back(r.front().key);
-			}
-			*/
 
 			int i = 0;
 			for (auto n : UD0) {
@@ -5867,44 +6371,80 @@ Solution perm_rep::shakeRandom_r(Solution s, int n)
 			dpt = UD0.at(dpt).key;
 
 			try {
-				return changeDepot(s, rt, dpt);
+				return changeDepot(s, dpt);
 			}
 			catch (string e) {
 				cout << e << endl;
-				throw "error generating neighbor " + to_string(n);
+				throw "error generating neighbor " + n;
 			}
 			catch (exception e) {
 				cout << e.what() << endl;
-				throw "error generating neighbor " + to_string(n);
+				throw "error generating neighbor " + n;
 			}
 		}
 		else {
 			return s;
 		}
 
-		break;
+		//break;
 	}
-	case 6: {
-		int rt = Random::get<int>(1, s.routes.size() - 1);
-		int p = Random::get<int>(2, s.routes.size() - 3);
-
-		try{
-			return routeSplit_r(s, rt, p);
+	else if (n == "splitR") {
+		// get all routes that can be splited. in order to be splitted the route must have at least two customers
+		vector<pair<int, int>> rts; // store the route position in the routes vector and the number od customers
+		vector<pair<int, int>> cList;
+		int i = 0;
+		for (auto r : s.routes) {
+			cList = getCustomersPos(r);
+			if (cList.size() >= 2) {
+				rts.push_back(pair<int, int>(i, cList.size()));
+			}			
+			i++;
 		}
-		catch (string e) {
-			cout << e << endl;
-			throw "error generating neighbor " + to_string(n);
-		}
 
-		break;
+		// choose random route
+		if (rts.size() > 0) {
+			int rt = Random::get<int>(0, rts.size() - 1);
+			int p = Random::get<int>(1, rts.at(rt).second - 1);
+
+			try {
+				return routeSplit_r(s, rt, p);
+			}
+			catch (string e) {
+				cout << e << endl;
+				throw "error generating neighbor " + n;
+			}
+
+		}
+		else {
+			// cant generate this neighbor
+			return s;
+		}
 	}
-	default:
-	{
-		return s;
-		break;
-	}		
+	else if (n == "unionR") {
+		if (s.routes.size() > 1) {
+			int r1 = Random::get<int>(0, s.routes.size() - 1);
+			int r2 = Random::get<int>(0, s.routes.size() - 1);
+			while (r1 == r2) {
+				r2 = Random::get<int>(0, s.routes.size() - 1);
+			}
+
+			try {
+				return routeUnion_r(s, r1, r2);
+			}
+			catch (string e) {
+				cout << e << endl;
+				throw "error generating neighbor " + n;
+			}
+		}
+		else {
+			return s;
+		}
+		
 	}
- 
+	else {
+		throw n + " is not a valid neighborhoor structure";
+	}
+	// swapD changeD splitR joinR
 }
 
 float perm_rep::decode(vector<double> chromosome)
@@ -5964,6 +6504,30 @@ Solution perm_rep::greedRT()
 	Solution s = permutationToSolution(p);
 
 	return s;
+}
+
+vector<pair<int, int>> perm_rep::getCustomersPos(vector<vertex> route)
+{
+	vector<pair<int, int>> ret;
+	int count = 0;
+	for (auto n : route) {
+		if (inst->getNodeByKey(n.key).type == "c") {
+			ret.push_back(pair<int, int>(n.key, count));
+		}
+		count++;
+	}
+	return ret;
+}
+
+vector<vertex> perm_rep::getCustomers(vector<vertex> route)
+{
+	vector<vertex> ret;
+	for (auto n : route) {
+		if (inst->getNodeByKey(n.key).type == "c") {
+			ret.push_back(n);
+		}
+	}
+	return ret;
 }
 
 int perm_rep::test_permutationToSolutionAlt()
@@ -6074,7 +6638,7 @@ int perm_rep::test_shakeRandom_r(int i)
 		getArcsNodes(init);
 		init.debug(cout);
 
-		Solution shake = shakeRandom_r(init, i);
+		Solution shake = shakeRandom_r(init, "2opt");
 
 		getArcsNodes(shake);
 		shake = procSol(shake);
@@ -6110,7 +6674,7 @@ int perm_rep::test_routePartition()
 
 		init.debug(cout);
 
-		init = routePartition_r(init, 0, 5, 1, 0);
+		init = routeInsertion_r(init, 0, 5, 1, 0);
 
 		init = procSol(init);
 
@@ -6241,7 +6805,7 @@ int perm_rep::test_shiftCustomer()
 
 int perm_rep::test_swapDepot()
 {
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK100_01.txt", 3);
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/", "UK200_01.txt", 3);
 	printInstance();
 
 	Solution init;
@@ -6258,6 +6822,73 @@ int perm_rep::test_swapDepot()
 		Solution n = swapDepot(init, a, b);
 		n = procSol(n);
 		getArcsNodes(n);	
+		n.debug(cout);
+
+		cout << init.FO << " - " << n.FO << endl;
+
+		for (auto i : n.inf) {
+			cout << i << endl;
+		}
+	}
+	catch (PermutationInf e) {
+		cout << e.what() << endl;
+	}
+
+	return 1;
+}
+
+int perm_rep::test_changeDepot()
+{
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/", "UK200_01.txt", 3);
+	printInstance();
+
+	Solution init;
+
+	try {
+
+		init = testPermutation(randomPermutation());
+		init.debug(cout);
+
+		int a;
+		cin >> a;
+
+		Solution n = changeDepot(init, a);
+		n = procSol(n);
+		getArcsNodes(n);
+		n.debug(cout);
+
+		cout << init.FO << " - " << n.FO << endl;
+
+		for (auto i : n.inf) {
+			cout << i << endl;
+		}
+	}
+	catch (PermutationInf e) {
+		cout << e.what() << endl;
+	}
+
+	return 1;
+}
+
+int perm_rep::test_splitRoute()
+{
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/", "UK200_01.txt", 3);
+	printInstance();
+
+	Solution init;
+
+	try {
+
+		init = testPermutation(randomPermutation());
+		init.debug(cout);
+
+		int a, b;
+		cin >> a;
+		cin >> b;
+
+		Solution n = routeSplit_r(init, a, b);
+		n = procSol(n);
+		getArcsNodes(n);
 		n.debug(cout);
 
 		cout << init.FO << " - " << n.FO << endl;
@@ -6311,7 +6942,7 @@ int perm_rep::test_neigh()
 
 		init.debug(cout);
 
-		init = routePartition_r(init, 0, 5, 1, 0);
+		init = routeInsertion_r(init, 0, 5, 1, 0);
 
 		init = procSol(init);
 
@@ -6378,14 +7009,12 @@ int perm_rep::test_neigh()
 
 int perm_rep::test_localSearch_r()
 {
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_01.txt", 3);
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/", "UK200_01.txt", 3);
 	printInstance();
 
-	
-	//Solution init = permutationToSolution({ 9, 11, 6, 10, 7, 8, 5 }); // good
-	//Solution init = permutationToSolution({ 7, 9, 5, 11, 6, 10, 8 });
 	cout << 1 << endl;
-	Solution init = permutationToSolution(randomPermutation());
+	auto p = randomPermutation();
+	Solution init = permutationToSolution(p);
 	cout << 2 << endl;
 
 	Solution ls = localSearch_r(init, "shiftC");
@@ -6408,10 +7037,10 @@ int perm_rep::test_localSearch_r()
 
 int perm_rep::test_VNS()
 {
-	maxRuntime = 300;// 300;
+	maxRuntime = 600;// 300;
 	start = std::chrono::high_resolution_clock::now();
 
-	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_01.txt", 3);
+	loadInstance("D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/", "UK200_11.txt", 3);
 	printInstance();
 
 	//Solution init = permutationToSolution({ 9, 11, 6, 10, 7, 8, 5 }); 
@@ -6421,7 +7050,7 @@ int perm_rep::test_VNS()
 	//init.debug(cout);
 	//Solution init = permutationToSolution({ 11, 8, 10, 6, 7, 5, 9 });
 
-	Solution vns = bVNS_r(init);
+	Solution vns = bVNS_r(init, 25);
 
 	getArcsNodes(vns);
 	vns.debug(cout);

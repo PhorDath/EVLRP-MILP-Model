@@ -6,7 +6,7 @@ vector<vertex> Algorithms::fixRoute(vector<vertex> sol)
 	// fix the route
 	sol.at(0).bLevel = inst->Q;
 	sol.at(0).lTime = 0;
-	sol.at(0).vLoad = inst->C;
+	sol.at(0).vLoad = inst->c;
 	sol.at(0).wTime = 0;
 	sol.at(0).aTime = 0;
 
@@ -1060,7 +1060,7 @@ int Algorithms::FOP(vector<vector<vertex>> sol)
 			if (v.vLoad < 0) {
 				sum3 += abs(v.vLoad);
 			}
-			else if (v.vLoad > inst->C) {
+			else if (v.vLoad > inst->c) {
 				sum3 += abs(v.vLoad);
 			}
 		}
@@ -1093,7 +1093,7 @@ int Algorithms::eval(vector<vector<vertex>> sol)
 			}
 
 			// checking vehicle load
-			if (v.vLoad < 0 || v.vLoad > inst->C) {
+			if (v.vLoad < 0 || v.vLoad > inst->c) {
 				return 3;
 			}
 		}
@@ -1148,7 +1148,7 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 			}
 
 			// checking vehicle load
-			if (v.vLoad < 0 || v.vLoad > inst->C) {
+			if (v.vLoad < 0 || v.vLoad > inst->c) {
 				// cout << v.key << endl;
 				ret.insert("vehicle_load");
 			}
@@ -1239,7 +1239,7 @@ vector<string> Algorithms::fullEval(Solution s)
 			}
 
 			// checking vehicle load
-			if (v1.vLoad < 0 || v1.vLoad > inst->C) {
+			if (v1.vLoad < 0 || v1.vLoad > inst->c) {
 				// cout << v.key << endl;
 				ret.insert("vehicle_load");
 			}
@@ -1309,7 +1309,7 @@ vector<string> Algorithms::evalRoute(route r)
 		}
 
 		// checking vehicle load
-		if (v.vLoad < 0 || v.vLoad > inst->C) {
+		if (v.vLoad < 0 || v.vLoad > inst->c) {
 			// cout << v.key << endl;
 			ret.insert("vehicle_load");
 		}

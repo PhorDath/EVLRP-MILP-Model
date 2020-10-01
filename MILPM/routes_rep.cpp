@@ -1005,7 +1005,7 @@ Solution routes_rep::greed()
 		// criteria: the depot node with the minimum sum of all distances to client nodes not coverd yet
 		v.key = depotHeuristc();
 		v.bLevel = inst->Q;
-		v.vLoad = inst->C;
+		v.vLoad = inst->c;
 		v.lTime = 0;
 		v.aTime = 0;
 		route.push_back(v);
@@ -1128,7 +1128,7 @@ Solution routes_rep::greed2()
 		// choose the depot
 		vertex v;
 		v.key = depotHeuristc();
-		v.vLoad = inst->C;
+		v.vLoad = inst->c;
 		r.push_back(v);
 
 		int lowestDemand = getLowestDemand(coverage);
