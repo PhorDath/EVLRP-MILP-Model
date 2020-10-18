@@ -1,12 +1,12 @@
-#include "Model_setAdapt.h"
+#include "Model_MDFPM.h"
 
-
-void Model_SA::setup(GRBModel& model)
+void Model_MDFPM::setup(GRBModel& model)
 {
 	varX(model);
 	varY(model);
 	varZ(model);
-	fo(model);	
+	fo(model);
+	c9(model);
 	c1(model);
 	c2(model);
 	c3(model);
@@ -14,10 +14,10 @@ void Model_SA::setup(GRBModel& model)
 	c5(model);
 	c6(model);
 	c7(model);
-	c9(model);
+
 }
 
-void Model_SA::setup_d(GRBModel& model)
+void Model_MDFPM::setup_d(GRBModel& model)
 {
 	varX(model);
 	varY(model);
@@ -35,7 +35,7 @@ void Model_SA::setup_d(GRBModel& model)
 	//c8_d(model);
 }
 
-void Model_SA::varX(GRBModel& model)
+void Model_MDFPM::varX(GRBModel& model)
 {
 	cout << "var x\n";
 	int k = 0;
@@ -56,14 +56,14 @@ void Model_SA::varX(GRBModel& model)
 	model.update();
 }
 
-GRBVar Model_SA::getX(GRBModel& model, string i, string j, int k)
+GRBVar Model_MDFPM::getX(GRBModel& model, string i, string j, int k)
 {
 	string varName = "x(" + to_string(k) + "," + i + "," + j + ")";
 	GRBVar x = model.getVarByName(varName);
 	return x;
 }
 
-void Model_SA::varY(GRBModel& model)
+void Model_MDFPM::varY(GRBModel& model)
 {
 	cout << "var y\n";
 	int k = 0;
@@ -77,14 +77,14 @@ void Model_SA::varY(GRBModel& model)
 	model.update();
 }
 
-GRBVar Model_SA::getY(GRBModel& model, string i, int k)
+GRBVar Model_MDFPM::getY(GRBModel& model, string i, int k)
 {
 	string varName = "y(" + to_string(k) + "," + i + ")";
 	GRBVar y = model.getVarByName(varName);
 	return y;
 }
 
-void Model_SA::varZ(GRBModel& model)
+void Model_MDFPM::varZ(GRBModel& model)
 {
 	cout << "var z\n";
 	for (auto i : sCities) {
@@ -93,18 +93,18 @@ void Model_SA::varZ(GRBModel& model)
 	model.update();
 }
 
-GRBVar Model_SA::getZ(GRBModel& model, string i)
+GRBVar Model_MDFPM::getZ(GRBModel& model, string i)
 {
 	return model.getVarByName("z(" + i + ")");
 }
 
-void Model_SA::fo(GRBModel& model)
+void Model_MDFPM::fo(GRBModel& model)
 {
 	cout << "fo\n";
 	GRBLinExpr fo = 0;
 	int k = 0;
 	for (auto inst : insts) {
-		for (auto n1 : inst.nodes) {			
+		for (auto n1 : inst.nodes) {
 			for (auto n2 : inst.nodes) {
 				if (n1.id != n2.id) {
 					int d = dists[{n1.id, n2.id}];
@@ -112,7 +112,7 @@ void Model_SA::fo(GRBModel& model)
 					GRBVar x = getX(model, n1.id, n2.id, k);
 					fo += d * x;
 				}
-				
+
 			}
 		}
 		k++;
@@ -121,7 +121,7 @@ void Model_SA::fo(GRBModel& model)
 	model.update();
 }
 
-void Model_SA::c1(GRBModel& model)
+void Model_MDFPM::c1(GRBModel& model)
 {
 	cout << "c1\n";
 	int k = 0;
@@ -136,15 +136,16 @@ void Model_SA::c1(GRBModel& model)
 				}
 			}
 			model.addConstr(c1 == 1, "c1(" + n1.id + "," + to_string(k) + ")");
-		}		
+		}
 		k++;
 	}
 	model.update();
 }
 
-void Model_SA::c2(GRBModel& model)
+void Model_MDFPM::c2(GRBModel& model)
 {
 	cout << "c2\n";
+
 	int k = 0;
 	for (auto inst : insts) {
 		for (auto n1 : inst.nodes) {
@@ -161,9 +162,10 @@ void Model_SA::c2(GRBModel& model)
 		k++;
 	}
 	model.update();
+
 }
 
-void Model_SA::c3(GRBModel& model)
+void Model_MDFPM::c3(GRBModel& model)
 {
 	cout << "c3\n";
 	int k = 0;
@@ -187,7 +189,7 @@ void Model_SA::c3(GRBModel& model)
 	model.update();
 }
 
-void Model_SA::c4(GRBModel& model)
+void Model_MDFPM::c4(GRBModel& model)
 {
 	cout << "c4\n";
 	int k = 0;
@@ -196,8 +198,8 @@ void Model_SA::c4(GRBModel& model)
 		for (auto n1 : inst.nodes) {
 
 			GRBVar y = getY(model, n1.id, k);
-			c += y;		
-			
+			c += y;
+
 		}
 		//model.addConstr(c <= ceil(inst.nodes.size() * 0.15), "c4(" + to_string(k) + ")");
 		model.addConstr(c <= p, "c4(" + to_string(k) + ")");
@@ -206,7 +208,7 @@ void Model_SA::c4(GRBModel& model)
 	model.update();
 }
 
-void Model_SA::c4_d(GRBModel& model)
+void Model_MDFPM::c4_d(GRBModel& model)
 {
 	cout << "c4\n";
 	int k = 0;
@@ -225,7 +227,7 @@ void Model_SA::c4_d(GRBModel& model)
 	model.update();
 }
 
-void Model_SA::c5(GRBModel& model)
+void Model_MDFPM::c5(GRBModel& model)
 {
 	cout << "c5\n";
 	for (auto city : sCities) {
@@ -252,7 +254,7 @@ void Model_SA::c5(GRBModel& model)
 	}
 }
 
-void Model_SA::c6(GRBModel& model)
+void Model_MDFPM::c6(GRBModel& model)
 {
 	cout << "c6\n";
 	int k = 0;
@@ -269,19 +271,19 @@ void Model_SA::c6(GRBModel& model)
 	model.update();
 }
 
-void Model_SA::c7(GRBModel& model)
+void Model_MDFPM::c7(GRBModel& model)
 {
 	cout << "c7\n";
 	GRBLinExpr c = 0;
 	for (auto city : sCities) {
-		c += getZ(model, city);		
+		c += getZ(model, city);
 	}
 	//model.addConstr(c <= sCities.size() * 0.15, "c7");
 	model.addConstr(c <= p, "c7");
 	model.update();
 }
 
-void Model_SA::c7_d(GRBModel& model)
+void Model_MDFPM::c7_d(GRBModel& model)
 {
 	cout << "c7\n";
 	GRBLinExpr c = 0;
@@ -292,12 +294,12 @@ void Model_SA::c7_d(GRBModel& model)
 	model.update();
 }
 
-void Model_SA::c8_d(GRBModel& model)
+void Model_MDFPM::c8_d(GRBModel& model)
 {
 	cout << "c8\n";
 	int k = 0;
 	for (int i = 0; i < insts.size(); i++) {
-		
+
 		GRBVar y;
 		y = getY(model, depots.at(i).id, i);
 
@@ -307,7 +309,7 @@ void Model_SA::c8_d(GRBModel& model)
 	model.update();
 }
 
-void Model_SA::c9(GRBModel& model)
+void Model_MDFPM::c9(GRBModel& model)
 {
 	fstream file;
 	file.open("D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/depots.txt", ios::in);
@@ -327,7 +329,7 @@ void Model_SA::c9(GRBModel& model)
 			}
 		}
 	}
-	
+
 	for (auto dpt : depotsList) {
 		GRBVar z = getZ(model, dpt);
 		model.addConstr(z == 0, "c9(" + dpt + ")");
@@ -335,7 +337,7 @@ void Model_SA::c9(GRBModel& model)
 	model.update();
 }
 
-void Model_SA::result(GRBModel& model)
+void Model_MDFPM::result(GRBModel& model)
 {
 	map<string, vector<int>> r;
 	map<int, vector<string>> r2;
@@ -359,11 +361,11 @@ void Model_SA::result(GRBModel& model)
 					r2[k].push_back(n1.id);
 				}
 			}
-			
+
 		}
 		k++;
 	}
-	
+
 	for (auto i : r) {
 		cout << i.first << ": ";
 		for (auto j : i.second) {
@@ -372,7 +374,7 @@ void Model_SA::result(GRBModel& model)
 		cout << endl;
 	}
 	cout << "----------\n";
-	
+
 	for (auto i : r2) {
 		cout << i.first << " - " << i.second.size() << ": ";
 		for (auto j : i.second) {
@@ -385,7 +387,7 @@ void Model_SA::result(GRBModel& model)
 		vector<int> aux;
 		r2_.insert(pair<int, vector<int>>(i.first, {}));
 		for (auto j : i.second) {
-			
+
 			for (auto node : insts.at(i.first).nodes) {
 				if (node.id == j) {
 					r2_[i.first].push_back(node.key);
@@ -398,7 +400,7 @@ void Model_SA::result(GRBModel& model)
 		//r2_.insert(i.first, {});
 		//r2_[i.first] = aux;
 	}
-	
+
 	for (auto i : r2_) {
 		cout << i.first << " - " << i.second.size() << ": ";
 		for (auto j : i.second) {
@@ -408,7 +410,7 @@ void Model_SA::result(GRBModel& model)
 	}
 }
 
-Model_SA::Model_SA(string dir, int size)
+Model_MDFPM::Model_MDFPM(string dir, int size)
 {
 	this->dir = dir;
 	//this->fileName = fileName;	
@@ -442,12 +444,6 @@ Model_SA::Model_SA(string dir, int size)
 				if (c == dists.end()) {
 					int d = insts.back().distanceMatrix[i][j];
 					dists.insert(pair<pair<string, string>, int>({ n.id, m.id }, d));
-
-					if (n.id == "Yr_Wyddgrug") {
-						cout << n.id << " - " << m.id << " " << d << endl;
-					}
-
-
 					if (d < minDist) {
 						minDist = d;
 					}
@@ -473,52 +469,9 @@ Model_SA::Model_SA(string dir, int size)
 	R = 161000 / 2; // stations
 	p = sCities.size() * 0.15; // stations
 
-	unordered_map<string, set<int>> occurency;
-
-	for (int j = 0; j < insts.size(); j++) {
-		for (node n : insts.at(j).nodes) {
-			if (occurency.find(n.id) == occurency.end()) {
-				occurency.insert(pair<string, set<int>>(n.id, {j}));
-			}
-			else {
-				occurency[n.id].insert(j);
-			}
-			
-		}
-	}
-
-	for (auto i : occurency) {
-		if (i.second.size() == 20) {
-			vsDepots.push_back(i.first);
-		}
-	}
-
-	for (auto i : insts) {
-		cout << vsDepots.size() << " ";
-		for (auto j : vsDepots) {
-			for (auto k : i.nodes) {
-				if (j == k.id) {
-					cout << k.key << " ";
-				}
-			}
-		}
-		cout << endl;
-	}
-
-	vector<pair<string, set<int>>> occurency2;
-	for (auto i : occurency) {
-		occurency2.push_back(i);
-	}
-
-	sort(occurency2.begin(), occurency2.end(), 
-		[](pair<string, set<int>> p1, pair<string, set<int>> p2)->bool {
-			return p1.second.size() > p2.second.size();
-		});
-
-	
 }
 
-void Model_SA::model()
+void Model_MDFPM::model()
 {
 	GRBEnv env = GRBEnv(true);
 	try {
@@ -535,10 +488,11 @@ void Model_SA::model()
 		setup(model);
 		model.update();
 
+
 		auto t1 = std::chrono::high_resolution_clock::now();
 
 		model.write("lp.lp");
-		model.getEnv().set(GRB_DoubleParam_TimeLimit, 28800); // 28800
+		model.getEnv().set(GRB_DoubleParam_TimeLimit, 600); // 28800
 		model.optimize();
 
 		auto t2 = std::chrono::high_resolution_clock::now();

@@ -48,6 +48,8 @@ private:
 	int minimalDeviationBSS(route r, int v);
 	int minimalDeviationBSS(int v1, int v2);
 
+	pair<int, int> chooseBSS(route& rt, int beg, int end); // search for the closest BSS from the target node (the BSS must be reachable from the initial node)
+
 	permutation randomPermutation();
 	route computeRoute(Solution s, int r);
 	route computeRoute(route sol); // similar to addStations but add stations to a given route
@@ -88,6 +90,7 @@ private:
 	Solution hillDescent_r_insertR(Solution s);
 	Solution hillDescent_r_changeD(Solution s);
 	Solution hillDescent_r_swapD(Solution s);
+	Solution hillDescent_r_bssReplacement(Solution s);
 	Solution hillDescent_r(Solution s);
 	Solution VNS(Solution s, int itMax, int maxTime);
 
@@ -98,7 +101,8 @@ private:
 	Solution shiftCustomer_r(Solution s, int j, int c, int q);	
 	Solution changeDepot(Solution s, int keyDPT);
 	Solution swapDepot(Solution s, int kDPTA, int kDPTB);
-	Solution bssReplacement_r(Solution s, int key); // Replace a bss defined by n and swap  it for others, aready placed, bss
+	Solution bssReplacement_r_(Solution s, int key); // Replace a bss defined by n and swap  it for others, aready placed, bss
+	Solution bssReplacement_r(Solution s, int bss1);
 	Solution shakeRandom_r(Solution s, string n);
 
 	// BGKGA	
@@ -113,6 +117,8 @@ private:
 	vector<vertex> getCustomers(vector<vertex> route);
 
 public:
+	permutation perm;
+
 	Solution GRASP(int maxIt, int maxRuntime);
 	Solution GA(int popSize, int eliteP, int maxGen);
 	Solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
@@ -136,6 +142,7 @@ public:
 	int test_swapDepot();
 	int test_changeDepot();
 	int test_splitRoute();
+	int test_bssReplacement_r();
 	int test_neigh();
 	int test_localSearch_r();
 	int test_VNS();

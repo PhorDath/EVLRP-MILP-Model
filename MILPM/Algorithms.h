@@ -106,6 +106,51 @@ public:
 	}
 };
 
+class BegEnd : public exception {
+
+private:
+	string msg;
+
+public:
+	BegEnd(const int beg, const int end) {
+		msg = "invalid beg ( " + to_string(beg) + " ) and end ( " + to_string(end) + " argument";
+	}
+
+	const char* what() const throw () {
+		return msg.c_str();
+	}
+};
+
+class InvalidRoute : public exception {
+
+private:
+	string msg;
+
+public:
+	InvalidRoute(const int r) {
+		msg = "invalid route ( " + to_string(r) + " )";
+	}
+
+	const char* what() const throw () {
+		return msg.c_str();
+	}
+};
+
+class InvalidRouteEnd : public exception {
+
+private:
+	string msg;
+
+public:
+	InvalidRouteEnd(const int r, const int end) {
+		msg = "invalid route (" + to_string(r) + ") end ( " + to_string(end) + " )";
+	}
+
+	const char* what() const throw () {
+		return msg.c_str();
+	}
+};
+
 class Algorithms
 {
 public:

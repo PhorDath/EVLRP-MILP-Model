@@ -230,6 +230,7 @@ void exp_vnsl(string dir1) {
 	csv.close();
 
 	map<string, set<int>> occurency;
+	vector<Solution> sols;
 
 	int count = 1;
 	string line;
@@ -263,58 +264,66 @@ void exp_vnsl(string dir1) {
 
 		perm_rep alg;
 		alg.loadInstance(dir1, line, 3);
-		alg.printInstance();
+		//alg.printInstance();
 		alg.setOutputDir(dirOutput);
-		vector<string> BSSs = { "Conisbrough",
-								"Doncaster",
-								"Pontefract",
-								"Staveley",
-								"Ilkeston",
-								"Warsop",
-								"Shipley",
-								"Newcastle_under_Lyme",
-								"Ossett",
-								"Burnley",
-								"Knaresborough",
+		vector<string> BSSs = { "Clayton_le_Moors",
+								"Wombwell",
 								"Radcliffe_on_Trent",
-								"Brighouse",
-								"Shepshed",
-								"Stalybridge",
-								"Pinxton",
+								"Batley",
+								"Conisbrough",
+								"Ilkeston",
+								"Pontefract",
+								"North_Ferriby",
+								"Shipley",
+								"Mansfield",
+								"Kirkham",
+								"Liverpool",
+								"Barnsley",
 								"Warrington",
 								"Hawarden",
-								"Barton_upon_Humber",
-								"Keighley" };
-		Solution s = alg.VNSL(BSSs, 25, 300);
+								"Chasetown",
+								"Radcliffe",
+								"Doncaster",
+								"Shepshed",
+								"Warsop" };
+		// Stalybridge
+		try {
+			Solution s = alg.VNSL(BSSs, 25, 300);
+			sols.push_back(s);
 
-		csv << alg.row << endl;
+			csv << alg.row << endl;
 
-		for (auto i : s.sStations) {
-			stations << i << " ";
+			for (auto i : s.sStations) {
+				stations << i << " ";
 
-			auto c = occurency.find(i);
-			if (c == occurency.end()) {
-				occurency.insert(pair<string, set<int>>(i, { count }));
+				auto c = occurency.find(i);
+				if (c == occurency.end()) {
+					occurency.insert(pair<string, set<int>>(i, { count }));
+				}
+				else {
+					occurency[i].insert(count);
+				}
 			}
-			else {
-				occurency[i].insert(count);
+			stations << endl;
+
+			for (auto i : occurency) {
+				cout << i.first << " ";
+				for (auto j : i.second) {
+					cout << j << " ";
+				}
+				cout << endl;
 			}
-		}
-		stations << endl;
 
-		for (auto i : occurency) {
-			cout << i.first << " ";
-			for (auto j : i.second) {
-				cout << j << " ";
+
+			for (auto i : s.sDepots) {
+				depots << i << " ";
 			}
-			cout << endl;
+			depots << endl;
 		}
-
-
-		for (auto i : s.sDepots) {
-			depots << i << " ";
+		catch (PermutationInf& e) {
+			cout << e.what() << endl;
+			continue;
 		}
-		depots << endl;
 
 		csv.close();
 		stations.close();
@@ -323,6 +332,7 @@ void exp_vnsl(string dir1) {
 		count++;
 	}
 
+	totalCost(sols, dirOutput);
 	all.close();
 
 	return;
@@ -389,12 +399,14 @@ void exp_vns2(string dir1) {
 			return;
 		}
 
+		//////////////////
 		perm_rep alg;
 		alg.loadInstance(dir1, line, 3);
-		alg.printInstance();
+		//alg.printInstance();
 		alg.setOutputDir(dirOutput);
 		Solution s = alg.VNS(25, 300);
 		sols.push_back(s);
+		///////////////////
 
 		csv << alg.row << endl;
 
@@ -794,7 +806,8 @@ void genBigMatrix(string dir1) {
 
 void adapt_model(string dir)
 {
-	Model_SA m(dir, 200);
+	//Model_SA m(dir, 200);
+	Model_PMedians m(dir, 200);
 	m.model();
 }
 

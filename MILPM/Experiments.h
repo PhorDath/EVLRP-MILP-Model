@@ -6,6 +6,7 @@
 #include <iostream>
 #include <boost/filesystem.hpp>
 #include "Model_setAdapt.h"
+#include "Model_PMedians.h"
 #include "Model.h"
 #include "perm_rep.h"
 #include "routes_rep.h"

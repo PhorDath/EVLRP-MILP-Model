@@ -5,14 +5,13 @@
 #include "perm_rep.h"
 #include "test.h"
 #include "Experiments.h"
-#include "main.h"
 
 using namespace std;
 
 const string dir1 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/MDEVLRPTW-BSPR/Instances/";
 const string dir2 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/SSG14/";
 const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
-const string dir4 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/";
+const string dir4 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/200/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK100_11.txt";
@@ -33,19 +32,22 @@ int main() {
 		//alg.test_SA();
 		//alg.test_addStations();
 		//alg.test_swapDepot();
-		alg.test_changeDepot();
+		//alg.test_changeDepot();
 		//alg.test_permutationToSolution();
 		//alg.test_permutationToSolutionAlt();
 		//alg.test_splitRoute();
 		//alg.test_new_evaluation();
+		alg.test_bssReplacement_r();
 	}
 	if (op == 1) {
 		//exp_sa(dir3);
 		//exp_sa(dir4);
 		//exp_model(dir3);
 		//exp_vns(dir4);
-		exp_vnsl(dir4);
+
 		//exp_vns2(dir4); // correto
+		exp_vnsl(dir4);
+		
 		//exp_vns3(dir4);
 		//exp_vns3(dir4);
 		//genBigMatrix(dir3);
@@ -127,9 +129,9 @@ int main() {
 		return 0;
 	}
 	else if (op == 7) {
-		//adapt_model(dir4);
+		adapt_model(dir4);
 		//adaptAll_n();
-		adaptAll("D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/");
+		//adaptAll("D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/200/");
 		return 0;
 	}
 

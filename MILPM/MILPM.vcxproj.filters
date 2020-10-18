@@ -54,6 +54,12 @@
     <ClCompile Include="Model_setAdapt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Model_MDFPM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Model_PMedians.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="instance.h">
@@ -92,7 +98,10 @@
     <ClInclude Include="Model_setAdapt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="main.h">
+    <ClInclude Include="Model_MDFPM.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Model_PMedians.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

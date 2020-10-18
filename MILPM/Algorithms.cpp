@@ -653,6 +653,8 @@ vector<float> Algorithms::FOComplete(routes sol)
 	vector<float> fo_parcels;
 
 	// depot cost
+	vector<int> qt(UD0.size(), 0);
+	/*
 	float depotCost = 0;
 	vector<int> qt(UD0.size(), 0);
 	for (auto route : sol) {
@@ -664,6 +666,15 @@ vector<float> Algorithms::FOComplete(routes sol)
 			numDepots += 1;
 		}
 	}
+	*/
+	float depotCost = 0;
+	float numDepots = 0;
+
+	set<int> qt_;
+	for (auto route : sol) {
+		qt_.insert(route.front().key);
+	}
+	numDepots = qt_.size();
 	// depotCost = numDepots * (inst->depotCost / inst->numC);
 	depotCost = numDepots * (inst->depotCost / inst->depotLifetime);
 
@@ -1130,6 +1141,11 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 			ret.insert("route_beg_end");
 		}
 
+
+		if (inst->getNodeByKey(route.back().key).type != "a") {
+			ret.insert("route_end");
+		}
+
 		for (auto v : route) {
 			node n = inst->getNodeByKey(v.key);
 
@@ -1143,7 +1159,7 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 
 			// checking battery lvl
 			if (v.bLevel < 0 || v.bLevel > inst->Q) {
-				// cout << "Vertex " << v.key << " and " << v.bLevel << endl;
+				cout << "Vertex " << v.key << " and " << v.bLevel << endl;
 				ret.insert("battery_level");
 			}
 

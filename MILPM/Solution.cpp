@@ -288,10 +288,15 @@ void Solution::debug(ostream& strm)
 		strm << endl;
 	}
 	strm << endl;
-	
-	if (arcs.size() == 0) {
-		cout << "eoq";
+
+	strm << "Routes: \n";
+	for (route r : routes) {
+		for (vertex v : r) {
+			strm << v.n.type << " ";
+		}
+		strm << endl;
 	}
+	strm << endl;
 
 	strm << "Distances: \n";
 	totalDistance = 0;

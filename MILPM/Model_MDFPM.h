@@ -5,19 +5,16 @@
 #include <set>
 #include <gurobi_c++.h>
 #include <chrono>
-#include <unordered_map>
 #include "instance.h"
 
-using namespace std;
-
-class Model_SA
+// multi-day=facility pmedian model
+class Model_MDFPM
 {
 private:
 	string dir, fileName;
 	vector<instance> insts;
 	set<string> sCities;
 	map<pair<string, string>, int> dists;
-	vector<string> vsDepots;
 	vector<node> depots;
 	set<string> depotsList;
 	int R;// = 10000; //10000;
@@ -26,7 +23,7 @@ private:
 
 	int maxDist = 0, minDist = 0;
 
-	void setup(GRBModel &model);
+	void setup(GRBModel& model);
 	void setup_d(GRBModel& model);
 	void varX(GRBModel& model);
 	GRBVar getX(GRBModel& model, string i, string j, int k);
@@ -49,8 +46,7 @@ private:
 	void result(GRBModel& model);
 
 public:
-	Model_SA(string dir, int size);
+	Model_MDFPM(string dir, int size);
 	void model();
-
 };
 
