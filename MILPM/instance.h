@@ -106,6 +106,7 @@ public:
 	void readSSG14();
 	void readprplib(); // uk instances	
 	void readUKAdapt();
+	void readBR();
 	void addDummyNodes();
 	vector<node> chooseStationsLocationRandom(vector<node> &customers);
 	vector<node> chooseStationsLocationMCLP(vector<node> &customers);

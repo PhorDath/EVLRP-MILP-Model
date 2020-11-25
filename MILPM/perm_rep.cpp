@@ -128,6 +128,141 @@ Solution perm_rep::permutationToSolution(permutation p)
 	return best;
 }
 
+Solution perm_rep::permutationToSolution_()
+{
+	Solution best;
+	best.FO = INT_MAX;
+	bool improv = false;
+	for (auto n : inst->set_UD0()) {		
+		Solution curr;
+
+		vector<node> C = inst->set_C(); // get the set of all customers
+
+		// create initial route route
+		route r;
+
+		// initial depot
+		vertex dpt;
+		dpt.key = n.key;
+		dpt.aTime = 0;
+		dpt.wTime = 0;
+		dpt.lTime = 0;
+		dpt.recharge = false;
+		dpt.recharged = 0;
+		dpt.bLevel = inst->Q;
+		dpt.vLoad = inst->c;
+		r.push_back(dpt);
+
+		curr.routes.push_back(r);
+
+		while (C.size() > 0) {
+			
+			bool insert = false;
+			for (route& rt : curr.routes) {
+
+				vertex v;
+				int minBU;
+
+				// search for the next node
+				minBU = 9999999;
+				for (node c : C) {
+
+					node nodeC = inst->getNodeByKey(c.key);
+					int BU = inst->getBatteryUsed(rt.back().key, c.key); // battery used
+					int TT = inst->getTD(rt.back().key, c.key); // travel time		
+
+					// compute node c relatively to last node in the current route
+					vertex v_;
+					v_.key = c.key;
+					v_.aTime = rt.back().lTime + TT; // arrival time
+
+					if (v_.aTime < nodeC.readyTime) { // waiting time
+						v_.wTime = nodeC.readyTime - v_.aTime;
+					}
+					else {
+						v_.wTime = 0;
+					}
+					v_.lTime = v_.aTime + v_.wTime + nodeC.serviceTime; // departure time
+					v_.vLoad = rt.back().vLoad - nodeC.demand; // vehicle load
+					v_.bLevel = rt.back().bLevel - BU; // battery level
+					v_.recharged = nodeC.serviceTime * inst->g; // amount recharged
+					if (v_.bLevel + v_.recharged > inst->Q) {
+						v_.recharged = inst->Q - v_.bLevel;
+					}
+
+					if (BU < minBU && BU != 0) {
+						minBU = BU;
+						v = v_;
+					}
+
+					/*
+					if (v.aTime + v.wTime >= nodeC.readyTime && v.lTime < nodeC.dueDate) { // check battery level and arrival time
+						rt.push_back(v);
+					}
+					*/
+				}
+
+				node nodeV = inst->getNodeByKey(v.key);
+				if (v.vLoad >= 0 && v.aTime < nodeV.dueDate) { // check battery level and arrival time
+					rt.push_back(v);
+					insert = true;
+
+					// remove the city from the C vector
+					vector<node> C_;
+					for (node aux : C) {
+						if (aux.key != v.key) {
+							C_.push_back(aux);
+						}
+					}
+					C = C_;
+				}
+				/*
+				else { // create new route
+					insert = false;
+					break;
+				}
+				*/
+			}
+
+			if (insert == false) {
+				route rt_;
+				rt_.push_back(dpt);
+				curr.routes.push_back(rt_);
+				
+			}
+		}
+
+		// add arrival node
+		dpt.key = inst->getArrival(dpt.key);
+		for (route& rt : curr.routes) {
+			rt.push_back(dpt);
+		}
+
+		try {
+			curr = addStations(curr);
+			curr = procSol(curr); // error
+
+			if (curr.FO < best.FO && curr.inf.size() == 0) {
+				best = curr;
+				improv = true;
+			}
+		}
+		catch (IsolatedNode& e) {
+			cout << e.what() << endl;
+		}
+		
+	}
+	if (improv == false) {
+		for (auto i : inst->set_R()) {
+			cout << i.key << " ";
+		}
+		cout << endl;
+		throw "infeasible_solution";
+	}
+
+	return best;
+}
+
 Solution perm_rep::permutationToSolution(permutation p, int cn)
 {
 	vector<bool> coverage(inst->nodes.size(), false);
@@ -1284,9 +1419,7 @@ route perm_rep::addStations(route rt)
 
 		if (cVertex.bLevel > inst->Q) {
 			cout << cVertex.bLevel << endl;
-			cout << "FUDEU\n";
 		}
-
 
 		if (currNode.type == "f" || currNode.type == "f_d") { // recharge in the bss
 			cVertex.recharged = inst->Q - cVertex.bLevel;
@@ -1353,7 +1486,7 @@ route perm_rep::addStations(route rt)
 				curr--;
 			}			
 		}
-
+		//int bLevel = rt.at(curr).bLevel + rt.at(curr).recharged;
 		if (rt.at(curr).bLevel < 0) {
 			// if not enough battery, we have to insert a bss in the route
 
@@ -1363,7 +1496,10 @@ route perm_rep::addStations(route rt)
 			// try to recharge the battery
 
 			// try to put a bss 
-			while (rt.at(curr).bLevel - minBU < 0) {
+			bool placed = false;
+			//while (rt.at(curr).bLevel - minBU < 0) {
+			while (placed == false) {
+				placed = true;
 				int put = false;
 				curr--;
 				minBU = INT_MAX;
@@ -1371,6 +1507,34 @@ route perm_rep::addStations(route rt)
 				currNode = inst->getNodeByKey(rt.at(curr).key);
 				int bss;
 
+				pair<int, int> ret;
+				try {
+					ret = chooseBSS(rt, curr, curr + 1);
+				}
+				catch (OutOfBSS& e) {
+					cout << e.what() << endl;
+					throw e;
+				}
+				catch (Unreachable& e) {
+					placed = false;
+					//throw e; ///////////////////
+					continue;
+				}
+				catch (exception& e) {
+					cout << e.what() << endl;
+				}
+
+				bss = ret.first;
+				minBU = ret.second;
+
+				// insert bss
+				vertex v;
+				v.key = bss;
+				rt.insert(rt.begin() + curr + 1, v);
+
+				//curr--;
+
+				/*
 				// special cases
 				// if the route is traced back to the depot due to a node 
 				if (currNode.type == "d") {
@@ -1434,36 +1598,7 @@ route perm_rep::addStations(route rt)
 						// remove the isolated node and push it to the next route
 						vertex aux = rt.at(curr + 1);
 						rt.erase(rt.begin() + curr + 1);
-						/*
-						// push to next route
-						if (j < rt.size() - 2) { // if we have routes to push
-							int size = rt.size();
-							rt.insert(rt.begin() + size - 1, aux);
-
-						}
-						else { // no more routes to push, create a new one
-
-							route r;
-
-							vertex bss;
-							int minDist = INT_MAX;
-							for (route r : s.routes) {
-								int dist = inst->dist(r.front().key, aux.key);
-
-								if (dist < minDist) {
-									minDist = dist;
-									bss = r.front();
-								}
-							}
-
-							r.push_back(bss);
-							r.push_back(aux);
-							r.push_back(bss);
-
-							s.routes.push_back(r); // bug?
-
-						}
-						*/
+						
 						// we also remove all the previous chain of bss
 						node n = inst->getNodeByKey(rt.at(curr).key);
 						while (n.type == "f") {
@@ -1490,6 +1625,8 @@ route perm_rep::addStations(route rt)
 						throw e;
 					}
 				}
+				
+				// comment
 
 				// compute the amount of energy the vehcile can recharge during service time in the current routes segment
 				int curr_ = curr;
@@ -1608,10 +1745,12 @@ route perm_rep::addStations(route rt)
 					curr++;
 					put = true;
 				}
-
+				
 				if (inst->getNodeByKey(rt.at(curr).key).type == "d") {
+					throw IsolatedNode(rt.at(curr).key);
 					//cout << "fudeu" << endl;
 				}
+				*/
 
 				if (put == true) {
 					break;
@@ -3835,28 +3974,30 @@ pair<int, int> perm_rep::chooseBSS(route& rt, int beg, int end)
 	for (node r : R) {
 		bool find = false;
 		for (vertex v : usedStations) {
-			if (r.type == inst->getNodeByKey(v.key).type) {
+			if (r.key == v.key) {
 				find = true;
 				break;
 			}
 		}
 	
-		if (find == false) {
+		int BU1 = inst->getBatteryUsed(rt.at(beg).key, r.key); // AS
+		int bLevel = rt.at(beg).bLevel + rt.at(beg).recharged;
+		if (find == false && BU1 < bLevel) {
 			available_r.push_back(r);
 		}
 	}
 
 	if (available_r.size() == 0) {
-		throw OutOfBSS();
+		throw Unreachable(beg, end);
 	}
 
 	// search for the closest bss from the stop node
 	for (node r : available_r) {
-		int BU1 = inst->getBatteryUsed(beg, r.key); // AS
-		int BU2 = inst->getBatteryUsed(r.key, end); // SB
+		int BU1 = inst->getBatteryUsed(rt.at(beg).key, r.key); // AS
+		int BU2 = inst->getBatteryUsed(r.key, rt.at(end).key); // SB
 
 		// get the lowest dist
-		if (BU2 < minBU && BU1 < rt.at(beg).bLevel && r.key != rt.at(beg).key) {
+		if (BU2 < minBU && r.key != rt.at(beg).key) {
 			bss = r.key;
 			minBU = BU2;
 		}
@@ -4745,7 +4886,8 @@ Solution perm_rep::VNS(int itMax, int maxTime)
 {
 	Solution init;
 	try {
-		init = greedDD();
+		//init = greedDD();
+		init = greed();
 	}
 	catch (exception &e) {
 		cout << e.what() << endl;
@@ -4760,15 +4902,23 @@ Solution perm_rep::VNSL(vector<string> BSS, int itMax, int maxTime)
 {
 
 	inst->removeBSS(BSS); // remove unwanted BSSs
-	inst->removeDPT({ "Stalybridge" });
-	Solution init = greedDD();
+	//inst->removeDPT({ "Meltham" });
+
+	Solution init;
+	try {
+		//init = greedDD();
+		init = greed();
+	}
+	catch (exception& e) {
+		cout << e.what() << endl;
+	}
 
 	//auto p = randomPermutation();
 	//Solution init = permutationToSolution(p);
 
 	cout << "Initial objective: " << init.FO << endl;
-	return init;
-	//return VNS(init, itMax, maxTime);
+	//return init;
+	return VNS(init, itMax, maxTime);
 
 }
 
@@ -4778,10 +4928,10 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 
 	//neighbors = { "insertR", "2opt", "shiftC" };
 	//neighbors = { "shiftC", "changeD", "2opt", "insertR" };
-	neighbors = { "shiftC", "bssReplacement", "2opt", "insertR" };
+	//neighbors = { "shiftC", "bssReplacement", "2opt", "insertR" };
 	//neighbors = { "bssReplacement" };
 	// neighbors = { "partR", "2opt", "shiftC", "swapD", "changeD", "splitR", "joinR" }; 
-	//neighbors = { "insertR", "2opt", "shiftC", "swapD", "changeD", "splitR", "unionR" }; // "swapD"
+	neighbors = { "insertR", "2opt", "shiftC", "changeD", "splitR", "unionR", "bssReplacement" }; // "swapD"
 
 	maxRuntime = maxTime;
 	Solution init = s;
@@ -4794,6 +4944,9 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 		try {
 			
 			long long duration_;
+			//int temp = neighbors.size();
+			//int n = Random::get(1, temp - 1);
+			cout << this->neighbors.at(n - 1) << endl;
 			Solution sl = shakeRandom_r(best, this->neighbors.at(n - 1));
 			#ifdef DEBUG_VNS
 			cout << "VNS local search" << endl;
@@ -4813,9 +4966,6 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 
 			if (sl.FO < best.FO && sl.inf.size() == 0) {
 
-				#ifdef DEBUG_VNS
-				cout << fixed << setprecision(2) << "VNS improvement: " << best.FO << " --> " << sl.FO << endl;
-				#endif
 				cout << fixed << setprecision(2) << "VNS improvement: " << best.FO << " --> " << sl.FO << " --> " << neighbors.at(n - 1) << endl;;
 
 				best = sl;
@@ -5286,6 +5436,8 @@ Solution perm_rep::localSearch_r_old(Solution s, string n)
 
 Solution perm_rep::localSearch_r(Solution s, string n)
 {
+	//"insertR", "2opt", "shiftC", "swapD", "changeD", "splitR", "unionR", "bssReplacement"
+
 	if (n == "2opt") {
 		return hillDescent_r_2opt(s);
 	}
@@ -5300,6 +5452,20 @@ Solution perm_rep::localSearch_r(Solution s, string n)
 	}
 	else if (n == "bssReplacement") {
 		return hillDescent_r_bssReplacement(s);
+	}
+	else if (n == "swapD") {
+		return hillDescent_r_swapD(s);
+	}
+	else if (n == "changeD") {
+		return hillDescent_r_changeD(s);
+	}
+	else if (n == "splitR") {
+		//return hillDescent_r_splitR(s);
+		return hillDescent_r_2opt(s);
+	}
+	else if (n == "unionR") {
+		//return hillDescent_r_unionR(s);
+		return hillDescent_r_2opt(s);
 	}
 	else {
 		throw n + " is not a valid neighborhood structure";
@@ -5625,6 +5791,152 @@ Solution perm_rep::hillDescent_r_changeD(Solution s)
 	#ifdef DEBUG_HILL_DESCENT
 	cout << "end_localSearch_r\n";
 	#endif // DEBUG
+
+	return best;
+}
+
+Solution perm_rep::hillDescent_r_splitR(Solution s)
+{
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "hillDescent_r_splitR\n";
+	#endif // DEBUG
+
+	float FO = s.FO;
+	Solution best = s;
+	best = procSol(best);
+	bool improv = true;
+
+	int count = 0;
+	while (improv == true) {
+		improv = false;
+
+		for (int i = 0; i < s.routes.size(); i++) {
+			auto customers = getCustomersPos(s.routes.at(i));
+
+			for (int j = 1; j < customers.size() - 1; j++) {
+				try {
+					Solution sl = routeSplit_r(s, i, customers.at(j).second);
+
+					#ifdef DEBUG_HILL_DESCENT
+					auto t2 = std::chrono::high_resolution_clock::now();
+					long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+					if (duration - prevTime > 5) {
+						cout << "time: " << duration << endl;
+						prevTime = duration;
+					}
+					#endif // DEBUG
+
+					if (sl.FO < best.FO && sl.inf.size() == 0) {
+						#ifdef DEBUG_HILL_DESCENT
+						cout << fixed << "improvment local search: " << best.FO << " - " << sl.FO << endl;
+						#endif // DEBUG
+
+						//
+						best = sl;
+						improv = true;
+
+						// measure runtime
+						auto t2 = std::chrono::high_resolution_clock::now();
+						long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+						// stop if max runtime is reached
+						if (duration >= maxRuntime) {
+							return best;
+						}
+
+						break;
+				}
+			}
+				catch (string str) {
+					cout << str << endl;
+					continue;
+				}
+				catch (exception e) {
+					cout << e.what() << endl;
+					continue;
+				}
+			}
+
+			
+
+
+		}
+		s = best;
+		count++;
+
+	}
+
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "end_localSearch_r\n";
+	#endif // DEBUG
+
+	return best;
+}
+
+Solution perm_rep::hillDescent_r_unionR(Solution s)
+{
+	#ifdef DEBUG_HILL_DESCENT
+	cout << "hillDescent_r_unionR\n";
+	#endif // DEBUG
+
+	float FO = s.FO;
+	Solution best = s;
+	best = procSol(best);
+	bool improv = true;
+
+	int count = 0;
+	while (improv == true) {
+		improv = false;
+
+		for (int i = 0; i < s.routes.size() - 1; i++) {
+			auto customers_r1 = getCustomersPos(s.routes.at(i));
+
+			for (int j = i + 1; j < s.routes.size(); j++) {
+				auto customers_r2 = getCustomersPos(s.routes.at(j));
+
+				for (int k = 1; k < customers_r1.size() - 1; k++) {
+
+					for (int l = 1; l < customers_r2.size() - 1; l++) {
+					}
+				}
+
+				try {
+					//Solution sl = routeUnion_r(s, i, j, customers_r1.at(k).second, customers_r2.at(l).second);
+					Solution sl = routeUnion_r(s, i, j);
+
+					if (sl.FO < best.FO && sl.inf.size() == 0) {
+						//
+						best = sl;
+						improv = true;
+
+						// measure runtime
+						auto t2 = std::chrono::high_resolution_clock::now();
+						long long duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - start).count();
+
+						// stop if max runtime is reached
+						if (duration >= maxRuntime) {
+							return best;
+						}
+
+						break;
+					}
+					
+				}
+				catch (string str) {
+					cout << str << endl;
+					continue;
+				}
+				catch (exception e) {
+					cout << e.what() << endl;
+					continue;
+				}
+			}
+			
+		s = best;
+		count++;
+
+		}
+	}
 
 	return best;
 }
@@ -6396,18 +6708,13 @@ Solution perm_rep::bssReplacement_r(Solution s, int bss1)
 	try {
 		for (int i : routes) {
 			route r;
-			//for (vertex v : s.routes.at(i)) {
-				//if (inst->getNodeByKey(v.key).type != "f") {
-				//	r.push_back(v);
-				//}
-			//}
 			r = removeBSS(s.routes.at(i));
 			r = addStations(r);
 			s.routes.at(i) = r;
 		}
 	}
 	catch (exception &e) {
-		cout << e.what() << endl;
+		//cout << e.what() << endl;
 		inst->R = R;
 		throw e;
 	}
@@ -6679,6 +6986,10 @@ Solution perm_rep::shakeRandom_r(Solution s, string n)
 
 	}
 	else if (n == "bssReplacement") {
+		if (inst->set_R().size() == 1) {
+			return s;
+		}
+
 		vector<int> BSSs;
 		for (route r : s.routes) {
 			for (vertex v : r) {
@@ -6731,6 +7042,66 @@ float perm_rep::decode(vector<double> chromosome)
 	return s.FO;
 }
 
+Solution perm_rep::greed()
+{
+	vector<node> C = inst->set_C(); // get the set of all customers
+
+	// get the node with the earliest due date
+	node minDueDate;
+	minDueDate.dueDate = INT_MAX;
+	for (node c : C) {
+		if (minDueDate.dueDate > c.dueDate) {
+			minDueDate = c;
+		}
+	}
+
+	vector<node> nodes;
+	nodes.push_back(minDueDate);
+	
+	vector<node> aux;
+	for (node c : C){ 
+		if (c.key != minDueDate.key) {
+			aux.push_back(c);
+		}
+
+	}
+	C = aux;
+
+	while (C.size() > 0) {
+		int minDist = INT_MAX;
+		
+		node nextNode;
+		for (node c : C) {
+			//cout << nodes.back().key << " - " << c.key << endl;
+			int dist = inst->getBatteryUsed(nodes.back().key, c.key);
+			if (dist < minDist) {
+				minDist = dist;
+				nextNode = c;
+			}
+		}
+
+		nodes.push_back(nextNode);
+
+		aux.clear();
+		for (node c : C) {
+			if (nextNode.key != c.key) {
+				aux.push_back(c);
+			}
+		}
+		C = aux;
+	}
+
+	permutation p;
+	for (node c : nodes) {
+		p.push_back(c.key);
+	}
+
+	//Solution s = permutationToSolution(p);
+	Solution s = permutationToSolution_();
+
+	return s;
+}
+
 Solution perm_rep::greedDD()
 {
 	permutation p;
@@ -6743,8 +7114,6 @@ Solution perm_rep::greedDD()
 	}
 
 	Solution s = permutationToSolution(p);
-
-	//s = localSearch_r(s, "2opt");
 
 	return s;
 }

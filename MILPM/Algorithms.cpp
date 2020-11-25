@@ -391,7 +391,6 @@ string Algorithms::getRow(Solution s)
 	return res;
 }
 
-
 void Algorithms::printPartialRoute(vector<vertex> r)
 {
 	cout << fixed << "Partial route \n";
@@ -1159,7 +1158,7 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 
 			// checking battery lvl
 			if (v.bLevel < 0 || v.bLevel > inst->Q) {
-				cout << "Vertex " << v.key << " and " << v.bLevel << endl;
+				//cout << "Vertex " << v.key << " and " << v.bLevel << endl;
 				ret.insert("battery_level");
 			}
 

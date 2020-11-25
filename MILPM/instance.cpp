@@ -580,6 +580,9 @@ void instance::readInstace()
 	if (type == 4) {
 		readprplib();
 	}
+	if (type == 5) {
+		readBR();
+	}
 	maxDist = 0;
 	minDist = 9999999;
 	for (int i = 0; i < distanceMatrix.size(); i++) {
@@ -1720,6 +1723,141 @@ void instance::readUKAdapt()
 	sort(nodes.begin(), nodes.end(), [](node a, node b){return a.key < b.key; }); // we sort the nodes because its not garuanteed that they will be sorted during the file reading, by ordering the nodes by key, we can retrieve data in the nodes o(1)
 	
 
+}
+
+void instance::readBR()
+{
+	type = 2;
+	fstream file;
+	file.open(dir + fileName, ios::in);
+	if (file.is_open() == false) {
+		cout << "Error opening file " << fileName + ".ukelrp" << endl;
+		cout << "In directory " << dir << endl;
+
+		isOpen = false;
+
+		return;
+	}
+	isOpen = true;
+
+	int ig;
+	string str;
+
+	file >> str >> numD;
+	file >> str >> numF;
+	file >> str >> numC;
+	file >> str >> o; // maximum number of stations to be sited
+	file >> str >> LB;
+	file >> str >> UB;
+	file >> str >> M;
+	file >> str >> maxD;
+	file >> str >> maxB;
+	file >> str >> maxV;
+	file >> str >> mDim; // distance matrix dimension
+	file >> str >> str >> depotCost;
+	file >> str >> str >> bssCost;
+	file >> str >> str >> brsCost;
+	file >> str >> str >> bssEnergyCost;
+	file >> str >> str >> brsEnergyCost;
+	file >> str >> str >> vehicleCost;
+	file >> str >> str >> driverWage;
+	file >> str >> str >> depotLifetime;
+	file >> str >> str >> bssLifetime;
+	file >> str >> str >> brsLifetime;
+	file >> str >> str >> vehicleLifetime;
+	file >> str >> str >> vehicleRange; // vehicle autonomy
+	file >> str >> str >> Q; // battery capacity
+	file >> str >> str >> ct; // battery swap time
+	file >> str >> str >> r; // battery consumption rate
+	file >> str >> str >> g; // recharging rate
+	file >> str >> str >> c; // vehicle load capacity
+	file >> str >> str >> v; // speed
+
+	int numNodes = numD + numF + numC;
+
+	// read nodes
+	node a;
+	for (int i = 0; i < numNodes; i++) {
+		file >> a.key >> a.id >> a.type >> a.x >> a.y >> a.demand >> a.readyTime >> a.dueDate >> a.serviceTime >> a.ogKey;
+		nodes.push_back(a);
+	}
+
+	distanceMatrix.resize(numNodes);
+	for (int i = 0; i < numNodes; i++) {
+		distanceMatrix.at(i).resize(numNodes);
+		for (int j = 0; j < numNodes; j++) {
+			float d;
+			file >> d;
+			d = d;// / 1000; // convert from meters to kilometers
+			distanceMatrix.at(i).at(j) = d;
+		}
+	}
+
+	// give all depot nodes a specific id
+	int id = 1;
+	for (int i = 0; i < nodes.size(); i++) {
+		if (nodes.at(i).type == "d") {
+			nodes.at(i).id_n = id;
+			id++;
+		}
+	}
+
+	// adding depot arrival nodes
+	vector<node> UD0 = set_UD0_();
+	node n;
+	for (int i = 0; i < UD0.size(); i++) {
+		UD0.at(i).ref2 = i;
+		n = UD0.at(i);
+		n.type = "a";
+		nodes.push_back(n);
+	}
+
+	// organize intial nodes key
+	for (int i = 0; i < nodes.size(); i++) {
+		nodes.at(i).key = i;
+		nodes.at(i).ref = -1;
+		nodes.at(i).ref2 = i;
+		//nodes.at(i).id_n = i;
+	}
+
+	addDummyNodes();
+
+	this->UD0 = set_UD0_();
+	this->UD1 = set_UD1_();
+	this->UD = set_UD_();
+	this->C = set_C_();
+	this->R = set_R_();
+	this->S = set_S_();
+	this->V = set_V_();
+	this->C0 = set_C0_();
+	this->V0 = set_V0_();
+	this->V1 = set_V1_();
+	this->V01 = set_V01_();
+
+	// create a vector of edges to becames easier to get distances in this type of instance
+	createEdgesVector();
+
+	//o = numC + numF;
+	//LB = 0; // wrong
+	//UB = numC + numF;
+	//M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
+
+	// measures units 
+	driverWage /= 60;
+	driverWage /= 60;
+	depotLifetime *= 365;
+	bssLifetime *= 365;
+	brsLifetime *= 365;
+	vehicleLifetime *= 365;
+	vehicleRange *= 1000;
+	bssEnergyCost /= 1000;
+	brsEnergyCost /= 1000;
+	Q = vehicleRange;
+	LB = 0; // wrong
+	UB = numC + numF;
+	M = 2 * (Q + set_C().size() + set_UD0()[0].dueDate);
+
+	sort(nodes.begin(), nodes.end(), [](node a, node b) {return a.key < b.key; }); // we sort the nodes because its not garuanteed that they will be sorted during the file reading, by ordering the nodes by key, we can retrieve data in the nodes o(1)
 }
 
 void instance::addDummyNodes()

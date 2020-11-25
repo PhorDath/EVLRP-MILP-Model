@@ -60,6 +60,9 @@
     <ClCompile Include="Model_PMedians.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Adaptation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="instance.h">
@@ -102,6 +105,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Model_PMedians.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Adaptation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -418,12 +418,12 @@ Model_SA::Model_SA(string dir, int size)
 	for (auto i : ls) {
 
 		if (i < 10) {
-			instance i(dir, "UK200_0" + to_string(i) + ".txt", 4);
+			instance i(dir, "UK" + to_string(size) + "_0" + to_string(i) + ".txt", 4);
 			depots.push_back(i.nodes.front());
 			insts.push_back(i);
 		}
 		else {
-			instance i(dir, "UK200_" + to_string(i) + ".txt", 4);
+			instance i(dir, "UK" + to_string(size) + "_" + to_string(i) + ".txt", 4);
 			depots.push_back(i.nodes.front());
 			insts.push_back(i);
 		}
@@ -443,9 +443,9 @@ Model_SA::Model_SA(string dir, int size)
 					int d = insts.back().distanceMatrix[i][j];
 					dists.insert(pair<pair<string, string>, int>({ n.id, m.id }, d));
 
-					if (n.id == "Yr_Wyddgrug") {
-						cout << n.id << " - " << m.id << " " << d << endl;
-					}
+					//if (n.id == "Yr_Wyddgrug") {
+					//	cout << n.id << " - " << m.id << " " << d << endl;
+					//}
 
 
 					if (d < minDist) {
@@ -532,7 +532,7 @@ void Model_SA::model()
 		GRBModel model = GRBModel(env);
 		model.set(GRB_StringAttr_ModelName, "setAdapt_" + fileName);
 
-		setup(model);
+		setup_d(model);
 		model.update();
 
 		auto t1 = std::chrono::high_resolution_clock::now();

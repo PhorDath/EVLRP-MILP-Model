@@ -36,12 +36,8 @@ private:
 	string msg;
 
 public:
-	IsolatedNode(const int n, const int r, const vector<int> perm){
-		msg = "node " + to_string(n) + " in route " + to_string(r) + " cant be reached\n";
-		for (int i : perm) {
-			msg += (to_string(i) + " ");
-		}
-		msg += "\n";
+	IsolatedNode(const int n){
+		msg = "node " + to_string(n) + " isolated";
 	}
 
 	const char * what() const throw () {
@@ -144,6 +140,21 @@ private:
 public:
 	InvalidRouteEnd(const int r, const int end) {
 		msg = "invalid route (" + to_string(r) + ") end ( " + to_string(end) + " )";
+	}
+
+	const char* what() const throw () {
+		return msg.c_str();
+	}
+};
+
+class Unreachable : public exception {
+
+private:
+	string msg;
+
+public:
+	Unreachable(const int beg, const int end) {
+		msg = to_string(end) + " unreachable";
 	}
 
 	const char* what() const throw () {

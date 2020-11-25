@@ -130,6 +130,7 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Adaptation.cpp" />
     <ClCompile Include="Algorithms.cpp" />
     <ClCompile Include="Decoder.cpp" />
     <ClCompile Include="Experiments.cpp" />
@@ -147,6 +148,7 @@
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Adaptation.h" />
     <ClInclude Include="Algorithms.h" />
     <ClInclude Include="Decoder.h" />
     <ClInclude Include="Experiments.h" />

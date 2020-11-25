@@ -5,13 +5,15 @@
 #include "perm_rep.h"
 #include "test.h"
 #include "Experiments.h"
+#include "Adaptation.h"
 
 using namespace std;
 
 const string dir1 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/MDEVLRPTW-BSPR/Instances/";
 const string dir2 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/SSG14/";
 const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
-const string dir4 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/200/";
+const string dir4 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/25/";
+const string dir_brelrp = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK100_11.txt";
@@ -43,10 +45,12 @@ int main() {
 		//exp_sa(dir3);
 		//exp_sa(dir4);
 		//exp_model(dir3);
+		//exp_model(dir_brelrp + "50/");
 		//exp_vns(dir4);
 
-		//exp_vns2(dir4); // correto
-		exp_vnsl(dir4);
+		//exp_model(dir_brelrp + "50/");
+		exp_vns2(dir_brelrp + "50/"); // correto
+		//exp_vnsl(dir_brelrp + "50/");
 		
 		//exp_vns3(dir4);
 		//exp_vns3(dir4);
@@ -75,9 +79,9 @@ int main() {
 		return 0;
 	}
 	else if (op == 3) {
-		Model model(dir3, file, 0, 3);
+		Model model(dir_brelrp, "teste_2.brelrp", 0, 5);
 		model.printInst();
-		model.optmize(-1);
+		model.optmize(0);
 		Solution s1 = model.getSolution();
 		s1.saveXML("test.xml");
 		s1.debug(cout);
@@ -96,7 +100,10 @@ int main() {
 	}
 	else if (op == 5) {
 		perm_rep alg;
-		alg.test_swapDepot();
+		alg.loadInstance(dir_brelrp, "teste_2.brelrp", 5);
+		alg.printInstance();
+		alg.setOutputDir(dir_brelrp + "output/");
+		Solution s = alg.VNS(25, 300);
 	}
 	else if (op == 6){
 		perm_rep alg;
@@ -129,10 +136,21 @@ int main() {
 		return 0;
 	}
 	else if (op == 7) {
-		adapt_model(dir4);
+		getAllData(dir3);
+		//adapt_model(dir4);
 		//adaptAll_n();
 		//adaptAll("D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/200/");
 		return 0;
+	}
+	else if (op == 8) {
+		perm_rep alg;
+		alg.loadInstance(dir_brelrp, "mg_00.brelrp", 5);
+		alg.printInstance();
+		Solution s = alg.VNS(25, 300);
+		s.debug(cout);
+
+		//instance inst("D:/Victor/Pos-Graduacao/UFV/Research/Implementation/instances_generator/", "test.txt", 5);
+		//inst.print(cout);
 	}
 
 }

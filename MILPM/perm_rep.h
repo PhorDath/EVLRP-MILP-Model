@@ -17,10 +17,10 @@ private:
 	vector<string> neighbors = { "insertR", "2opt", "shiftC", "swapD", "changeD"}; //  "swapD" 
 
 	Solution permutationToSolution(permutation p);
+	Solution permutationToSolution_();
 	Solution permutationToSolution(permutation p, int cn); // cn is the cendidate`s list`s size
 	Solution permutationToSolutionAlt(permutation p);
 	Solution permutationToSolutionGrasp(permutation p);
-
 	Solution choosePermutationToSolution(permutation p, int n);
 
 	Solution addDepots(Solution s);
@@ -32,7 +32,6 @@ private:
 	Solution addStationsAlt(Solution s); // add stations in the route, 	
 	route addStations(route rt, int n); // choose a bss to be sited
 	route addStationsAlt(route rt); // choose a place to sit a bss
-
 	Solution addStations_OLD(Solution s, int n);
 	route addStations_OLD(route rt); // add stations to the solution by a greedy criteria (closest ) 
 	Solution addStations_model(Solution s); // add stations to the solution by a greedy criteria (closest ) 
@@ -91,6 +90,8 @@ private:
 	Solution hillDescent_r_changeD(Solution s);
 	Solution hillDescent_r_swapD(Solution s);
 	Solution hillDescent_r_bssReplacement(Solution s);
+	Solution hillDescent_r_splitR(Solution s); // implementation
+	Solution hillDescent_r_unionR(Solution s); // implementation
 	Solution hillDescent_r(Solution s);
 	Solution VNS(Solution s, int itMax, int maxTime);
 
@@ -109,6 +110,7 @@ private:
 	vector<ValueKeyPair> v;
 
 	// greed
+	Solution greed();
 	Solution greedDD();
 	Solution greedRT();
 

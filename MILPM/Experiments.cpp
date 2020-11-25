@@ -60,7 +60,7 @@ void exp_model(string dir1)
 			return;
 		}
 
-		Model model(dir1, line, 0, 3, dirOutput);
+		Model model(dir1, line, 0, 5, dirOutput);
 		if (model.fileOpened() == true) {
 			model.printInst();
 			model.optmize();
@@ -263,29 +263,21 @@ void exp_vnsl(string dir1) {
 		}
 
 		perm_rep alg;
-		alg.loadInstance(dir1, line, 3);
+		alg.loadInstance(dir1, line, 5);
 		//alg.printInstance();
 		alg.setOutputDir(dirOutput);
-		vector<string> BSSs = { "Clayton_le_Moors",
-								"Wombwell",
-								"Radcliffe_on_Trent",
-								"Batley",
-								"Conisbrough",
-								"Ilkeston",
-								"Pontefract",
-								"North_Ferriby",
-								"Shipley",
-								"Mansfield",
-								"Kirkham",
-								"Liverpool",
-								"Barnsley",
-								"Warrington",
-								"Hawarden",
-								"Chasetown",
-								"Radcliffe",
-								"Doncaster",
-								"Shepshed",
-								"Warsop" };
+		vector<string> BSSs = { "Divino",
+								"Piranga",
+								"Rio_Casca",
+								"Visconde_do_Rio_Branco",
+								"Rio_Pomba",
+								"Carangola",
+								"Matias_Barbosa",
+								"Lima_Duarte",
+								"Tocantins",
+								"Bicas"
+			
+			};
 		// Stalybridge
 		try {
 			Solution s = alg.VNSL(BSSs, 25, 300);
@@ -401,7 +393,7 @@ void exp_vns2(string dir1) {
 
 		//////////////////
 		perm_rep alg;
-		alg.loadInstance(dir1, line, 3);
+		alg.loadInstance(dir1, line, 5);
 		//alg.printInstance();
 		alg.setOutputDir(dirOutput);
 		Solution s = alg.VNS(25, 300);
@@ -806,8 +798,8 @@ void genBigMatrix(string dir1) {
 
 void adapt_model(string dir)
 {
-	//Model_SA m(dir, 200);
-	Model_PMedians m(dir, 200);
+	Model_SA m(dir, 25);
+	//Model_PMedians m(dir, 200);
 	m.model();
 }
 
