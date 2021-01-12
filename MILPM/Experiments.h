@@ -11,6 +11,7 @@
 #include "perm_rep.h"
 #include "routes_rep.h"
 #include "test.h"
+#include "lrp_opt.h"
 
 using namespace std;
 
@@ -24,14 +25,16 @@ void exp_vns(string dir1);
 void exp_vnsl(string dir1);
 void exp_vns2(string dir1);
 void exp_vns3(string dir1);
-void exp_brkga(string dir1);
 void exp_grasp(string dir1);
 void exp_instances(string dir1);
+void exp_lowerbound(string dir, string file);
 void genBigMatrix(string dir1);
 void adapt_model(string dir);
 void test1();
 
-
+vector<Solution> exp_vns_(string dir1);
+vector<Solution> exp_vnsl_(string dir1, vector<string> BSSs);
+void exp(string dir, string region, int pct);
 ///
 
 void exp1(string dir1, string dir2);

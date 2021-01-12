@@ -1,6 +1,7 @@
 #pragma once
 #include <BRKGA.h>
 #include <MTRand.h>
+#include <map>
 #include "Algorithms.h"
 
 #define DEBUG
@@ -8,13 +9,11 @@
 //#define DEBUG_VNS
 //#define DEBUG_HILL_DESCENT
 
-typedef pair<double, unsigned> ValueKeyPair;
-
 class perm_rep : public Algorithms
 {
 private:
 	string dirOutput;
-	vector<string> neighbors = { "insertR", "2opt", "shiftC", "swapD", "changeD"}; //  "swapD" 
+	vector<string> neighbors = { }; //  "swapD" 
 
 	Solution permutationToSolution(permutation p);
 	Solution permutationToSolution_();
@@ -37,7 +36,6 @@ private:
 	Solution addStations_model(Solution s); // add stations to the solution by a greedy criteria (closest ) 
 
 	bool rechargeSchedule(route &r, int beg, int end, int energy);
-	vector<int> knapSack(route r, int beg, int end);
 
 	//
 	pair<int, int> closestBSS(Solution& s, int route, int key); // search for the closest bss of a node with a given key, return the pair (bss key, distance)
@@ -52,10 +50,12 @@ private:
 	permutation randomPermutation();
 	route computeRoute(Solution s, int r);
 	route computeRoute(route sol); // similar to addStations but add stations to a given route
-
 	node nearestBSS(int key);
-
 	int availableRoute(Solution s, int n); // check if there is an vailable route to insert the node n
+	void computeNode(Solution& s, int r, int n); // compute the n node from the route r bases in the node n-1
+	vertex computeVertex(vertex v1, vertex v2); // compute the n node from the route r bases in the node n-1
+	vertex computeVertex(vertex v1, node n);
+	void initDepot(vertex& v);
 
 	route removeBSS_beg_end(route r);
 	route removeBSS_beg(route r);
@@ -69,12 +69,6 @@ private:
 	//solution greed();
 	permutation opt2(permutation p, int beg, int end);
 
-	//GA
-	vector<Solution> generateOffspringPop(vector<Solution> pop, int eliteSize);
-	vector<permutation> crossover(permutation p1, permutation p2);
-	permutation mutation(permutation s);
-	vector<float> calcFitness(vector<Solution> pop);
-
 	//SA
 	// solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
 
@@ -84,16 +78,19 @@ private:
 	Solution rVNS_r(Solution s); // VNS // localSearch_GRASP
 	Solution localSearch_r_old(Solution s, string n);
 	Solution localSearch_r(Solution s, string n);
-	Solution hillDescent_r_2opt(Solution s);
-	Solution hillDescent_r_shiftC(Solution s);
-	Solution hillDescent_r_insertR(Solution s);
-	Solution hillDescent_r_changeD(Solution s);
-	Solution hillDescent_r_swapD(Solution s);
-	Solution hillDescent_r_bssReplacement(Solution s);
-	Solution hillDescent_r_splitR(Solution s); // implementation
-	Solution hillDescent_r_unionR(Solution s); // implementation
+	Solution localSearch_r(Solution s, string n, bool fimp);
+	Solution hillDescent_r_2opt(Solution s, bool fimp);
+	Solution hillDescent_r_shiftC(Solution s, bool fimp);
+	Solution hillDescent_r_insertR(Solution s, bool fimp);
+	Solution hillDescent_r_changeD(Solution s, bool fimp);
+	Solution hillDescent_r_changeDV2(Solution s, bool fimp);
+	Solution hillDescent_r_swapD(Solution s, bool fimp);
+	Solution hillDescent_r_bssReplacement(Solution s, bool fimp);
+	Solution hillDescent_r_splitR(Solution s, bool fimp); // implementation
+	Solution hillDescent_r_unionR(Solution s, bool fimp); // implementation
 	Solution hillDescent_r(Solution s);
 	Solution VNS(Solution s, int itMax, int maxTime);
+	
 
 	Solution routeSplit_r(Solution s, int rt, int pos); // split route n in two in a given position m (m < s.route.at(n).size() - 2)
 	Solution routeUnion_r(Solution s, int r1, int r2);
@@ -101,16 +98,17 @@ private:
 	Solution opt2_route_r(Solution s, int j, int beg, int end);
 	Solution shiftCustomer_r(Solution s, int j, int c, int q);	
 	Solution changeDepot(Solution s, int keyDPT);
+	Solution changeDepotV2(Solution s, int keyA, int keyB);
 	Solution swapDepot(Solution s, int kDPTA, int kDPTB);
 	Solution bssReplacement_r_(Solution s, int key); // Replace a bss defined by n and swap  it for others, aready placed, bss
 	Solution bssReplacement_r(Solution s, int bss1);
 	Solution shakeRandom_r(Solution s, string n);
 
-	// BGKGA	
-	vector<ValueKeyPair> v;
-
 	// greed
 	Solution greed();
+	Solution greed_();
+	Solution greed2();
+	Solution greedDist();
 	Solution greedDD();
 	Solution greedRT();
 
@@ -121,15 +119,20 @@ private:
 public:
 	permutation perm;
 
+	Solution greedl(vector<string> BSS); // greed limiting bss
+
 	Solution GRASP(int maxIt, int maxRuntime);
-	Solution GA(int popSize, int eliteP, int maxGen);
 	Solution sA(int initTemp, int finalTemp, float coolingRate, int maxIt, int maxRuntime);
 	Solution bVNS(int itMax, int maxTime);
 	Solution VNS(int itMax, int maxTime);
 	Solution VNSL(vector<string> BSS, int itMax, int maxTime); // this version of the VNS will limit the BSSs according to the specified ones
-		
-	Solution BRKGA_();
-	float decode(vector<double> chromosome);
+	Solution lowerBound();
+
+	vector<string> chooseBSS_(int p, string regionNameFile, string regionsCitiesFile, string dmfile, map<string, int> stFreq);
+	vector<string> chooseBSS(int p, set<string> cities, map<pair<string, string>, float> dists, map<string, int> stFreq);
+	vector<string> chooseBSS_model(set<string> cities, map<pair<string, string>, float> dists, map<string, int> stFreq);
+
+	static map<string, int> getBSSFreq(vector<Solution> sols);
 	void setOutputDir(string dir);
 	bool getArcsNodes(Solution& s);
 
@@ -144,6 +147,7 @@ public:
 	int test_swapDepot();
 	int test_changeDepot();
 	int test_splitRoute();
+	int test_unionRoute();
 	int test_bssReplacement_r();
 	int test_neigh();
 	int test_localSearch_r();

@@ -1,27 +1,13 @@
-#ifndef DECODER_H
-#define DECODER_H
+#pragma once
+#include "instance.h"
 
-#include <list>
-#include <vector>
-#include <algorithm>
-#include <utility> 
-
-#include "perm_rep.h"
-
-using namespace std;
-
-class Decoder {
+class SampleDecoder {
 public:
-	Decoder(perm_rep& a);
-	~Decoder();
-
-	double decode(const vector<double>& chromosome) const;
-
-private:
-	perm_rep &alg;
-	instance inst;
-	
-
+	SampleDecoder();
+	SampleDecoder();
+	double decode(const std::vector< double >& chromosome) const {
+		// Here we store the fitness of ‘chromosome’
+		double myFitness = 0.0;
+		return myFitness;
+	}
 };
-
-#endif // !DECODER_H

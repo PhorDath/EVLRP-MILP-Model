@@ -563,6 +563,4 @@ void Model_SA::model()
 	catch (exception e) {
 		cout << e.what() << endl;
 	}
-
-
 }

@@ -196,6 +196,120 @@ void Algorithms::getSol(ostream & strm, Solution sol)
 	}
 }
 
+void Algorithms::writeSolutionBin(string file, Solution s)
+{
+	fstream f;
+	f.open(file, ios::binary | ios::out);
+	if (!f.is_open()) {
+		cout << "Error opening file " << file << endl;
+		exit(1);
+	}
+
+	f.write((char*)&s, sizeof(Solution));
+	f.close();
+}
+
+Solution Algorithms::readSolutionBin(string file)
+{
+	fstream f;
+	Solution s;
+
+	f.open(file, ios::binary | ios::in);
+	if (!f.is_open()) {
+		cout << "Error opening file " << file << endl;
+		exit(1);
+	}
+	
+	f.read((char*)&s, sizeof(Solution));
+	f.close();
+
+	return s;
+}
+
+void Algorithms::writeSolutionTxt(string file, Solution s)
+{
+	fstream f;
+	f.open(file, ios::out);
+	if (!f.is_open()) {
+		cout << "Error opening file " << file << endl;
+		exit(1);
+	}
+
+	f << s.FO << endl;
+	f << s.FOp.size() << " ";
+	for (auto i : s.FOp) {
+		f << i << " ";
+	}
+	f << endl;
+	f << s.inf.size() << " ";
+	for (auto i : s.inf) {
+		f << i << " ";
+	}
+	f << endl;
+	f << s.routes.size() << endl; // number of routes
+	for (auto i : s.routes) {
+		f << i.size() << endl; // route size
+		for (auto j : i) {
+			f << j.key << " " << j.bLevel << " " << j.recharge << " " << j.recharged << " " << j.vLoad << " " << j.wTime << " " << j.aTime << " " << j.lTime << endl;
+		}
+	}
+	f << endl;
+	
+	f.close();
+}
+
+Solution Algorithms::readSolutionTxt(string file)
+{
+	fstream f;
+	Solution s;
+	int n;
+	string aux;
+
+	f.open(file, ios::in);
+	if (!f.is_open()) {
+		cout << "Error opening file " << file << endl;
+		exit(1);
+	}
+
+	f >> s.FO;
+	f >> n;
+	for (int i = 0; i < n; i++) {
+		f >> aux;
+		s.FOp.push_back(stof(aux));
+	}
+	f >> n;
+	for (int i = 0; i < n; i++) {
+		f >> aux;
+		s.inf.push_back(aux);
+	}
+	f >> n; // number of routes
+	for (int i = 0; i < n; i++) {
+		int m;
+		f >> m; // route size
+		route r;
+		for (int j = 0; j < m; j++) {
+			vertex v;
+			f >> v.key >> v.bLevel >> v.recharge >> v.recharged >> v.vLoad >> v.wTime >> v.aTime >> v.lTime;
+			r.push_back(v);
+		}
+		s.routes.push_back(r);
+	}
+
+	f.close();
+
+	return s;
+}
+
+void Algorithms::writeRoutes(ostream& strm, Solution s)
+{
+	for (auto r : s.routes) {
+		for (auto i : r) {
+			cout << i.key << " ";
+		}
+		cout << endl;
+	}
+}
+
 void Algorithms::solutionToXML(Solution s)
 {
 	ptree tree;
@@ -384,10 +498,8 @@ string Algorithms::getRow(Solution s)
 	res += to_string(s.FO) + ",";
 	res += to_string(s.FOINIT) + ",";
 	res += to_string(s.runtime);
-	cout << res << endl;
-
-
-	cout << s.status << s.FO << " " << s.FOINIT << " " << s.runtime << endl;
+	//cout << res << endl;
+	//cout << s.status << s.FO << " " << s.FOINIT << " " << s.runtime << endl;
 	return res;
 }
 
@@ -1204,12 +1316,13 @@ vector<string> Algorithms::fullEval(vector<vector<vertex>> sol)
 		for (int i = 0; i < r.size() - 1; i++) {
 			if(r.at(i).key == r.at(i + 1).key) {
 				ret.insert("consecutive_vertex");
+				//cout << "consecutive_vertex" << endl;
 				a = true;
-				break;
+				//break;
 			}
 		}
 		if (a == true) {
-			break;
+			//break;
 		}
 	}
 
@@ -1298,6 +1411,33 @@ vector<string> Algorithms::fullEval(Solution s)
 }
 
 vector<string> Algorithms::evalRoute(route r)
+{
+	vector<string> inf;
+	node nCurr, nPrev;
+	vertex vCurr, vPrev;
+	for (int i = 1; i < r.size(); i++) {
+		vCurr = r.at(i);
+		vPrev = r.at(i - 1);
+		nCurr = inst->getNodeByKey(vCurr.key);
+		nPrev = inst->getNodeByKey(vPrev.key);
+		// check vehicle load
+		if (vCurr.vLoad < 0 || vCurr.vLoad > inst->c || vCurr.vLoad != vPrev.vLoad - nCurr.demand) {
+			inf.push_back("vehicle_load");
+		}
+		// check battery level
+		if (vCurr.bLevel < 0 || vCurr.bLevel > inst->Q ) { // || vCurr.bLevel != vPrev.bLevel - inst->getBatteryUsed(vPrev.key, vCurr.key)
+			inf.push_back("battery_level");
+		}
+		// check time windows
+		if (vCurr.aTime > nCurr.dueDate ) { // || vCurr.aTime != vPrev.lTime + inst->getTD(vPrev.key, vCurr.key)
+			inf.push_back("time_windows");
+		}
+	}
+
+	return inf;
+}
+
+vector<string> Algorithms::evalRoute_(route r)
 {
 	set<string> ret;
 

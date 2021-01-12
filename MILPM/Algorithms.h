@@ -31,7 +31,6 @@ struct MovementFailed : public exception {
 };
 
 class IsolatedNode : public exception {
-
 private:
 	string msg;
 
@@ -162,6 +161,21 @@ public:
 	}
 };
 
+class UnfeasibleInstance : public exception {
+
+private:
+	string msg;
+
+public:
+	UnfeasibleInstance(string name) {
+		msg = name + " is unfeasible";
+	}
+
+	const char* what() const throw () {
+		return msg.c_str();
+	}
+};
+
 class Algorithms
 {
 public:
@@ -186,6 +200,7 @@ public:
 	vector<string> fullEval(vector<vector<vertex>> sol);
 	vector<string> fullEval(Solution s);
 	vector<string> evalRoute(route r);
+	vector<string> evalRoute_(route r);
 	vector<vertex> fixRoute(vector<vertex> sol);
 	route optRoute(route r);
 	
@@ -221,6 +236,12 @@ public:
 	
 	void getSol(ostream &strm, Solution sol);
 	void getSol2(ostream &strm, Solution sol);
+	void writeSolutionBin(string file, Solution s);
+	Solution readSolutionBin(string file);
+	void writeSolutionTxt(string file, Solution s);
+	Solution readSolutionTxt(string file);
+	void writeRoutes(ostream &strm, Solution s);
+
 
 	void solutionToXML(Solution s);
 

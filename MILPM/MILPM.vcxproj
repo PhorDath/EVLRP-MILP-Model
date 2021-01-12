@@ -135,6 +135,7 @@
     <ClCompile Include="Decoder.cpp" />
     <ClCompile Include="Experiments.cpp" />
     <ClCompile Include="instance.cpp" />
+    <ClCompile Include="lrp_opt.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MCLPModel.cpp" />
     <ClCompile Include="Model.cpp" />
@@ -153,6 +154,7 @@
     <ClInclude Include="Decoder.h" />
     <ClInclude Include="Experiments.h" />
     <ClInclude Include="instance.h" />
+    <ClInclude Include="lrp_opt.h" />
     <ClInclude Include="MCLPModel.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Model_MDFPM.h" />

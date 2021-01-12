@@ -39,19 +39,144 @@ int main() {
 		//alg.test_permutationToSolutionAlt();
 		//alg.test_splitRoute();
 		//alg.test_new_evaluation();
-		alg.test_bssReplacement_r();
+		//alg.test_bssReplacement_r();
+		alg.test_unionRoute();
 	}
 	if (op == 1) {
+		//string region = "alto_paranaiba";
+	
+		//exp(dir_brelrp, "alto_paranaiba", 20);
+		//exp(dir_brelrp, "alto_paranaiba", 50);
+		//exp(dir_brelrp, "alto_paranaiba", 80);
+
+		//exp(dir_brelrp, "mata", 20);
+		//exp(dir_brelrp, "mata", 50);
+		//exp(dir_brelrp, "mata", 80);
+
+		exp(dir_brelrp, "rio_doce", 20);
+		//exp(dir_brelrp, "rio_doce", 50);
+		//exp(dir_brelrp, "rio_doce", 80);
+
+		//exp(dir_brelrp, "triangulo", 20);
+		//exp(dir_brelrp, "triangulo", 50);
+		//exp(dir_brelrp, "triangulo", 80);
+
+		//exp(dir_brelrp, "jequitinhonha_mucuri", 20);
+		//exp(dir_brelrp, "jequitinhonha_mucuri", 50);
+		//exp(dir_brelrp, "jequitinhonha_mucuri", 80);
+
+		//exp(dir_brelrp, "sul_de_minas", 20);
+		//exp(dir_brelrp, "sul_de_minas", 50);
+		//exp(dir_brelrp, "sul_de_minas", 80);
+
+		//exp(dir_brelrp, "central", 20);
+		//exp(dir_brelrp, "central", 50);
+		//exp(dir_brelrp, "central", 80);
+
+		/*
+		string s = "jequitinhonha_mucuri/old";
+		exp_vns2(dir_brelrp + s + "/20/");
+		exp_vns2(dir_brelrp + s + "/50/");
+		exp_vns2(dir_brelrp + s + "/80/");
+		*/
+
+		//exp_vns2(dir_brelrp + "alto_paranaiba/20/");
+		//exp_vns2(dir_brelrp + "alto_paranaiba/50/");
+		//exp_vns2(dir_brelrp + "alto_paranaiba/80/");
+
+		//exp_vns2(dir_brelrp + "centro_oeste/20/");
+		//exp_vns2(dir_brelrp + "centro_oeste/50/");
+		//exp_vns2(dir_brelrp + "centro_oeste/80/");
+
+		
+		//exp_vns2(dir_brelrp + "rio_doce/20/");
+		//exp_vns2(dir_brelrp + "rio_doce/50/");
+		//exp_vns2(dir_brelrp + "rio_doce/80/");
+
+		//exp_vns2(dir_brelrp + "sul_de_minas/20/");
+		//exp_vns2(dir_brelrp + "sul_de_minas/50/");
+		//exp_vns2(dir_brelrp + "sul_de_minas/80/");
+
+		//exp_vns2(dir_brelrp + "triangulo/20/");
+		//exp_vns2(dir_brelrp + "triangulo/50/");
+		//exp_vns2(dir_brelrp + "triangulo/80/");
+
+		//exp_vns2(dir_brelrp + "jequitinhonha_mucuri/old/20/");
+		//exp_vns2(dir_brelrp + "jequitinhonha_mucuri/old/50/");
+		//exp_vns2(dir_brelrp + "jequitinhonha_mucuri/old/80/");
+
+		//exp_vns2(dir_brelrp + "mata/20/");
+		//exp_vns2(dir_brelrp + "mata/50/");
+		//exp_vns2(dir_brelrp + "mata/80/");
+
+		//exp_vns2(dir_brelrp + "central/20/");
+		//exp_vns2(dir_brelrp + "central/50/");
+		//exp_vns2(dir_brelrp + "central/80/");
+
+		//exp_vns2(dir_brelrp + "alto_paranaiba/80/");
+		//exp_vns2(dir_brelrp + "centro_oeste/80/");
+		//exp_vns2(dir_brelrp + "rio_doce/80/");
+		//exp_vns2(dir_brelrp + "sul_de_minas/80/");
+		//exp_vns2(dir_brelrp + "triangulo/80/");
+		//exp_vns2(dir_brelrp + "mata/80/");
+		//exp_vns2(dir_brelrp + "central/80/");
+
+		//exp_vnsl(dir_brelrp + "alto_paranaiba/20/");
+		//exp_vnsl(dir_brelrp + "alto_paranaiba/50/");
+		//exp_vnsl(dir_brelrp + "alto_paranaiba/80/");
+
+		//exp_vnsl(dir_brelrp + "centro_oeste/20/");
+		//exp_vnsl(dir_brelrp + "centro_oeste/50/");
+		//exp_vnsl(dir_brelrp + "centro_oeste/80/");
+
+		//exp_vnsl(dir_brelrp + "rio_doce/20/");
+		//exp_vnsl(dir_brelrp + "rio_doce/50/");
+		//exp_vnsl(dir_brelrp + "rio_doce/80/");
+
+		//exp_vnsl(dir_brelrp + "sul_de_minas/20/");
+		//exp_vnsl(dir_brelrp + "sul_de_minas/50/");
+		//exp_vnsl(dir_brelrp + "sul_de_minas/80/");
+
+		//exp_vnsl(dir_brelrp + "triangulo/20/");
+		//exp_vnsl(dir_brelrp + "triangulo/50/");
+		//exp_vnsl(dir_brelrp + "triangulo/80/");
+
+		//exp_vnsl(dir_brelrp + "jequitinhonha_mucuri/old/20/");
+		//exp_vnsl(dir_brelrp + "jequitinhonha_mucuri/old/50/");
+		//exp_vnsl(dir_brelrp + "jequitinhonha_mucuri/old/80/");
+
+		//exp_vnsl(dir_brelrp + "mata/20/");
+		//exp_vnsl(dir_brelrp + "mata/50/");
+		//exp_vnsl(dir_brelrp + "mata/80/");
+
+		//exp_vnsl(dir_brelrp + "central/20/");
+		//exp_vnsl(dir_brelrp + "central/50/");
+		//exp_vnsl(dir_brelrp + "central/80/");
+
+		//exp_vnsl(dir_brelrp + "alto_paranaiba/80/");
+		//exp_vnsl(dir_brelrp + "centro_oeste/80/");
+		//exp_vnsl(dir_brelrp + "rio_doce/80/");
+		//exp_vnsl(dir_brelrp + "sul_de_minas/80/");
+		//exp_vnsl(dir_brelrp + "triangulo/80/");
+		//exp_vnsl(dir_brelrp + "mata/80/");
+		//exp_vnsl(dir_brelrp + "central/80/");
+
 		//exp_sa(dir3);
 		//exp_sa(dir4);
 		//exp_model(dir3);
 		//exp_model(dir_brelrp + "50/");
 		//exp_vns(dir4);
 
-		//exp_model(dir_brelrp + "50/");
-		exp_vns2(dir_brelrp + "50/"); // correto
-		//exp_vnsl(dir_brelrp + "50/");
-		
+		//exp_model(dir_brelrp + "25/");
+		//for (int i = 0; i < 10; i++)
+		//	exp_vns2(dir_brelrp + "central/50/"); // correto
+
+		//for (int i = 0; i < 11; i++)
+		//	exp_vnsl(dir_brelrp + "central/50/");
+		//exp_lowerbound(dir_brelrp + "50/", "mg50_01.brelrp");
+		//exp_lowerbound(dir3, "UK10_01.txt.ukelrp");
+
+
 		//exp_vns3(dir4);
 		//exp_vns3(dir4);
 		//genBigMatrix(dir3);
@@ -79,7 +204,7 @@ int main() {
 		return 0;
 	}
 	else if (op == 3) {
-		Model model(dir_brelrp, "teste_2.brelrp", 0, 5);
+		Model model(dir_brelrp, "mg50_01.brelrp", 0, 5);
 		model.printInst();
 		model.optmize(0);
 		Solution s1 = model.getSolution();
@@ -100,7 +225,7 @@ int main() {
 	}
 	else if (op == 5) {
 		perm_rep alg;
-		alg.loadInstance(dir_brelrp, "teste_2.brelrp", 5);
+		alg.loadInstance(dir_brelrp + "50/", "mg50_01.brelrp", 5);
 		alg.printInstance();
 		alg.setOutputDir(dir_brelrp + "output/");
 		Solution s = alg.VNS(25, 300);
