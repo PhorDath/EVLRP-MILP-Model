@@ -3882,7 +3882,7 @@ int perm_rep::availableRoute(Solution s, int n)
 void perm_rep::computeNode(Solution& s, int r, int n)
 {
 	if (n < 1) {
-		cout << "Error\n";
+		//cout << "Error\n";
 		return;
 	}
 	int prev = n - 1;
@@ -4646,9 +4646,6 @@ Solution perm_rep::VNSL(vector<string> BSS, int itMax, int maxTime)
 		find = false;
 		cout << e.what() << endl;
 	}
-
-	//auto p = randomPermutation();
-	//Solution init = permutationToSolution(p);
 	
 	if (find == true) {
 		//return init;
@@ -4986,7 +4983,10 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 	//neighbors = { "shiftC", "bssReplacement", "2opt", "insertR" };
 	//neighbors = { "bssReplacement" };
 	// neighbors = { "partR", "2opt", "shiftC", "swapD", "changeD", "splitR", "joinR" }; 
-	neighbors = { "unionR", "insertR", "2opt", "shiftC", "bssReplacement", "changeD" };// , "insertR", "2opt", "shiftC", "changeD", "bssReplacement" }; // "swapD" , ,   
+
+	//neighbors = { "unionR", "insertR", "2opt", "shiftC", "bssReplacement", "changeD" };// , "insertR", "2opt", "shiftC", "changeD", "bssReplacement" }; // "swapD" , ,   
+	neighbors = { "unionR", "2opt", "shiftC", "bssReplacement", "changeD" };// , "insertR", "2opt", "shiftC", "changeD", "bssReplacement" }; // "swapD" , ,   
+
 	//neighbors = { "unionR" }; // ok
 	//neighbors = { "insertR" }; // ok	
 	//neighbors = { "2opt" }; // ok
@@ -4994,7 +4994,7 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 	//neighbors = { "bssReplacement" }; // ok?
 	//neighbors = { "changeD" }; // ok
 	
-	//neighbors = { "2opt" };7
+	//neighbors = { "2opt" };
 	//neighbors = { "unionR" };
 	//neighbors = { "insertR" };
 	//neighbors = { "shiftC" };
@@ -5019,7 +5019,14 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 			int n = Random::get(0, maxN);
 			cout << this->neighbors.at(n) << " - ";
 			cout << "shake - ";
-			Solution sl = shakeRandom_r(best, this->neighbors.at(n));
+			Solution sl;
+			try {
+				sl = shakeRandom_r(best, this->neighbors.at(n));
+			}
+			catch (exception& e) {
+				sl = best;
+			}
+			
 			#ifdef DEBUG_VNS
 			cout << "VNS local search" << endl;
 			auto t1_ = std::chrono::high_resolution_clock::now();
@@ -5056,6 +5063,9 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 		}
 		catch (string str) {
 			//cout << str << endl;
+		}
+		catch (exception& e) {
+			
 		}
 
 		// measure runtime
@@ -5140,6 +5150,22 @@ map<string, int> perm_rep::getBSSFreq(vector<Solution> sols)
 {
 	map<string, int> stFreq;
 	for (auto j : sols) {
+		for (auto r : j.routes) {
+			for (auto v : r) {
+				if (v.n.type == "f") {
+					map<string, int>::iterator it;
+					it = stFreq.find(v.n.id);
+					if (it == stFreq.end()) {
+						stFreq.insert({ v.n.id, 1 });
+					}
+					else {
+						stFreq[v.n.id]++;
+					}
+				}
+			}
+		}
+
+		/*
 		for (string i : j.sStations) {
 			map<string, int>::iterator it;
 			it = stFreq.find(i);
@@ -5150,6 +5176,7 @@ map<string, int> perm_rep::getBSSFreq(vector<Solution> sols)
 				stFreq[i]++;
 			}
 		}
+		*/
 	}
 	
 	return stFreq;
@@ -5576,8 +5603,6 @@ Solution perm_rep::localSearch_r(Solution s, string n, bool fimp)
 		return hillDescent_r_insertR(s, op);
 	}
 	else if (n == "changeD") {
-		//return s;
-		//return hillDescent_r_changeD(s, op);
 		return hillDescent_r_changeDV2(s, op);
 	}
 	else if (n == "bssReplacement") {
@@ -5590,11 +5615,9 @@ Solution perm_rep::localSearch_r(Solution s, string n, bool fimp)
 		return hillDescent_r_changeD(s, op);
 	}
 	else if (n == "splitR") {
-		//return hillDescent_r_splitR(s);
 		return hillDescent_r_splitR(s, op);
 	}
 	else if (n == "unionR") {
-		//return hillDescent_r_unionR(s);
 		return hillDescent_r_unionR(s, op);
 	}
 	else {
@@ -5986,7 +6009,7 @@ Solution perm_rep::hillDescent_r_changeDV2(Solution s, bool fimp)
 		}
 
 		if (useddpts.size() < 1 || availabedpts.size() < 1) {
-			cout << "error\n"; /////////////
+			//cout << "error\n"; /////////////
 		}
 
 		int keyB = Random::get<int>(0, availabedpts.size() - 1);
@@ -7191,52 +7214,53 @@ Solution perm_rep::shakeRandom_r(Solution s, string n)
 {
 	//cout << "shaking " << n << endl;
 	if (n == "insertR") { // route partition
-		if (s.routes.size() <= 1) { // cant use this neighborhood in solutions with only one route
-			return s;
-		}
-
-		vector<int> rts;
-		int i = 0;
-		for (auto r : s.routes) {
-			int tc = getNumC(r);
-			if (tc >= 2) {
-				rts.push_back(i);
-			}
-			i++;
-		}
-		if (rts.size() == 0) {
-			//throw "none route can be partitioned";
-			return s;
-		}
-		int r1 = Random::get<int>(0, rts.size() - 1);
-		r1 = rts.at(r1);
-
-		int r2 = Random::get<int>(0, s.routes.size() - 1);
-		while (r1 == r2) {
-			r2 = Random::get<int>(0, s.routes.size() - 1);
-		}
-
-		vector<int> customers = getListC(s.routes.at(r1));
-		int p1 = Random::get<int>(1, customers.size() - 1);
-		p1 = customers.at(p1);
-
-		customers = getListC(s.routes.at(r2));
-		//int p2 = Random::get<int>(0, s.routes.at(r2).size() - 2);
-		int p2 = Random::get<int>(0, customers.size() - 1);
-		p2 = customers.at(p2);
-
 		try {
+			if (s.routes.size() <= 1) { // cant use this neighborhood in solutions with only one route
+				return s;
+			}
+
+			vector<int> rts;
+			int i = 0;
+			for (auto r : s.routes) {
+				int tc = getNumC(r);
+				if (tc >= 2) {
+					rts.push_back(i);
+				}
+				i++;
+			}
+			if (rts.size() < 2) {
+				return s;
+			}
+			int r1 = Random::get<int>(0, rts.size() - 1);
+			if (r1 >= 0 && r1 < rts.size()) {
+				r1 = rts.at(r1);
+			}
+			else {
+				cout << "Fudeu 1\n";
+				return s;
+			}
+
+			int r2 = Random::get<int>(0, s.routes.size() - 1);
+			while (r1 == r2) {
+				r2 = Random::get<int>(0, s.routes.size() - 1);
+			}
+
+			vector<int> customers = getListC(s.routes.at(r1));
+			int p1 = Random::get<int>(1, customers.size() - 1);
+			p1 = customers.at(p1);
+
+			customers = getListC(s.routes.at(r2));
+			//int p2 = Random::get<int>(0, s.routes.at(r2).size() - 2);
+			int p2 = Random::get<int>(0, customers.size() - 1);
+			p2 = customers.at(p2);
+
 			//cout << "partitioning route " << r1 << " in " << p1 << " and inserting subr in route " << r2 << " in position " << p2 << endl;
 			return routeInsertion_r(s, r1, p1, r2, p2);
 		}
-		catch (string e) {
-			//cout << e << endl;
-			//throw "error generating neighbor " + n;
+		catch (string &e) {
 			return s;
 		}
-		catch (exception e) {
-			//cout << e.what() << endl;
-			//throw "error generating neighbor " + n;
+		catch (exception &e) {
 			return s;
 		}
 
@@ -7397,7 +7421,7 @@ Solution perm_rep::shakeRandom_r(Solution s, string n)
 			}
 
 			if (useddpts.size() < 1 || availabedpts.size() < 1) {
-				cout << "error\n"; /////////////
+				//cout << "error\n"; /////////////
 			}
 
 			int keyB = Random::get<int>(0, availabedpts.size() - 1);
@@ -7735,6 +7759,7 @@ Solution perm_rep::greed()
 	try {
 		curr = addStations(curr);
 		curr = procSol(curr); // error
+		getArcsNodes(curr);
 
 		if (curr.FO < best.FO && curr.inf.size() == 0) {
 			best = curr;
@@ -7761,6 +7786,7 @@ Solution perm_rep::greedl(vector<string> BSS)
 	Solution init;
 	try {
 		init = greed();
+		getArcsNodes(init);
 		//cout << fixed << "Initial objective: " << init.FO << endl;
 		return init;
 	}
@@ -7768,7 +7794,7 @@ Solution perm_rep::greedl(vector<string> BSS)
 		throw PermutationInf({ 0 });
 	}
 	catch (exception& e) {
-		cout << e.what() << endl;
+		throw PermutationInf({ 0 });
 	}
 }
 
@@ -9012,4 +9038,73 @@ float perm_rep::getTravelCost(Solution s)
 		}
 	}
 	return count;
+}
+
+float perm_rep::totalCost_(vector<Solution> sols, string dir) {
+
+	set<string> stations;
+	set<string> depots;
+
+	float cost = 0;
+
+	float depotCost = 0;
+	float bssCost = 0;
+	float vehicleCost = 0;
+	float drivingCost = 0;
+	float brsEnergyCost = 0;
+	float bssEnergyCost = 0;
+	float bssUseCost = 0;
+
+	int maxVehicles = -1;
+	int cont = 0;
+	for (auto s : sols) {
+
+
+		vehicleCost = s.FOp.at(3);
+		drivingCost = s.FOp.at(4);
+		brsEnergyCost = s.FOp.at(5);
+		bssEnergyCost = s.FOp.at(6);
+		bssUseCost = s.FOp.at(7);
+
+
+		for (route r : s.routes) {
+			for (vertex v : r) {
+				if (v.n.type == "f") {
+					stations.insert(v.n.id);
+				}
+			}
+			depots.insert(r.front().n.id);
+		}
+
+		int numV = s.routes.size();
+		if (numV > maxVehicles) {
+			maxVehicles = numV;
+		}
+		vehicleCost = vehicleCost / maxVehicles;
+
+		cost += drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
+		cont++;
+	}
+
+	if (sols.size() > 0) {
+		set<string> aux;
+
+		for (route r : sols.at(0).routes) {
+			for (vertex v : r) {
+				if (v.n.type == "f") {
+					stations.insert(v.n.id);
+				}
+			}
+		}
+
+		bssCost = sols.at(0).FOp.at(2) / stations.size();
+	}
+
+	bssCost *= stations.size();
+	cost += bssCost;
+
+	depotCost += sols.front().FOp.at(1); // depot cost;
+	cost += depotCost;
+
+	return cost;
 }

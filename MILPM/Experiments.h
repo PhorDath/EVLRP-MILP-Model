@@ -32,9 +32,10 @@ void genBigMatrix(string dir1);
 void adapt_model(string dir);
 void test1();
 
-vector<Solution> exp_vns_(string dir1);
-vector<Solution> exp_vnsl_(string dir1, vector<string> BSSs);
-void exp(string dir, string region, int pct);
+vector<Solution> exp_vns_(string dir1, string output);
+vector<Solution> exp_vnsl_(string dir1, string output, vector<string> BSSs);
+pair<float, float> exp(string dir, string region, int pct);
+void call_exp(string dir, string region, int pct);
 ///
 
 void exp1(string dir1, string dir2);

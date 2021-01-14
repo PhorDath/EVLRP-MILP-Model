@@ -27,10 +27,71 @@ vector<string> lrp_opt::chooseBSS(int p, set<string> cities, map<pair<string, st
 	return choosenCities;
 }
 
-vector<string> lrp_opt::chooseBSS_GA(int p, set<string> cities, map<pair<string, string>, float> dists, map<string, int> stFreq)
+vector<string> lrp_opt::chooseBSS_GA()
 {
-	BRKGA<SampleDecoder, 100> GA();
-	return vector<string>();
+	const unsigned n = stFreq.size(); // Size of chromosomes;
+	const unsigned p = 10; // Size of population;
+	const double pe = 0.20; // Fraction of population to be the elite-set
+	const double pm = 0.10; // Fraction of population to be replaced by mutants
+	const double rhoe = 0.70; // Probability offspring inherits elite parent allele
+	const unsigned K = 3; // Number of independent populations
+	const unsigned MAXT = 2; // Number of threads for parallel decoding
+
+	vector<string> aux;
+	for (auto i : stFreq) {
+		aux.push_back(i.first);
+	}
+	Decoder decoder(this->dir, aux); // Initialize decoder
+
+	const long unsigned rngSeed = time(0); // Seed random number generator
+	MTRand rng(rngSeed); // Initialize random number generator
+
+	// Initialize BRKGA-based heuristic
+	BRKGA<Decoder, MTRand> algorithm(n, p, pe, pm, rhoe, decoder, rng, K, MAXT);
+
+	unsigned generation = 1; // Current generation
+	const unsigned X_INTVL = 10; // Exchange best individuals every 100 generations
+	const unsigned X_NUMBER = 2; // Exchange top 2 best
+	const unsigned MAX_GENS = 5; // Run for 1000 generations
+	const unsigned MAX_GENS_NO_IMPROVE = 10; // Run for 1000 generations
+	
+	// Iterations of the algorithm ...
+	float bestFitness = algorithm.getBestFitness();
+	int it = 0;
+	int gen = 1;
+	do {
+		cout << "generation: " << generation << endl;
+
+		algorithm.evolve(); // Evolve the population for one generation
+		if ((++generation) % X_INTVL == 0) {
+			algorithm.exchangeElite(X_NUMBER); // Exchange top individuals
+		}
+
+		
+		if (algorithm.getBestFitness() < bestFitness) {
+			bestFitness = algorithm.getBestFitness();
+			it = 0;
+		}
+		else {
+			it++;
+		}
+
+		cout << "Best solution found so far has objective value = " << algorithm.getBestFitness() << endl;
+		gen++;
+	} while (gen < MAX_GENS);
+	//while (it < MAX_GENS_NO_IMPROVE);
+	cout << "Best solution found has objective value = " << algorithm.getBestFitness() << endl;
+	auto best = algorithm.getBestChromosome();
+
+	vector<string> BSS;
+
+	for (int i = 0; i < best.size(); i++) {
+		if (best.at(i) > 0.3) {
+			BSS.push_back(aux.at(i));
+		}
+	}
+
+	return BSS;
 }
 
 vector<string> lrp_opt::chooseBSS_model(set<string> cities, map<pair<string, string>, float> dists, map<string, int> stFreq)
@@ -177,7 +238,7 @@ lrp_opt::lrp_opt(string regionName, int pct, string dir, map<string, int> stFreq
 	*/
 }
 
-vector<string> lrp_opt::opt()
+vector<string> lrp_opt::opt_()
 {
 	int startpct = 15;
 	int lastpct = startpct;
@@ -221,4 +282,9 @@ vector<string> lrp_opt::opt()
 		}
 		all.close();
 	}
+}
+
+vector<string> lrp_opt::opt_brkga()
+{
+	return chooseBSS_GA();
 }

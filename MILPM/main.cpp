@@ -43,35 +43,37 @@ int main() {
 		alg.test_unionRoute();
 	}
 	if (op == 1) {
-		//string region = "alto_paranaiba";
-	
+
 		//exp(dir_brelrp, "alto_paranaiba", 20);
 		//exp(dir_brelrp, "alto_paranaiba", 50);
 		//exp(dir_brelrp, "alto_paranaiba", 80);
 
+		//exp(dir_brelrp, "rio_doce", 20);
+		//exp(dir_brelrp, "rio_doce", 50);
+		//exp(dir_brelrp, "rio_doce", 80);
+
+		call_exp(dir_brelrp, "mata", 50);
 		//exp(dir_brelrp, "mata", 20);
 		//exp(dir_brelrp, "mata", 50);
 		//exp(dir_brelrp, "mata", 80);
 
-		exp(dir_brelrp, "rio_doce", 20);
-		//exp(dir_brelrp, "rio_doce", 50);
-		//exp(dir_brelrp, "rio_doce", 80);
+		/*
+		exp(dir_brelrp, "jequitinhonha_mucuri", 20);
+		exp(dir_brelrp, "jequitinhonha_mucuri", 50);
+		exp(dir_brelrp, "jequitinhonha_mucuri", 80);
 
-		//exp(dir_brelrp, "triangulo", 20);
-		//exp(dir_brelrp, "triangulo", 50);
-		//exp(dir_brelrp, "triangulo", 80);
+		exp(dir_brelrp, "triangulo", 20);
+		exp(dir_brelrp, "triangulo", 50);
+		exp(dir_brelrp, "triangulo", 80);		
 
-		//exp(dir_brelrp, "jequitinhonha_mucuri", 20);
-		//exp(dir_brelrp, "jequitinhonha_mucuri", 50);
-		//exp(dir_brelrp, "jequitinhonha_mucuri", 80);
+		exp(dir_brelrp, "sul_de_minas", 20);
+		exp(dir_brelrp, "sul_de_minas", 50);
+		exp(dir_brelrp, "sul_de_minas", 80);
 
-		//exp(dir_brelrp, "sul_de_minas", 20);
-		//exp(dir_brelrp, "sul_de_minas", 50);
-		//exp(dir_brelrp, "sul_de_minas", 80);
-
-		//exp(dir_brelrp, "central", 20);
-		//exp(dir_brelrp, "central", 50);
-		//exp(dir_brelrp, "central", 80);
+		exp(dir_brelrp, "central", 20);
+		exp(dir_brelrp, "central", 50);
+		exp(dir_brelrp, "central", 80);
+		*/
 
 		/*
 		string s = "jequitinhonha_mucuri/old";

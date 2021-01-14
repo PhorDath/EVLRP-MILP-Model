@@ -162,4 +162,5 @@ public:
 	
 	// aux
 	float getTravelCost(Solution s);
+	static float totalCost_(vector<Solution> sols, string dir);
 };

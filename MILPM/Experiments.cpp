@@ -919,7 +919,7 @@ void test1()
 	
 }
 
-vector<Solution> exp_vns_(string dir1)
+vector<Solution> exp_vns_(string dir1, string output)
 {
 	fstream all;
 	all.open(dir1 + "all.txt", ios::in);
@@ -927,13 +927,19 @@ vector<Solution> exp_vns_(string dir1)
 		throw runtime_error("Could not open file all.txt");
 	}
 
-	// prepare the output directory
-	string date = getDate();
-	string dirOutput = dir1;
-	boost::filesystem::create_directory(dirOutput + "output");
-	dirOutput += "output/";
-	boost::filesystem::create_directory(dirOutput + "/" + date);
-	dirOutput += date + "/";
+	string dirOutput = output;
+	if (output == "") {
+		// prepare the output directory
+		string date = getDate();
+		boost::filesystem::create_directory(dirOutput + "output");
+		dirOutput += "output/";
+		boost::filesystem::create_directory(dirOutput + "/" + date);
+		dirOutput += date + "/";
+	}
+	else {
+		boost::filesystem::create_directory(dirOutput + "vns");
+		dirOutput += "vns/";
+	}
 
 	// csv file
 	fstream csv;
@@ -1004,30 +1010,6 @@ vector<Solution> exp_vns_(string dir1)
 			}
 		}
 
-		/*
-
-		for (auto i : s.sStations) {
-			stations << i << " ";
-
-			auto c = occurency.find(i);
-			if (c == occurency.end()) {
-				occurency.insert(pair<string, set<int>>(i, {count}) );
-			}
-			else {
-				occurency[i].insert(count);
-			}
-		}
-		stations << endl;
-
-		for (auto i : occurency) {
-			cout << i.first << " ";
-			for (auto j : i.second) {
-				cout << j << " ";
-			}
-			cout << endl;
-		}
-		*/
-
 		for (auto i : s.sDepots) {
 			depots << i << " ";
 		}
@@ -1050,7 +1032,7 @@ vector<Solution> exp_vns_(string dir1)
 	return sols;
 }
 
-vector<Solution> exp_vnsl_(string dir1, vector<string> BSSs)
+vector<Solution> exp_vnsl_(string dir1, string output, vector<string> BSSs)
 {
 	fstream all;
 	all.open(dir1 + "all.txt", ios::in);
@@ -1058,13 +1040,20 @@ vector<Solution> exp_vnsl_(string dir1, vector<string> BSSs)
 		throw runtime_error("Could not open file all.txt");
 	}
 
-	// prepare the output directory
-	string date = getDate();
-	string dirOutput = dir1;
-	boost::filesystem::create_directory(dirOutput + "output");
-	dirOutput += "output/";
-	boost::filesystem::create_directory(dirOutput + "/" + date);
-	dirOutput += date + "/";
+	string dirOutput = output;
+	if (output == "") {
+		// prepare the output directory
+		string date = getDate();		
+		boost::filesystem::create_directory(dirOutput + "output");
+		dirOutput += "output/";
+		boost::filesystem::create_directory(dirOutput + "/" + date);
+		dirOutput += date + "/";
+	}
+	else {
+		boost::filesystem::create_directory(dirOutput + "vnsl");
+		dirOutput += "vnsl/";
+	}
+	
 
 	// save BSSs
 	fstream bss;
@@ -1169,22 +1158,53 @@ vector<Solution> exp_vnsl_(string dir1, vector<string> BSSs)
 	return sols;
 }
 
-void exp(string dir, string region, int pct)
+pair<float, float> exp(string dir, string region, int pct)
 {
 	string dir2 = dir + region + "/" + to_string(pct) + "/";
-	vector<Solution> sols = exp_vns_(dir2);
-	auto freq = perm_rep::getBSSFreq(sols);
+	
+	
+	// prepare the output directory
+	string date = getDate();
+	string dirOutput = dir2;
+	boost::filesystem::create_directory(dirOutput + "output");
+	dirOutput += "output/";
+	boost::filesystem::create_directory(dirOutput + "/" + date);
+	dirOutput += date + "/";
+
+	vector<Solution> sols = exp_vns_(dir2, dirOutput);
+	map<string, int> freq = perm_rep::getBSSFreq(sols);
 
 	//string citiesfile = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/alto_paranaiba/alto_paranaiba.txt";
 	//string dmfile = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/";
 
 	lrp_opt m(region, pct, dir, freq);
-	vector<string> BSSs = m.opt();	
+	vector<string> BSSs = m.opt_brkga();	
 	for (auto i : BSSs) {
 		cout << i << endl;
 	}
 
-	vector<Solution> sols2 = exp_vnsl_(dir2, BSSs);
+	vector<Solution> sols2 = exp_vnsl_(dir2, dirOutput, BSSs);
+
+	//
+	return { perm_rep::totalCost_(sols, "") , perm_rep::totalCost_(sols2, "") };
+}
+
+void call_exp(string dir, string region, int pct) {
+	// csv file
+	fstream csv;
+	csv.open(dir + "/" + region + "/" + to_string(pct) + "/" + "result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir << endl;
+		//return;
+	}
+
+	for (int i = 0; i < 10; i++) {
+		auto v = exp(dir, region, pct);
+		csv << region + "_" + to_string(pct) << "," << to_string(v.first) << "," << to_string(v.second) << endl;
+	}
+	
+	csv.close();
 }
 
 void exp1(string dir1, string dir2) {
