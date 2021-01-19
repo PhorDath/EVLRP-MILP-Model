@@ -43,38 +43,55 @@ int main() {
 		alg.test_unionRoute();
 	}
 	if (op == 1) {
+		
+		//vector<int> pcts = { 20, 50, 80 };
+		//vector<string> zonas = { "mata", "alto_paranaiba", "sul_de_minas", "rio_doce", "jequitinhonha_mucuri", "triangulo", "centro_oeste", "central" };
+		// "jequitinhonha_mucuri" ver instancias de 80%
+		vector<int> pcts = { 20, 50, 80 };
+		//vector<string> zonas = {"rio_doce", "alto_paranaiba", "sul_de_minas", "mata", "triangulo", "centro_oeste", "central" };
+		vector<string> zonas = { "alto_paranaiba", "triangulo", "centro_oeste", "mata", "sul_de_minas", "central" };
 
-		//exp(dir_brelrp, "alto_paranaiba", 20);
-		//exp(dir_brelrp, "alto_paranaiba", 50);
-		//exp(dir_brelrp, "alto_paranaiba", 80);
-
-		//exp(dir_brelrp, "rio_doce", 20);
-		//exp(dir_brelrp, "rio_doce", 50);
-		//exp(dir_brelrp, "rio_doce", 80);
-
-		call_exp(dir_brelrp, "mata", 50);
-		//exp(dir_brelrp, "mata", 20);
-		//exp(dir_brelrp, "mata", 50);
-		//exp(dir_brelrp, "mata", 80);
-
+		for (auto z : zonas) {
+			for (auto p : pcts) {
+				lrp_opt alg(dir_brelrp, z, p);
+				//call_exp(dir_brelrp, z, p);
+			}
+		}
+		
 		/*
-		exp(dir_brelrp, "jequitinhonha_mucuri", 20);
-		exp(dir_brelrp, "jequitinhonha_mucuri", 50);
-		exp(dir_brelrp, "jequitinhonha_mucuri", 80);
+		call_exp(dir_brelrp, "mata", 20);
+		call_exp(dir_brelrp, "mata", 50);
+		call_exp(dir_brelrp, "mata", 80);///////////////
 
-		exp(dir_brelrp, "triangulo", 20);
-		exp(dir_brelrp, "triangulo", 50);
-		exp(dir_brelrp, "triangulo", 80);		
+		call_exp(dir_brelrp, "alto_paranaiba", 20);
+		call_exp(dir_brelrp, "alto_paranaiba", 50);
+		call_exp(dir_brelrp, "alto_paranaiba", 80);
 
-		exp(dir_brelrp, "sul_de_minas", 20);
-		exp(dir_brelrp, "sul_de_minas", 50);
-		exp(dir_brelrp, "sul_de_minas", 80);
+		call_exp(dir_brelrp, "sul_de_minas", 20);
+		call_exp(dir_brelrp, "sul_de_minas", 50);
+		call_exp(dir_brelrp, "sul_de_minas", 80);
+		
+		call_exp(dir_brelrp, "rio_doce", 20);
+		call_exp(dir_brelrp, "rio_doce", 50);
+		call_exp(dir_brelrp, "rio_doce", 80);
 
-		exp(dir_brelrp, "central", 20);
-		exp(dir_brelrp, "central", 50);
-		exp(dir_brelrp, "central", 80);
+		call_exp(dir_brelrp, "jequitinhonha_mucuri", 20);
+		call_exp(dir_brelrp, "jequitinhonha_mucuri", 50);
+		call_exp(dir_brelrp, "jequitinhonha_mucuri", 80);
+
+		call_exp(dir_brelrp, "triangulo", 20);
+		call_exp(dir_brelrp, "triangulo", 50);
+		call_exp(dir_brelrp, "triangulo", 80);		
+
+		call_exp(dir_brelrp, "centro_oeste", 20);
+		call_exp(dir_brelrp, "centro_oeste", 50);
+		call_exp(dir_brelrp, "centro_oeste", 80);
+
+		call_exp(dir_brelrp, "central", 20);
+		call_exp(dir_brelrp, "central", 50);
+		call_exp(dir_brelrp, "central", 80);
 		*/
-
+		
 		/*
 		string s = "jequitinhonha_mucuri/old";
 		exp_vns2(dir_brelrp + s + "/20/");
@@ -166,7 +183,7 @@ int main() {
 		//exp_sa(dir3);
 		//exp_sa(dir4);
 		//exp_model(dir3);
-		//exp_model(dir_brelrp + "50/");
+		//exp_model(dir_brelrp + "alto_paranaiba/20/");
 		//exp_vns(dir4);
 
 		//exp_model(dir_brelrp + "25/");

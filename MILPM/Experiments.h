@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <boost/filesystem.hpp>
+#include <chrono>
 #include "Model_setAdapt.h"
 #include "Model_PMedians.h"
 #include "Model.h"
@@ -33,7 +34,7 @@ void adapt_model(string dir);
 void test1();
 
 vector<Solution> exp_vns_(string dir1, string output);
-vector<Solution> exp_vnsl_(string dir1, string output, vector<string> BSSs);
+vector<Solution> exp_vnsl_(string dir1, string output, vector<string> BSSs, vector<string> DPTs);
 pair<float, float> exp(string dir, string region, int pct);
 void call_exp(string dir, string region, int pct);
 ///
@@ -47,6 +48,7 @@ void exp_SA(string dir1, string dir2, int type);
 int menuModel();
 string menuInstance(string curDir);
 
-float totalCost(vector<Solution> sols, string dir);
+float totalCost(vector<Solution> sols, string dir, bool write);
+float totalCost_Desarmotized(vector<Solution> sols, string dir, bool write);
 
 #endif EXPERIMENTS_H

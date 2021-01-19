@@ -119,6 +119,9 @@ private:
 public:
 	permutation perm;
 
+	//perm_rep();
+	~perm_rep();
+
 	Solution greedl(vector<string> BSS); // greed limiting bss
 
 	Solution GRASP(int maxIt, int maxRuntime);
@@ -126,6 +129,7 @@ public:
 	Solution bVNS(int itMax, int maxTime);
 	Solution VNS(int itMax, int maxTime);
 	Solution VNSL(vector<string> BSS, int itMax, int maxTime); // this version of the VNS will limit the BSSs according to the specified ones
+	Solution VNSL(vector<string> BSS, vector<string> DPT, int itMax, int maxTime);
 	Solution lowerBound();
 
 	vector<string> chooseBSS_(int p, string regionNameFile, string regionsCitiesFile, string dmfile, map<string, int> stFreq);
@@ -133,6 +137,7 @@ public:
 	vector<string> chooseBSS_model(set<string> cities, map<pair<string, string>, float> dists, map<string, int> stFreq);
 
 	static map<string, int> getBSSFreq(vector<Solution> sols);
+	static map<string, int> getDepotFreq(vector<Solution> sols);
 	void setOutputDir(string dir);
 	bool getArcsNodes(Solution& s);
 
@@ -162,5 +167,5 @@ public:
 	
 	// aux
 	float getTravelCost(Solution s);
-	static float totalCost_(vector<Solution> sols, string dir);
+	static float totalCost(vector<Solution> sols);
 };

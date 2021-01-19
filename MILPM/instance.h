@@ -127,6 +127,7 @@ public:
 	instance(string file);
 	instance(string dir, string file);
 	instance(string dir, string file, int type);
+	~instance();
 
 	void test();
 
@@ -181,11 +182,7 @@ public:
 	bool isDepot(int key);
 	int getArrival(int key);
 	void removeBSS(vector<string> BSS);
-	void removeDPT(vector<string> DPT);
-
-	~instance();
-
-	
+	void removeDPT(vector<string> DPT);	
 };
 
 void adaptAll(string dir);

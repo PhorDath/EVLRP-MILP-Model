@@ -355,7 +355,8 @@ void exp_vnsl(string dir1) {
 		count++;
 	}
 
-	totalCost(sols, dirOutput);
+	totalCost(sols, dirOutput, true);
+	totalCost_Desarmotized(sols, dirOutput, true);
 	all.close();
 
 	return;
@@ -488,7 +489,8 @@ void exp_vns2(string dir1) {
 	//perm_rep alg;
 	//alg.chooseBSS_(dir1 + "region.txt", "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/alto_paranaiba/alto_paranaiba.txt", "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/distmatrix_mg.txt", stFreq);
 
-	totalCost(sols, dirOutput);
+	totalCost(sols, dirOutput, true);
+	totalCost_Desarmotized(sols, dirOutput, true);
 	all.close();
 
 	return;
@@ -821,7 +823,8 @@ void exp_lowerbound(string dir, string file)
 
 		count++;
 	}
-	totalCost(sols, dirOutput);
+	totalCost(sols, dirOutput, true);
+	totalCost_Desarmotized(sols, dirOutput, true);
 	all.close();
 
 	return;
@@ -1026,13 +1029,14 @@ vector<Solution> exp_vns_(string dir1, string output)
 		stations << i.first << " " << i.second << endl;
 	stations.close();
 
-	totalCost(sols, dirOutput);
+	totalCost(sols, dirOutput, true);
+	totalCost_Desarmotized(sols, dirOutput, true);
 	all.close();
 
 	return sols;
 }
 
-vector<Solution> exp_vnsl_(string dir1, string output, vector<string> BSSs)
+vector<Solution> exp_vnsl_(string dir1, string output, vector<string> BSSs, vector<string> DPTs)
 {
 	fstream all;
 	all.open(dir1 + "all.txt", ios::in);
@@ -1120,7 +1124,7 @@ vector<Solution> exp_vnsl_(string dir1, string output, vector<string> BSSs)
 		alg.loadInstance(dir1, line, 5);
 		//alg.printInstance();
 		alg.setOutputDir(dirOutput);
-		Solution s = alg.VNSL(BSSs, 25, 1200);
+		Solution s = alg.VNSL(BSSs, DPTs, 25, 1200);
 		sols.push_back(s);
 		///////////////////
 
@@ -1152,7 +1156,8 @@ vector<Solution> exp_vnsl_(string dir1, string output, vector<string> BSSs)
 		stations << i.first << " " << i.second << endl;
 	stations.close();
 
-	totalCost(sols, dirOutput);
+	totalCost(sols, dirOutput, true);
+	totalCost_Desarmotized(sols, dirOutput, true);
 	all.close();
 
 	return sols;
@@ -1172,36 +1177,57 @@ pair<float, float> exp(string dir, string region, int pct)
 	dirOutput += date + "/";
 
 	vector<Solution> sols = exp_vns_(dir2, dirOutput);
+	auto tcost1 = totalCost(sols, "", false);
 	map<string, int> freq = perm_rep::getBSSFreq(sols);
+	map<string, int> freqD = perm_rep::getDepotFreq(sols);
 
 	//string citiesfile = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/alto_paranaiba/alto_paranaiba.txt";
 	//string dmfile = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/";
 
-	lrp_opt m(region, pct, dir, freq);
-	vector<string> BSSs = m.opt_brkga();	
+	lrp_opt m(region, pct, dir, freq, freqD);
+	//vector<string> BSSs = m.opt_brkga();	
+
+	m.opt();
+	vector<string> DPTs = m.DPTs;
+	vector<string> BSSs = m.BSSs;
+	
+	for (auto i : DPTs) {
+		cout << i << endl;
+	}
 	for (auto i : BSSs) {
 		cout << i << endl;
 	}
 
-	vector<Solution> sols2 = exp_vnsl_(dir2, dirOutput, BSSs);
+	vector<Solution> sols2 = exp_vnsl_(dir2, dirOutput, BSSs, DPTs);
+	auto tcost2 = totalCost(sols2, "", false);
 
 	//
-	return { perm_rep::totalCost_(sols, "") , perm_rep::totalCost_(sols2, "") };
+	//return { perm_rep::totalCost_(sols, "") , perm_rep::totalCost_(sols2, "") };
+	return { tcost1, tcost2 };
+	
 }
 
 void call_exp(string dir, string region, int pct) {
 	// csv file
 	fstream csv;
-	csv.open(dir + "/" + region + "/" + to_string(pct) + "/" + "result.csv", ios::out | ios::ate);
+	csv.open(dir + "/" + region + "/" + to_string(pct) + "/output/" + "result.csv", ios::out | ios::ate);
 	if (csv.is_open() == false) {
 		cout << "Error opening file result.csv\n";
 		cout << "On directory " << dir << endl;
 		//return;
 	}
 
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < 1; i++) {
+		auto start = std::chrono::high_resolution_clock::now();
+
 		auto v = exp(dir, region, pct);
-		csv << region + "_" + to_string(pct) << "," << to_string(v.first) << "," << to_string(v.second) << endl;
+
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+		csv << region + "_" + to_string(pct) << "," << to_string(v.first) << "," << to_string(v.second) << "," << duration << endl;
+
+
 	}
 	
 	csv.close();
@@ -1509,17 +1535,21 @@ string menuInstance(string curDir) {
 	return fileName;
 }
 
-float totalCost(vector<Solution> sols, string dir) {
+float totalCost(vector<Solution> sols, string dir, bool write) {
+
 	string fName = "cost.txt";
 	fstream file;
-	file.open(dir + fName, ios::out);
-	while (file.is_open() == false) {
-		cout << "Error creating file cost.txt in directory " << dir << endl;
-		cout << "enter a new file to store the cost\n";
-		cin >> fName;
+	if (write == true) {
 		file.open(dir + fName, ios::out);
+		while (file.is_open() == false) {
+			cout << "Error creating file cost.txt in directory " << dir << endl;
+			cout << "enter a new file to store the cost\n";
+			cin >> fName;
+			file.open(dir + fName, ios::out);
+		}
 	}
 
+	set<string> depots;
 	set<string> stations;
 
 	float cost = 0;
@@ -1533,53 +1563,141 @@ float totalCost(vector<Solution> sols, string dir) {
 	float bssUseCost = 0;	
 
 	int maxVehicles = -1;
-	int cont = 0;
+	int cont = 1;
+
 	for (auto s : sols) {
 
-
-		vehicleCost = s.FOp.at(3);
 		drivingCost = s.FOp.at(4);
 		brsEnergyCost = s.FOp.at(5);
 		bssEnergyCost = s.FOp.at(6);
 		bssUseCost = s.FOp.at(7);
 
-		file << cont << ": " << drivingCost << " " << brsEnergyCost << " " << bssEnergyCost << " " << bssUseCost << endl;
+		if (write == true) {
+			file << cont << " " << s.FOp.at(1) << " " << s.FOp.at(2) << " " << s.FOp.at(3) << " " << drivingCost << " " << brsEnergyCost << " " << bssEnergyCost << " " << bssUseCost << " " << (s.FOp.at(1) + s.FOp.at(2) + s.FOp.at(3) + drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost) << " " << drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost << endl;
+		}
 
 		for (route r : s.routes) {
 			for (vertex v : r) {
 				if (v.n.type == "f") {
 					stations.insert(v.n.id);
 				}
+				else if (v.n.type == "d") {
+					depots.insert(v.n.id);
+				}
 			}
 		}		
-		
-		if (cont == 0) {
-			bssCost = s.FOp.at(2) / stations.size();
-		}		
+
 
 		int numV = s.routes.size();
 		if (numV > maxVehicles) {
 			maxVehicles = numV;
 		}
-		vehicleCost = vehicleCost / maxVehicles;
+		
+		if (cont == 1) {
+			depotCost = sols.front().FOp.at(1) / depots.size();
+			bssCost = sols.front().FOp.at(2) / stations.size();
+			vehicleCost = sols.front().FOp.at(3) / sols.front().routes.size();
+		}
 
 		cost += drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
 		cont++;
 	}
 	
-	file << "vehicle cost: " << vehicleCost * maxVehicles << endl;
+	cost += vehicleCost * maxVehicles;
+	cost += bssCost * stations.size();
+	cost += depotCost * depots.size();
 
-	bssCost *= stations.size();
-	file << "bss cost: " << bssCost << endl;
-	cost += bssCost;	
+	if (write == true) {
+		file << "vehicle cost: " << vehicleCost * maxVehicles << endl;
+		file << "bss cost: " << bssCost * stations.size() << endl;
+		file << "depot cost: " << depotCost * depots.size() << endl;
+		file << "total cost: " << cost << endl;
+		file.close();
+	}
+	
+	return cost;
+}
 
-	depotCost += sols.front().FOp.at(1); // depot cost;
-	file << "depot cost: " << depotCost << endl;
-	cost += depotCost;
+float totalCost_Desarmotized(vector<Solution> sols, string dir, bool write)
+{
+	int d = 30;
+	string fName = "cost_d.txt";
+	fstream file;
+	if (write == true) {
+		file.open(dir + fName, ios::out);
+		while (file.is_open() == false) {
+			cout << "Error creating file cost.txt in directory " << dir << endl;
+			cout << "enter a new file to store the cost\n";
+			cin >> fName;
+			file.open(dir + fName, ios::out);
+		}
+	}
 
-	file << "total cost: " << cost << endl;
+	set<string> depots;
+	set<string> stations;
 
-	file.close();
+	float cost = 0;
+
+	float depotCost = 0;
+	float bssCost = 0;
+	float vehicleCost = 0;
+	float drivingCost = 0;
+	float brsEnergyCost = 0;
+	float bssEnergyCost = 0;
+	float bssUseCost = 0;
+
+	int maxVehicles = -1;
+	int cont = 1;
+
+	for (auto s : sols) {
+
+		drivingCost = s.FOp.at(4);
+		brsEnergyCost = s.FOp.at(5);
+		bssEnergyCost = s.FOp.at(6);
+		bssUseCost = s.FOp.at(7);
+
+		if (write == true) {
+			file << cont << " " << s.FOp.at(1) << " " << s.FOp.at(2) << " " << s.FOp.at(3) << " " << drivingCost << " " << brsEnergyCost << " " << bssEnergyCost << " " << bssUseCost << " " << (s.FOp.at(1) + s.FOp.at(2) + s.FOp.at(3) + drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost) << " " << drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost << endl;
+		}
+
+		for (route r : s.routes) {
+			for (vertex v : r) {
+				if (v.n.type == "f") {
+					stations.insert(v.n.id);
+				}
+				else if (v.n.type == "d") {
+					depots.insert(v.n.id);
+				}
+			}
+		}
+
+
+		int numV = s.routes.size();
+		if (numV > maxVehicles) {
+			maxVehicles = numV;
+		}
+
+		if (cont == 1) {
+			depotCost = sols.front().FOp.at(1) / depots.size();
+			bssCost = sols.front().FOp.at(2) / stations.size();
+			vehicleCost = sols.front().FOp.at(3) / sols.front().routes.size();
+		}
+
+		cost += drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
+		cont++;
+	}
+
+	cost += vehicleCost * maxVehicles * sols.size();
+	cost += bssCost * stations.size() * sols.size();
+	cost += depotCost * depots.size() * sols.size();
+
+	if (write == true) {
+		file << "vehicle cost: " << vehicleCost * maxVehicles * sols.size() << endl;
+		file << "bss cost: " << bssCost * stations.size() * sols.size() << endl;
+		file << "depot cost: " << depotCost * depots.size() * sols.size() << endl;
+		file << "total cost: " << cost << endl;
+		file.close();
+	}
 
 	return cost;
 }

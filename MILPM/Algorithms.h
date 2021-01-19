@@ -23,13 +23,11 @@ class NoImprovementExcp : public exception {
 		return "No improvement found";
 	}
 };
-
 struct MovementFailed : public exception {
 	const char * what() const throw () {
 		return "Failing to perform a movement in the solution";
 	}
 };
-
 class IsolatedNode : public exception {
 private:
 	string msg;
@@ -43,7 +41,6 @@ public:
 		return msg.c_str();
 	}
 };
-
 class PermutationInf : public exception {
 
 private:
@@ -64,7 +61,6 @@ public:
 		return msg.c_str();
 	}
 };
-
 class OutOfBSS : public exception {
 
 private:
@@ -79,7 +75,6 @@ public:
 		return msg.c_str();
 	}
 };
-
 class SplitRoute : public exception {
 
 private:
@@ -100,7 +95,6 @@ public:
 		return msg.c_str();
 	}
 };
-
 class BegEnd : public exception {
 
 private:
@@ -115,7 +109,6 @@ public:
 		return msg.c_str();
 	}
 };
-
 class InvalidRoute : public exception {
 
 private:
@@ -130,7 +123,6 @@ public:
 		return msg.c_str();
 	}
 };
-
 class InvalidRouteEnd : public exception {
 
 private:
@@ -145,7 +137,6 @@ public:
 		return msg.c_str();
 	}
 };
-
 class Unreachable : public exception {
 
 private:
@@ -160,7 +151,6 @@ public:
 		return msg.c_str();
 	}
 };
-
 class UnfeasibleInstance : public exception {
 
 private:
@@ -193,6 +183,7 @@ public:
 	float FO(vector<vector<vertex>> sol);
 	int routeFO(route r);
 	vector<float> FOComplete(routes sol);
+	vector<float> FOComplete_NonAmortized(routes sol);
 	Solution fixSol(Solution s, route r, int pos);
 	vector<float> FOComplete_old(vector<vector<vertex>> sol);
 	int FOP(vector<vector<vertex>> sol);
@@ -223,8 +214,11 @@ public:
 	long long maxRuntime;
 
 	Algorithms();
+	~Algorithms();
 
 	int loadInstance(string dir, string fileName, int type);
+	bool removeBSS(vector<string> BSS);
+	bool removeDPT(vector<string> DPT);
 	void printInstance();
 	//void getSol(ostream &strm);
 	void getSol(Solution sol, ostream &strm);
@@ -249,6 +243,6 @@ public:
 
 	void adaptInstance();
 
-	~Algorithms();
+	
 };
 

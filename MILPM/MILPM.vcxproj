@@ -84,7 +84,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\libs\brkgaAPI\src;D:\boost\boost_1_72_0;C:\gurobi901\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\libs\brkgaAPI_mp_ipr\brkga_mp_ipr;D:\libs\brkgaAPI\src;D:\boost\boost_1_72_0;C:\gurobi901\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -114,7 +114,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\libs\brkgaAPI\src;C:\Users\phord\AppData\Local\Programs\Python\Python37\include;D:\boost\boost_1_72_0;C:\gurobi901\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\libs\brkgaAPI_mp_ipr\brkga_mp_ipr;D:\libs\brkgaAPI\src;C:\Users\phord\AppData\Local\Programs\Python\Python37\include;D:\boost\boost_1_72_0;C:\gurobi901\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BrowseInformation>true</BrowseInformation>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>Default</LanguageStandard>

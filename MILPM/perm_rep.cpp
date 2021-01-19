@@ -4629,7 +4629,6 @@ Solution perm_rep::VNSL(vector<string> BSS, int itMax, int maxTime)
 {
 
 	inst->removeBSS(BSS); // remove unwanted BSSs
-	//inst->removeDPT({ "Meltham" });
 
 	Solution init;
 	bool find = false;
@@ -4655,6 +4654,38 @@ Solution perm_rep::VNSL(vector<string> BSS, int itMax, int maxTime)
 		return init;
 	}
 }
+
+Solution perm_rep::VNSL(vector<string> BSS, vector<string> DPT, int itMax, int maxTime)
+{
+
+	inst->removeBSS(BSS); // remove unwanted BSSs
+	inst->removeDPT(DPT);
+
+	Solution init;
+	bool find = false;
+
+	try {
+		init = greed();
+		cout << fixed << "Initial objective: " << init.FO << endl;
+		find = true;
+	}
+	catch (UnfeasibleInstance& e) {
+		throw PermutationInf({ 0 });
+	}
+	catch (exception& e) {
+		find = false;
+		cout << e.what() << endl;
+	}
+
+	if (find == true) {
+		//return init;
+		return VNS(init, itMax, maxTime);
+	}
+	else {
+		return init;
+	}
+}
+
 
 Solution perm_rep::lowerBound() {
 	Solution s;
@@ -5149,37 +5180,71 @@ Solution perm_rep::testPermutation(permutation p)
 map<string, int> perm_rep::getBSSFreq(vector<Solution> sols)
 {
 	map<string, int> stFreq;
+	vector<set<string>> vsStations;
+	bool find;
+
 	for (auto j : sols) {
+		set<string> sStations;
 		for (auto r : j.routes) {
 			for (auto v : r) {
 				if (v.n.type == "f") {
-					map<string, int>::iterator it;
-					it = stFreq.find(v.n.id);
-					if (it == stFreq.end()) {
-						stFreq.insert({ v.n.id, 1 });
-					}
-					else {
-						stFreq[v.n.id]++;
-					}
+					sStations.insert(v.n.id);
+
 				}
 			}
 		}
+		vsStations.push_back(sStations);
+	}
 
-		/*
-		for (string i : j.sStations) {
+	for (auto i : vsStations) {
+		for (auto j : i) {
 			map<string, int>::iterator it;
-			it = stFreq.find(i);
+			it = stFreq.find(j);
 			if (it == stFreq.end()) {
-				stFreq.insert({ i, 1 });
+				stFreq.insert({ j, 1 });
 			}
 			else {
-				stFreq[i]++;
+				stFreq[j]++;
 			}
 		}
-		*/
 	}
 	
 	return stFreq;
+}
+
+map<string, int> perm_rep::getDepotFreq(vector<Solution> sols)
+{
+	map<string, int> dpFreq;
+	vector<set<string>> vsDepots;
+	bool find;
+
+	for (auto j : sols) {
+		set<string> sDepots;
+		for (auto r : j.routes) {
+			for (auto v : r) {
+				if (v.n.type == "d") {
+					sDepots.insert(v.n.id);
+
+				}
+			}
+		}
+		vsDepots.push_back(sDepots);
+	}
+
+	for (auto i : vsDepots) {
+		for (auto j : i) {
+			map<string, int>::iterator it;
+			it = dpFreq.find(j);
+			if (it == dpFreq.end()) {
+				dpFreq.insert({ j, 1 });
+			}
+			else {
+				dpFreq[j]++;
+			}
+		}
+	}
+
+	return dpFreq;
 }
 
 void perm_rep::setOutputDir(string dir)
@@ -7779,6 +7844,11 @@ Solution perm_rep::greed()
 	return best;
 }
 
+perm_rep::~perm_rep()
+{
+	
+}
+
 Solution perm_rep::greedl(vector<string> BSS)
 {
 	inst->removeBSS(BSS); // remove unwanted BSSs
@@ -9040,8 +9110,64 @@ float perm_rep::getTravelCost(Solution s)
 	return count;
 }
 
-float perm_rep::totalCost_(vector<Solution> sols, string dir) {
+float perm_rep::totalCost(vector<Solution> sols) {
+	set<string> depots;
+	set<string> stations;
 
+	float cost = 0;
+
+	float depotCost = 0;
+	float bssCost = 0;
+	float vehicleCost = 0;
+	float drivingCost = 0;
+	float brsEnergyCost = 0;
+	float bssEnergyCost = 0;
+	float bssUseCost = 0;
+
+	int maxVehicles = -1;
+	int cont = 1;
+
+	for (auto s : sols) {
+
+		drivingCost = s.FOp.at(4);
+		brsEnergyCost = s.FOp.at(5);
+		bssEnergyCost = s.FOp.at(6);
+		bssUseCost = s.FOp.at(7);
+
+
+		for (route r : s.routes) {
+			for (vertex v : r) {
+				if (v.n.type == "f") {
+					stations.insert(v.n.id);
+				}
+				else if (v.n.type == "d") {
+					depots.insert(v.n.id);
+				}
+			}
+		}
+
+
+		int numV = s.routes.size();
+		if (numV > maxVehicles) {
+			maxVehicles = numV;
+		}
+
+		if (cont == 1) {
+			depotCost = sols.front().FOp.at(1) / depots.size();
+			bssCost = sols.front().FOp.at(2) / stations.size();
+			vehicleCost = sols.front().FOp.at(3) / sols.front().routes.size();
+		}
+
+		cost += drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
+		cont++;
+	}
+
+	cost += vehicleCost * maxVehicles;
+	cost += bssCost * stations.size();
+	cost += depotCost * depots.size();
+
+	return cost;
+	/*
 	set<string> stations;
 	set<string> depots;
 
@@ -9107,4 +9233,5 @@ float perm_rep::totalCost_(vector<Solution> sols, string dir) {
 	cost += depotCost;
 
 	return cost;
+	*/
 }

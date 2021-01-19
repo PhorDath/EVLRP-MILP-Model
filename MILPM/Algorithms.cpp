@@ -549,6 +549,11 @@ Algorithms::Algorithms()
 {
 }
 
+Algorithms::~Algorithms()
+{
+	delete inst;
+}
+
 int Algorithms::loadInstance(string dir, string fileName, int type)
 {
 	inst = new instance(dir, fileName, type);
@@ -750,8 +755,7 @@ int Algorithms::routeFO(route r)
 
 vector<float> Algorithms::FOComplete(routes sol)
 {
-	//routes sol = s.routes;
-
+	/*
 	auto UD0 = inst->set_UD0();
 	auto UD1 = inst->set_UD1();
 	auto C = inst->set_C();
@@ -759,25 +763,14 @@ vector<float> Algorithms::FOComplete(routes sol)
 	auto V0 = inst->set_V0();
 	auto V1 = inst->set_V1();
 	auto V01 = inst->set_V01();
+	*/
 
 	float fo = 0;
 	vector<float> fo_parcels;
 
 	// depot cost
-	vector<int> qt(UD0.size(), 0);
-	/*
-	float depotCost = 0;
-	vector<int> qt(UD0.size(), 0);
-	for (auto route : sol) {
-		qt.at(route.front().key) = 1;
-	}
-	float numDepots = 0;
-	for (auto i : qt) {
-		if (i == 1) {
-			numDepots += 1;
-		}
-	}
-	*/
+	vector<int> qt(inst->UD0.size(), 0);
+
 	float depotCost = 0;
 	float numDepots = 0;
 
@@ -792,23 +785,23 @@ vector<float> Algorithms::FOComplete(routes sol)
 	// bss cost
 	float bssCost = 0;
 
+	set<string> BSS;
+
 	fill(qt.begin(), qt.end(), 0);
 	qt.resize(inst->nodes.size(), 0);
 
 	for (route r : sol) {
 		for (vertex v : r) {
-			if (inst->getNodeByKey(v.key).type == "f" || inst->getNodeByKey(v.key).type == "f_d") {
-				node n = inst->getNodeByKey(v.key);
-				qt.at(n.ref2) = 1;
+			node n = inst->getNodeByKey(v.key);
+			if (n.type == "f" || n.type == "f_d") {
+				
+				//qt.at(n.ref2) = 1;
+				BSS.insert(n.id);
 
 			}
 		}
 	}
-	int numBSS = 0;
-	for (auto i : qt) {
-		numBSS += i;
-	}
-	// bssCost = numBSS * (inst->bssCost / inst->numC);
+	int numBSS = BSS.size();
 	bssCost = numBSS * (inst->bssCost / inst->bssLifetime);
 
 	// vehicle fixed cost
@@ -827,42 +820,25 @@ vector<float> Algorithms::FOComplete(routes sol)
 	}
 
 	// energy cost in brs
-	float energy = 0;
+	// energy cost in bss
+	float energyBRS = 0;
+	float energyBSS = 0;
+	int BSSUSE = 0;
 	for (route r : sol) {
 		for (vertex v : r) {
 			node n = inst->getNodeByKey(v.key);
 			if (n.type == "c" || n.type == "c_d") {
-				energy += v.recharged;
+				energyBRS += v.recharged;
 			}				
-		}
-	}
-	float brsEnergyCost = energy * inst->brsEnergyCost;
-
-	// energy cost in bss
-	float bssEnergyCost = 0;// = energy * inst->bssEnergyCost;
-	for (route r : sol) {
-		energy = 0;
-		for (vertex v : r) {
-			node n = inst->getNodeByKey(v.key);
-			if (n.type == "f" || n.type == "f_d") {
-				energy += v.recharged;
-			}				
-		}
-		bssEnergyCost += energy * inst->bssEnergyCost;
-	}
-	
-
-	energy = 0;
-	// bss use cost
-	for (route r : sol) {
-		for (vertex v : r) {
-			node n = inst->getNodeByKey(v.key);
-			if (n.type == "f" || n.type == "f_d") {
-				energy += 1;
+			else if (n.type == "f" || n.type == "f_d") {
+				energyBSS += v.recharged;
+				BSSUSE++;
 			}
 		}
 	}
-	float bssUseCost = energy * 50;
+	float brsEnergyCost = energyBRS * inst->brsEnergyCost;
+	float bssEnergyCost = energyBSS * inst->bssEnergyCost;
+	float bssUseCost = BSSUSE * inst->bssUseCost;
 
 	fo = depotCost + bssCost + vehicleCost + drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
 
@@ -872,6 +848,95 @@ vector<float> Algorithms::FOComplete(routes sol)
 	float FO_ = depotCost * inst->depotLifetime + bssCost * inst->bssLifetime + vehicleCost * inst->vehicleLifetime + drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
 
 	fo_parcels = { fo + p, depotCost, bssCost, vehicleCost, drivingCost, brsEnergyCost, bssEnergyCost, bssUseCost, p, FO_};
+
+	return fo_parcels;
+}
+
+vector<float> Algorithms::FOComplete_NonAmortized(routes sol)
+{
+	float fo = 0;
+	vector<float> fo_parcels;
+
+	// depot cost
+	vector<int> qt(inst->UD0.size(), 0);
+
+	float depotCost = 0;
+	float numDepots = 0;
+
+	set<int> qt_;
+	for (auto route : sol) {
+		qt_.insert(route.front().key);
+	}
+	numDepots = qt_.size();
+	// depotCost = numDepots * (inst->depotCost / inst->numC);
+	depotCost = numDepots * (inst->depotCost);
+
+	// bss cost
+	float bssCost = 0;
+
+	set<string> BSS;
+
+	fill(qt.begin(), qt.end(), 0);
+	qt.resize(inst->nodes.size(), 0);
+
+	for (route r : sol) {
+		for (vertex v : r) {
+			node n = inst->getNodeByKey(v.key);
+			if (n.type == "f" || n.type == "f_d") {
+
+				//qt.at(n.ref2) = 1;
+				BSS.insert(n.id);
+
+			}
+		}
+	}
+	int numBSS = BSS.size();
+	bssCost = numBSS * (inst->bssCost);
+
+	// vehicle fixed cost
+	float vehicleCost = sol.size() * (inst->vehicleCost);
+
+	// driving cost
+	float drivingCost = 0;
+	for (route r : sol) {
+		for (int i = 0; i < r.size() - 1; i++) {
+			auto n = inst->getNodeByKey(r.at(i).key);
+			drivingCost += inst->getTD(r.at(i).key, r.at(i + 1).key) * inst->driverWage;
+			if (n.type == "c") {
+				drivingCost += n.serviceTime * inst->driverWage;
+			}
+		}
+	}
+
+	// energy cost in brs
+	// energy cost in bss
+	float energyBRS = 0;
+	float energyBSS = 0;
+	int BSSUSE = 0;
+	for (route r : sol) {
+		for (vertex v : r) {
+			node n = inst->getNodeByKey(v.key);
+			if (n.type == "c" || n.type == "c_d") {
+				energyBRS += v.recharged;
+			}
+			else if (n.type == "f" || n.type == "f_d") {
+				energyBSS += v.recharged;
+				BSSUSE++;
+			}
+		}
+	}
+	float brsEnergyCost = energyBRS * inst->brsEnergyCost;
+	float bssEnergyCost = energyBSS * inst->bssEnergyCost;
+	float bssUseCost = BSSUSE * inst->bssUseCost;
+
+	fo = depotCost + bssCost + vehicleCost + drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
+
+	//int p = FOP(sol);
+	float p = 0;
+
+	float FO_ = depotCost * inst->depotLifetime + bssCost * inst->bssLifetime + vehicleCost * inst->vehicleLifetime + drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
+
+	fo_parcels = { fo + p, depotCost, bssCost, vehicleCost, drivingCost, brsEnergyCost, bssEnergyCost, bssUseCost, p, FO_ };
 
 	return fo_parcels;
 }
@@ -1497,6 +1562,12 @@ vector<string> Algorithms::evalRoute_(route r)
 	return ret2;
 }
 
+bool Algorithms::removeDPT(vector<string> DPT)
+{
+	inst->removeDPT(DPT);
+	return true;
+}
+
 void Algorithms::printInstance()
 {
 	inst->print(cout);
@@ -1624,7 +1695,4 @@ void Algorithms::getSol2(Solution sol, ostream & strm)
 
 }
 
-Algorithms::~Algorithms()
-{
 
-}

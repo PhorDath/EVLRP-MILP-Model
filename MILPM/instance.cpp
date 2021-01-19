@@ -1757,6 +1757,7 @@ void instance::readBR()
 	file >> str >> str >> depotCost;
 	file >> str >> str >> bssCost;
 	file >> str >> str >> brsCost;
+	bssUseCost = 50; // UK = 50
 	file >> str >> str >> bssEnergyCost;
 	file >> str >> str >> brsEnergyCost;
 	file >> str >> str >> vehicleCost;
@@ -2290,6 +2291,28 @@ void instance::readSSG14()
 
 instance::~instance()
 {
+	int m = distanceMatrix.size();
+	for (int i = 0; i < m; i++) {
+		distanceMatrix.at(i).clear();
+	}
+	distanceMatrix.clear();
+
+	edges.clear();
+	st.clear();
+	dp.clear();
+	nodes.clear();
+
+	UD0.clear();
+	UD1.clear();
+	UD.clear();
+	C.clear();
+	R.clear();
+	S.clear();
+	V.clear();
+	C0.clear();
+	V0.clear();
+	V1.clear();
+	V01.clear();
 }
 
 // this function adapts the instances considering the result from the 
