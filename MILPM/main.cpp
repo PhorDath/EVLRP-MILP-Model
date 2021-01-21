@@ -13,7 +13,7 @@ const string dir1 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/MDEVLRPTW-BS
 const string dir2 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/SSG14/";
 const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
 const string dir4 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/25/";
-const string dir_brelrp = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/";
+const string dir_brelrp = "C:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK100_11.txt";
@@ -43,53 +43,48 @@ int main() {
 		alg.test_unionRoute();
 	}
 	if (op == 1) {
-		
+		//exp_opt(dir_brelrp);
+		/*
 		//vector<int> pcts = { 20, 50, 80 };
 		//vector<string> zonas = { "mata", "alto_paranaiba", "sul_de_minas", "rio_doce", "jequitinhonha_mucuri", "triangulo", "centro_oeste", "central" };
 		// "jequitinhonha_mucuri" ver instancias de 80%
+		
 		vector<int> pcts = { 20, 50, 80 };
-		//vector<string> zonas = {"rio_doce", "alto_paranaiba", "sul_de_minas", "mata", "triangulo", "centro_oeste", "central" };
-		vector<string> zonas = { "alto_paranaiba", "triangulo", "centro_oeste", "mata", "sul_de_minas", "central" };
+		vector<string> zonas = {"mata", "sul_de_minas","central" };
+		//vector<string> zonas = { "triangulo" };
+		int n = 10;
+
+		string date = getDate();
+		boost::filesystem::create_directory(dir_brelrp + "output");
+		boost::filesystem::create_directory(dir_brelrp + "output/" + date);
+
+		fstream csv;
+		csv.open(dir_brelrp + "output/" + date + "/result.csv", ios::out | ios::ate);
+		if (csv.is_open() == false) {
+			cout << "Error opening file result.csv\n";
+			cout << "On directory " << dir_brelrp + "output/" + date + "/" << endl;
+			//return;
+		}
+
+		csv << "inst,D,S,C,VNS,VNSl,delta,usedpct,time\n";
 
 		for (auto z : zonas) {
 			for (auto p : pcts) {
+				auto start = std::chrono::high_resolution_clock::now();
+
 				lrp_opt alg(dir_brelrp, z, p);
-				//call_exp(dir_brelrp, z, p);
+				alg.date = date;
+				alg.n = n;
+				alg.opt();
+
+				auto end = std::chrono::high_resolution_clock::now();
+				auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+				csv << z + "_" + to_string(p) << "," << alg.numd << "," << alg.nums << "," << alg.numc << "," << alg.avgVNS_b << "," << alg.avgVNSl_b << "," << alg.avgVNS_b - alg.avgVNSl_b << "," << alg.usedpct << "," << duration << endl;
 			}
 		}
-		
-		/*
-		call_exp(dir_brelrp, "mata", 20);
-		call_exp(dir_brelrp, "mata", 50);
-		call_exp(dir_brelrp, "mata", 80);///////////////
 
-		call_exp(dir_brelrp, "alto_paranaiba", 20);
-		call_exp(dir_brelrp, "alto_paranaiba", 50);
-		call_exp(dir_brelrp, "alto_paranaiba", 80);
-
-		call_exp(dir_brelrp, "sul_de_minas", 20);
-		call_exp(dir_brelrp, "sul_de_minas", 50);
-		call_exp(dir_brelrp, "sul_de_minas", 80);
-		
-		call_exp(dir_brelrp, "rio_doce", 20);
-		call_exp(dir_brelrp, "rio_doce", 50);
-		call_exp(dir_brelrp, "rio_doce", 80);
-
-		call_exp(dir_brelrp, "jequitinhonha_mucuri", 20);
-		call_exp(dir_brelrp, "jequitinhonha_mucuri", 50);
-		call_exp(dir_brelrp, "jequitinhonha_mucuri", 80);
-
-		call_exp(dir_brelrp, "triangulo", 20);
-		call_exp(dir_brelrp, "triangulo", 50);
-		call_exp(dir_brelrp, "triangulo", 80);		
-
-		call_exp(dir_brelrp, "centro_oeste", 20);
-		call_exp(dir_brelrp, "centro_oeste", 50);
-		call_exp(dir_brelrp, "centro_oeste", 80);
-
-		call_exp(dir_brelrp, "central", 20);
-		call_exp(dir_brelrp, "central", 50);
-		call_exp(dir_brelrp, "central", 80);
+		csv.close();
 		*/
 		
 		/*
@@ -183,7 +178,15 @@ int main() {
 		//exp_sa(dir3);
 		//exp_sa(dir4);
 		//exp_model(dir3);
-		//exp_model(dir_brelrp + "alto_paranaiba/20/");
+		vector<int> pcts = { 20, 50, 80 };
+		vector<string> zonas = { "alto_paranaiba", "centro_oeste", "rio_doce", "triangulo" };
+		for (auto i : zonas) {
+			for (auto j : pcts) {
+				cout << dir_brelrp + i + "/" + to_string(j) + "/" << endl;
+				exp_model(dir_brelrp + i + "/" + to_string(j) + "/");
+			}
+		}
+		
 		//exp_vns(dir4);
 
 		//exp_model(dir_brelrp + "25/");

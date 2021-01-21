@@ -1233,6 +1233,46 @@ void call_exp(string dir, string region, int pct) {
 	csv.close();
 }
 
+void exp_opt(string dir)
+{
+	vector<int> pcts = { 20, 50, 80 };
+	vector<string> zonas = { "mata", "sul_de_minas","central" };
+	//vector<string> zonas = { "triangulo" };
+	int n = 10;
+
+	string date = getDate();
+	boost::filesystem::create_directory(dir + "output");
+	boost::filesystem::create_directory(dir + "output/" + date);
+
+	fstream csv;
+	csv.open(dir + "output/" + date + "/result.csv", ios::out | ios::ate);
+	if (csv.is_open() == false) {
+		cout << "Error opening file result.csv\n";
+		cout << "On directory " << dir + "output/" + date + "/" << endl;
+		//return;
+	}
+
+	csv << "inst,D,S,C,VNS,VNSl,delta,usedpct,time\n";
+
+	for (auto z : zonas) {
+		for (auto p : pcts) {
+			auto start = std::chrono::high_resolution_clock::now();
+
+			lrp_opt alg(dir, z, p);
+			alg.date = date;
+			alg.n = n;
+			alg.opt();
+
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+			csv << z + "_" + to_string(p) << "," << alg.numd << "," << alg.nums << "," << alg.numc << "," << alg.avgVNS_b << "," << alg.avgVNSl_b << "," << alg.avgVNS_b - alg.avgVNSl_b << "," << alg.usedpct << "," << duration << endl;
+		}
+	}
+
+	csv.close();
+}
+
 void exp1(string dir1, string dir2) {
 	fstream file;
 	file.open(dir1 + "all.txt", ios::in);

@@ -381,29 +381,18 @@ vector<string> lrp_opt::chooseBSS_model(set<string> cities, map<pair<string, str
 
 vector<Solution> lrp_opt::vns(string dir1, string output)
 {
-	fstream all;
+	boost::filesystem::create_directory(output + "vns/");
+	output += "vns/";
+
+	fstream all;	
 	all.open(dir1 + "all.txt", ios::in);
 	if (all.is_open() == false) {
 		throw runtime_error("Could not open file all.txt");
 	}
 
-	string dirOutput = output;
-	if (output == "") {
-		// prepare the output directory
-		string date = getDate();
-		boost::filesystem::create_directory(dirOutput + "output");
-		dirOutput += "output/";
-		boost::filesystem::create_directory(dirOutput + "/" + date);
-		dirOutput += date + "/";
-	}
-	else {
-		boost::filesystem::create_directory(dirOutput + "vns");
-		dirOutput += "vns/";
-	}
-
 	// csv file
 	fstream csv;
-	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	csv.open(output + "result.csv", ios::out | ios::ate);
 	if (csv.is_open() == false) {
 		cout << "Error opening file result.csv\n";
 		cout << "On directory " << dir1 << endl;
@@ -419,7 +408,7 @@ vector<Solution> lrp_opt::vns(string dir1, string output)
 	vector<Solution> sols;
 
 	fstream stations;
-	stations.open(dirOutput + "stations.txt", ios::out | ios::app);
+	stations.open(output + "stations.txt", ios::out | ios::app);
 	if (stations.is_open() == false) {
 		cout << "Error opening file stations.csv\n";
 		cout << "On directory " << dir1 << endl;
@@ -432,7 +421,7 @@ vector<Solution> lrp_opt::vns(string dir1, string output)
 		cout << line << endl;
 
 		fstream depots;
-		depots.open(dirOutput + "depots.txt", ios::out | ios::app);
+		depots.open(output + "depots.txt", ios::out | ios::app);
 		if (stations.is_open() == false) {
 			cout << "Error opening file depots.csv\n";
 			cout << "On directory " << dir1 << endl;
@@ -441,7 +430,7 @@ vector<Solution> lrp_opt::vns(string dir1, string output)
 
 		// csv file
 		fstream csv;
-		csv.open(dirOutput + "result.csv", ios::out | ios::app);
+		csv.open(output + "result.csv", ios::out | ios::app);
 		if (csv.is_open() == false) {
 			cout << "Error opening file result.csv\n";
 			cout << "On directory " << dir1 << endl;
@@ -452,11 +441,13 @@ vector<Solution> lrp_opt::vns(string dir1, string output)
 		perm_rep alg;
 		alg.loadInstance(dir1, line, 5);
 		//alg.printInstance();
-		alg.setOutputDir(dirOutput);
+		alg.setOutputDir(output);
 		Solution s = alg.VNS(25, 1200);
 		sols.push_back(s);
 		///////////////////
-
+		this->numc = alg.inst->numC;
+		this->numd = alg.inst->numD;
+		this->nums = alg.inst->numF;
 		csv << alg.row << endl;
 
 		for (string i : s.sStations) {
@@ -486,8 +477,8 @@ vector<Solution> lrp_opt::vns(string dir1, string output)
 		stations << i.first << " " << i.second << endl;
 	stations.close();
 
-	totalCost(sols, dirOutput, true);
-	totalCost_Desarmotized(sols, dirOutput, true);
+	totalCost(sols, output, true);
+	totalCost_Desarmotized(sols, output, true);
 	all.close();
 
 	return sols;
@@ -495,30 +486,18 @@ vector<Solution> lrp_opt::vns(string dir1, string output)
 
 vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, vector<string> DPTs)
 {
+	boost::filesystem::create_directory(output + "vnsl/");
+	output += "vnsl/";
+
 	fstream all;
 	all.open(dir1 + "all.txt", ios::in);
 	if (all.is_open() == false) {
 		throw runtime_error("Could not open file all.txt");
 	}
 
-	string dirOutput = output;
-	if (output == "") {
-		// prepare the output directory
-		string date = getDate();
-		boost::filesystem::create_directory(dirOutput + "output");
-		dirOutput += "output/";
-		boost::filesystem::create_directory(dirOutput + "/" + date);
-		dirOutput += date + "/";
-	}
-	else {
-		boost::filesystem::create_directory(dirOutput + "vnsl");
-		dirOutput += "vnsl/";
-	}
-
-
 	// save BSSs
 	fstream bss;
-	bss.open(dirOutput + "bss.txt", ios::out | ios::app);
+	bss.open(output + "bss.txt", ios::out | ios::app);
 	if (bss.is_open() == false) {
 		cout << "Error opening file stations.csv\n";
 		cout << "On directory " << dir1 << endl;
@@ -530,7 +509,7 @@ vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, 
 
 	// csv file
 	fstream csv;
-	csv.open(dirOutput + "result.csv", ios::out | ios::ate);
+	csv.open(output + "result.csv", ios::out | ios::ate);
 	if (csv.is_open() == false) {
 		cout << "Error opening file result.csv\n";
 		cout << "On directory " << dir1 << endl;
@@ -546,7 +525,7 @@ vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, 
 	vector<Solution> sols;
 
 	fstream stations;
-	stations.open(dirOutput + "stations.txt", ios::out | ios::app);
+	stations.open(output + "stations.txt", ios::out | ios::app);
 	if (stations.is_open() == false) {
 		cout << "Error opening file stations.csv\n";
 		cout << "On directory " << dir1 << endl;
@@ -560,7 +539,7 @@ vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, 
 		cout << line << endl;
 
 		fstream depots;
-		depots.open(dirOutput + "depots.txt", ios::out | ios::app);
+		depots.open(output + "depots.txt", ios::out | ios::app);
 		if (stations.is_open() == false) {
 			cout << "Error opening file depots.csv\n";
 			cout << "On directory " << dir1 << endl;
@@ -569,7 +548,7 @@ vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, 
 
 		// csv file
 		fstream csv;
-		csv.open(dirOutput + "result.csv", ios::out | ios::app);
+		csv.open(output + "result.csv", ios::out | ios::app);
 		if (csv.is_open() == false) {
 			cout << "Error opening file result.csv\n";
 			cout << "On directory " << dir1 << endl;
@@ -580,7 +559,7 @@ vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, 
 		perm_rep alg;
 		alg.loadInstance(dir1, line, 5);
 		//alg.printInstance();
-		alg.setOutputDir(dirOutput);
+		alg.setOutputDir(output);
 		Solution s = alg.VNSL(BSSs, DPTs, 25, 1200);
 		sols.push_back(s);
 		///////////////////
@@ -613,8 +592,8 @@ vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, 
 		stations << i.first << " " << i.second << endl;
 	stations.close();
 
-	totalCost(sols, dirOutput, true);
-	totalCost_Desarmotized(sols, dirOutput, true);
+	totalCost(sols, output, true);
+	totalCost_Desarmotized(sols, output, true);
 	all.close();
 
 	return sols;
@@ -622,6 +601,23 @@ vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, 
 
 lrp_opt::lrp_opt(string dir, string regionName, int pct)
 {
+	this->region = regionName;
+	this->pct = pct;
+	this->dir = dir; // +regionName + "/" + to_string(pct) + "/";
+
+	string line;
+	fstream file;
+
+	// get city list		
+	file.open(dir + regionName + "/" + regionName + ".txt", ios::in);
+	if (!file.is_open()) {
+		cout << "error opening file " << "all.txt" << endl;
+		exit(1);
+	}
+	while (getline(file, line)) {
+		cities.insert(line);
+	}
+	file.close();
 }
 
 lrp_opt::lrp_opt(string regionName, int pct, string dir, map<string, int> stFreq)
@@ -675,7 +671,7 @@ lrp_opt::lrp_opt(string regionName, int pct, string dir, map<string, int> stFreq
 {
 	this->region = regionName;
 	this->pct = pct;
-	this->dir = dir + regionName + "/" + to_string(pct) + "/";
+	this->dir = dir;
 	this->stFreq = stFreq;
 	this->dpFreq = dpFreq;
 	
@@ -696,43 +692,59 @@ lrp_opt::lrp_opt(string regionName, int pct, string dir, map<string, int> stFreq
 
 bool lrp_opt::opt()
 {
-	// csv file
-	fstream csv;
-	csv.open(dir + "/" + region + "/" + to_string(pct) + "/output/" + "result.csv", ios::out | ios::ate);
+	
+
+	this->dirOutput = dir + "output/" + this->date + "/";
+	boost::filesystem::create_directory(this->dirOutput + region + "/");
+	boost::filesystem::create_directory(this->dirOutput + region + "/" + to_string(pct) + "/");
+
+	string dir3 = this->dirOutput + region + "/" + to_string(pct) + "/";
+
+	fstream csv; // csv file
+	csv.open(dir3 + "result.csv", ios::out | ios::ate);
 	if (csv.is_open() == false) {
 		cout << "Error opening file result.csv\n";
-		cout << "On directory " << dir << endl;
+		cout << "On directory " << dir3 << endl;
 		//return;
 	}
+	csv << "n,inst,VNS,VNSl,delta,pct,time\n";
 
-	for (int i = 0; i < 1; i++) {
+	this->avgVNS_a = 0;
+	this->avgVNSl_a = 0;
+	this->avgVNS_b = 0;
+	this->avgVNSl_b = 0;
+
+	for (int i = 0; i < n; i++) {
 		auto start = std::chrono::high_resolution_clock::now();
+		
+
+		boost::filesystem::create_directory(this->dirOutput + region + "/" + to_string(pct) + "/" + to_string(i) + "/");
+
+		// prepare the output directory
+		string dirOutput = this->dirOutput + region + "/" + to_string(pct) + "/" + to_string(i) + "/";
+		boost::filesystem::create_directory(dirOutput + "/");
 
 		string dir2 = dir + region + "/" + to_string(pct) + "/";
 
-
-		// prepare the output directory
-		string date = getDate();
-		string dirOutput = dir2;
-		boost::filesystem::create_directory(dirOutput + "output");
-		dirOutput += "output/";
-		boost::filesystem::create_directory(dirOutput + "/" + date);
-		dirOutput += date + "/";
-
 		vector<Solution> sols = vns(dir2, dirOutput);
-		auto tcost1 = totalCost(sols, "", false);
-		map<string, int> freq = perm_rep::getBSSFreq(sols);
-		map<string, int> freqD = perm_rep::getDepotFreq(sols);
+
+		auto tcost1_a = totalCost(sols, "", false);
+		auto tcost1_b = totalCost_Desarmotized(sols, "", false);
+		
+		this->stFreq = perm_rep::getBSSFreq(sols);
+		this->dpFreq = perm_rep::getDepotFreq(sols);
 
 		//string citiesfile = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/alto_paranaiba/alto_paranaiba.txt";
 		//string dmfile = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/";
 
-		lrp_opt m(region, pct, dir, freq, freqD);
+		//lrp_opt m(region, pct, dir, freq, freqD);
 		//vector<string> BSSs = m.opt_brkga();	
 
-		m.opt();
-		vector<string> DPTs = m.DPTs;
-		vector<string> BSSs = m.BSSs;
+		this->usedpct = opt_bss();
+		//opt_brkga();
+
+		vector<string> DPTs = this->DPTs;
+		vector<string> BSSs = this->BSSs;
 
 		for (auto i : DPTs) {
 			cout << i << endl;
@@ -742,19 +754,31 @@ bool lrp_opt::opt()
 		}
 
 		vector<Solution> sols2 = vnsl(dir2, dirOutput, BSSs, DPTs);
-		auto tcost2 = totalCost(sols2, "", false);
-
+		auto tcost2_a = totalCost(sols2, "", false);
+		auto tcost2_b = totalCost_Desarmotized(sols2, "", false);
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
-		csv << region + "_" + to_string(pct) << "," << to_string(tcost1) << "," << to_string(tcost2) << "," << duration << endl;
+		avgVNS_a += tcost1_a;
+		avgVNSl_a += tcost2_a;
+		avgVNS_b += tcost1_b;
+		avgVNSl_b += tcost2_b;
+
+		csv << to_string(i) << "," << region << "_" << to_string(pct) << "," << to_string(tcost1_b) << "," << to_string(tcost2_b) << "," << to_string(tcost1_b - tcost2_b) << "," << usedpct << "," << duration << endl;
 	}
 
+	avgVNS_a /= this->n;
+	avgVNSl_a /= this->n;
+	avgVNS_b /= this->n;
+	avgVNSl_b /= this->n;
+
 	csv.close();
+
+	return true;
 }
 
-bool lrp_opt::opt_bss()
+int lrp_opt::opt_bss()
 {
 	int startpct = 70;
 	bool inf = false;
@@ -780,6 +804,7 @@ bool lrp_opt::opt_bss()
 		perm_rep alg;
 		
 		fstream all;
+		string dir = this->dir + region + "/" + to_string(pct) + "/";
 		all.open(dir + "all.txt", ios::in);
 		if (all.is_open() == false) {
 			throw runtime_error("Could not open file all.txt");
@@ -826,9 +851,9 @@ bool lrp_opt::opt_bss()
 		//}
 
 		if (ok == true && inf == false) {
-			this->pct = i;
+
 			this->BSSs = BSS;
-			return true;
+			return i;
 		}
 		
 	}
