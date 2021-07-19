@@ -1,6 +1,5 @@
 #pragma once
-#include <BRKGA.h>
-#include <MTRand.h>
+//#include <MTRand.h>
 #include <map>
 #include "Algorithms.h"
 
@@ -119,6 +118,8 @@ private:
 public:
 	permutation perm;
 
+	bool output = true;
+
 	//perm_rep();
 	~perm_rep();
 
@@ -168,4 +169,5 @@ public:
 	// aux
 	float getTravelCost(Solution s);
 	static float totalCost(vector<Solution> sols);
+	static float totalCost4(vector<Solution> sols);
 };

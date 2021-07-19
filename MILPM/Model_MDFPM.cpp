@@ -419,13 +419,16 @@ Model_MDFPM::Model_MDFPM(string dir, int size)
 	vector<int> ls = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 	for (auto i : ls) {
 
+		string s = "";
 		if (i < 10) {
-			instance i(dir, "UK200_0" + to_string(i) + ".txt", 4);
+			s = "UK200_0" + to_string(i) + ".txt";
+			instance i(dir, s, 4);
 			depots.push_back(i.nodes.front());
 			insts.push_back(i);
 		}
 		else {
-			instance i(dir, "UK200_" + to_string(i) + ".txt", 4);
+			s = "UK200_" + to_string(i) + ".txt";
+			instance i(dir, s, 4);
 			depots.push_back(i.nodes.front());
 			insts.push_back(i);
 		}

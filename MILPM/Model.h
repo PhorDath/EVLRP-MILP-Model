@@ -7,7 +7,7 @@
 #include "Util.h"
 #include "perm_rep.h"
 
-#define TMAX 600
+#define TMAX 3600
 
 using namespace std;
 

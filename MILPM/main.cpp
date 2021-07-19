@@ -1,4 +1,10 @@
-// teste 6
+/*
+	This project is in development by Victor Hugo Vidigal Corrêa from the Federal University of Viçosa (UFV) as his master's project.
+	This project includes many algorithm and mathematical models for the Multi-Depot Electrical Location-Routing with Time-Windows, Partial Recharging and Battery Swap Stations. 
+	The dissertation with the details on the algorithms can be found in the UFV's dissrtations and thesis repository.
+*/
+
+//#define MODEL // this will decide weather the gurobi mathematical model will be compiled or not
 
 #include <iostream>
 #include "Model.h"
@@ -9,41 +15,117 @@
 
 using namespace std;
 
-const string dir1 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/MDEVLRPTW-BSPR/Instances/";
-const string dir2 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/SSG14/";
-const string dir3 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/prplib/";
-const string dir4 = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/25/";
-const string dir_brelrp = "C:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/";
+const string dir1 = "D:/OneDrive/Victor/Pos-Graduacao/Research/Instances/MDEVLRPTW-BSPR/Instances/";
+const string dir2 = "D:/OneDrive/Victor/Pos-Graduacao/Research/Instances/SSG14/";
+const string dir3 = "D:/OneDrive/Victor/Pos-Graduacao/Research/Instances/prplib/";
+const string dir4 = "D:/OneDrive/Victor/Pos-Graduacao/Research/Instances/test/25/";
+const string dir_brelrp = "D:/OneDrive/Victor/Pos-Graduacao/Research/Instances/brelrp/";
 const string file1 = "c101C5.txt";
 const string file2 = "c101_21.xml";
 const string file3 = "UK100_11.txt";
 const string file = "UK200_01.txt";
 
-int main() {
-	int op = 1;
-	if (op == 0) {
+int main(int argc, char *argv[]) {
+	int op = -1;
+	string a = "vns";
+
+	if (argc > 1) {
+		if (a == "vns") {
+			string inst = "";
+			int itMax = 0, maxTime = 0;
+
+			vector<string> arguments(argv + 1, argv + argc);
+
+			inst = arguments.front();
+			for (unsigned int i = 1; i < arguments.size(); i += 2)
+			{
+				if (arguments[i] == "--ITMAX")
+					itMax = atoi(arguments[i + 1].c_str());
+				else if (arguments[i] == "--MAXTIME")
+					maxTime = atoi(arguments[i + 1].c_str());
+			}
+
+			//cout << inst << " " << itMax << " " << maxTime << endl;
+
+			perm_rep alg;
+
+			alg.loadInstance("", inst, 5);
+			alg.output = false;
+			Solution s = alg.VNS(itMax, maxTime);
+			cout << s.FO;
+			return 0;
+		}
+		else if (a == "sa") {
+			string inst = "";
+			int itMax = 0, maxTime = 0;
+
+			vector<string> arguments(argv + 1, argv + argc);
+
+			inst = arguments.front();
+			for (unsigned int i = 1; i < arguments.size(); i += 2)
+			{
+				if (arguments[i] == "--ITMAX")
+					itMax = atoi(arguments[i + 1].c_str());
+				else if (arguments[i] == "--MAXTIME")
+					maxTime = atoi(arguments[i + 1].c_str());
+			}
+
+			//cout << inst << " " << itMax << " " << maxTime << endl;
+
+			perm_rep alg;
+
+			alg.loadInstance("", inst, 5);
+			alg.output = false;
+			Solution s = alg.VNS(itMax, maxTime);
+			cout << s.FO;
+			return 0;
+		}
+		
+	}
+	else {
 		perm_rep alg;
-		//alg.test_routePartition();
-		//alg.test_opt2_route();
-		//alg.test_neigh();
-		//alg.test_shiftCustomer();
-		//alg.test_localSearch_r();
-		//alg.test_shakeRandom_r(4);
-		//alg.test_VNS();		
-		//alg.test_GRASP();
-		//alg.test_SA();
-		//alg.test_addStations();
-		//alg.test_swapDepot();
-		//alg.test_changeDepot();
-		//alg.test_permutationToSolution();
-		//alg.test_permutationToSolutionAlt();
-		//alg.test_splitRoute();
-		//alg.test_new_evaluation();
-		//alg.test_bssReplacement_r();
+
+		int itMax = 5, maxTime = 20;
+
+		string dir = "D:/OneDrive/Victor/Pos-Graduacao/Research/calibration/instances/";
+		//string inst = "mg_central_20_27.brelrp";
+		string inst = "mg_alto_paranaiba_20_09.brelrp";
+
+		alg.loadInstance(dir, inst, 5);
+		alg.output = false;
+		Solution s = alg.VNS(itMax, maxTime);
+		cout << s.FO;
+		return 0;
+	}
+	
+
+	if (op == 10) {
+		perm_rep alg;
+		alg.test_routePartition();
+		alg.test_opt2_route();
+		alg.test_neigh();
+		alg.test_shiftCustomer();
+		alg.test_localSearch_r();
+		alg.test_shakeRandom_r(4);
+		alg.test_VNS();		
+		alg.test_GRASP();
+		alg.test_SA();
+		alg.test_addStations();
+		alg.test_swapDepot();
+		alg.test_changeDepot();
+		alg.test_permutationToSolution();
+		alg.test_permutationToSolutionAlt();
+		alg.test_splitRoute();
+		alg.test_new_evaluation();
+		alg.test_bssReplacement_r();
 		alg.test_unionRoute();
 	}
-	if (op == 1) {
-		//exp_opt(dir_brelrp);
+	else if (op == 11) {
+		//exp_vns2(dir_brelrp + "central/80/");
+		//exp_vns2(dir_brelrp + "central/80/");
+
+		//exp_opt(dir_brelrp, 1);
+		exp_opt(dir_brelrp, 2);
 		/*
 		//vector<int> pcts = { 20, 50, 80 };
 		//vector<string> zonas = { "mata", "alto_paranaiba", "sul_de_minas", "rio_doce", "jequitinhonha_mucuri", "triangulo", "centro_oeste", "central" };
@@ -87,6 +169,19 @@ int main() {
 		csv.close();
 		*/
 		
+		//exp_vns3(dir_brelrp);
+
+		/*
+		vector<int> pcts = { 20, 50, 80 };
+		vector<string> zonas = { "alto_paranaiba", "centro_oeste", "rio_doce", "triangulo", "mata", "sul_de_minas","central" };
+		for (auto i : zonas) {
+			for (auto j : pcts) {
+				cout << dir_brelrp + i + "/" + to_string(j) + "/" << endl;
+				exp_vns2(dir_brelrp + i + "/" + to_string(j) + "/");
+			}
+		}
+		*/
+
 		/*
 		string s = "jequitinhonha_mucuri/old";
 		exp_vns2(dir_brelrp + s + "/20/");
@@ -178,15 +273,16 @@ int main() {
 		//exp_sa(dir3);
 		//exp_sa(dir4);
 		//exp_model(dir3);
+/*
 		vector<int> pcts = { 20, 50, 80 };
-		vector<string> zonas = { "alto_paranaiba", "centro_oeste", "rio_doce", "triangulo" };
+		vector<string> zonas = { "alto_paranaiba", "centro_oeste", "rio_doce", "triangulo", "mata", "sul_de_minas","central" };
 		for (auto i : zonas) {
 			for (auto j : pcts) {
 				cout << dir_brelrp + i + "/" + to_string(j) + "/" << endl;
 				exp_model(dir_brelrp + i + "/" + to_string(j) + "/");
 			}
 		}
-		
+*/
 		//exp_vns(dir4);
 
 		//exp_model(dir_brelrp + "25/");
@@ -208,7 +304,7 @@ int main() {
 		//exp_grasp(dir3);
 		//exp_instances(dir3);
 	}	
-	else if (op == 2) {
+	else if (op == 12) {
 		Solution init;
 		perm_rep alg;
 		alg.loadInstance(dir3, file, 3);
@@ -225,7 +321,8 @@ int main() {
 
 		return 0;
 	}
-	else if (op == 3) {
+	else if (op == 13) {
+		#ifdef MODEL		
 		Model model(dir_brelrp, "mg50_01.brelrp", 0, 5);
 		model.printInst();
 		model.optmize(0);
@@ -234,8 +331,9 @@ int main() {
 		s1.debug(cout);
 		cout << endl;
 		return 0;
+		#endif
 	}
-	else if (op == 4) {
+	else if (op == 14) {
 		perm_rep alg;
 		alg.loadInstance(dir3, file, 3);
 		alg.printInstance();
@@ -245,14 +343,14 @@ int main() {
 		return 0;
 
 	}
-	else if (op == 5) {
+	else if (op == 15) {
 		perm_rep alg;
 		alg.loadInstance(dir_brelrp + "50/", "mg50_01.brelrp", 5);
 		alg.printInstance();
 		alg.setOutputDir(dir_brelrp + "output/");
 		Solution s = alg.VNS(25, 300);
 	}
-	else if (op == 6){
+	else if (op == 16){
 		perm_rep alg;
 		alg.loadInstance(dir4, file, 3);
 		alg.printInstance();
@@ -282,14 +380,14 @@ int main() {
 		cout << endl;
 		return 0;
 	}
-	else if (op == 7) {
+	else if (op == 17) {
 		getAllData(dir3);
 		//adapt_model(dir4);
 		//adaptAll_n();
 		//adaptAll("D:/Victor/Pos-Graduacao/UFV/Research/Instances/test/200/");
 		return 0;
 	}
-	else if (op == 8) {
+	else if (op == 18) {
 		perm_rep alg;
 		alg.loadInstance(dir_brelrp, "mg_00.brelrp", 5);
 		alg.printInstance();
@@ -299,5 +397,4 @@ int main() {
 		//instance inst("D:/Victor/Pos-Graduacao/UFV/Research/Implementation/instances_generator/", "test.txt", 5);
 		//inst.print(cout);
 	}
-
 }

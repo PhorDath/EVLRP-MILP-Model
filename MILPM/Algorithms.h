@@ -212,6 +212,7 @@ public:
 public:
 	instance *inst;
 	long long maxRuntime;
+	string date;
 
 	Algorithms();
 	~Algorithms();

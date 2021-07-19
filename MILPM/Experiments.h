@@ -37,7 +37,7 @@ vector<Solution> exp_vns_(string dir1, string output);
 vector<Solution> exp_vnsl_(string dir1, string output, vector<string> BSSs, vector<string> DPTs);
 pair<float, float> exp(string dir, string region, int pct);
 void call_exp(string dir, string region, int pct);
-void exp_opt(string dir);
+void exp_opt(string dir, int op);
 ///
 
 void exp1(string dir1, string dir2);

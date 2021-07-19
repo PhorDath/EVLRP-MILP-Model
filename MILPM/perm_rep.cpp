@@ -4605,7 +4605,10 @@ Solution perm_rep::VNS(int itMax, int maxTime)
 
 	try {
 		init = greed();
-		cout << fixed << "Initial objective: " << init.FO << endl;
+		if (output == true) {
+			cout << fixed << "Initial objective: " << init.FO << endl;
+		}
+		
 		find = true;
 	}
 	catch (UnfeasibleInstance& e) {
@@ -4613,11 +4616,12 @@ Solution perm_rep::VNS(int itMax, int maxTime)
 	}
 	catch (exception &e) {
 		find = false;
-		cout << e.what() << endl;
+		if (output == true) {
+			cout << e.what() << endl;
+		}		
 	}
 
 	if (find == true) {
-		//return init;
 		return VNS(init, itMax, maxTime);
 	}
 	else {
@@ -5045,11 +5049,16 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 			
 			auto currTime = std::chrono::high_resolution_clock::now();
 			duration_ = std::chrono::duration_cast<std::chrono::seconds>(currTime - start).count();
-			cout << fixed << setprecision(2) << best.FO << " - " << duration_ << " - ";
+			if (output == true) {
+				cout << fixed << setprecision(2) << best.FO << " - " << duration_ << " - ";
+			}
 
 			int n = Random::get(0, maxN);
-			cout << this->neighbors.at(n) << " - ";
-			cout << "shake - ";
+			if (output == true) {
+				cout << this->neighbors.at(n) << " - ";
+				cout << "shake - ";
+			}
+			
 			Solution sl;
 			try {
 				sl = shakeRandom_r(best, this->neighbors.at(n));
@@ -5062,7 +5071,10 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 			cout << "VNS local search" << endl;
 			auto t1_ = std::chrono::high_resolution_clock::now();
 			#endif
-			cout << "ls\n";
+			if (output == true) {
+				cout << "ls\n";
+			}
+			
 			sl = localSearch_r(sl, this->neighbors.at(n), false); // "2opt"
 			#ifdef DEBUG_VNS
 			auto t2_ = std::chrono::high_resolution_clock::now();
@@ -5073,7 +5085,9 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 			
 
 			if (sl.FO < best.FO && sl.inf.size() == 0) {
-				cout << fixed << setprecision(2) << "VNS improvement: " << best.FO << " --> " << sl.FO << " --> " << neighbors.at(n) << endl;
+				if (output == true) {
+					cout << fixed << setprecision(2) << "VNS improvement: " << best.FO << " --> " << sl.FO << " --> " << neighbors.at(n) << endl;
+				}
 
 				best = sl;
 				s = sl;
@@ -5130,14 +5144,16 @@ Solution perm_rep::VNS(Solution s, int itMax, int maxTime)
 	fstream op;
 	op.open(dirOutput + inst->fileName, ios::app);
 	if (op.is_open() == false) {
-		cout << "error creating output file\n";
+		if (output == true) {
+			cout << "error creating output file\n";
+		}		
 		return best;
 	}
 	else {
 		best.debug(op);
 	}
 
-	best.saveXML(dirOutput + inst->fileName + ".xml");
+	//best.saveXML(dirOutput + inst->fileName + ".xml");
 
 	return best;
 }
@@ -5750,11 +5766,15 @@ Solution perm_rep::hillDescent_r_2opt(Solution s, bool fimp)
 						}
 					}
 					catch (string str) {
-						cout << str << endl;
+						if (output == true) {
+							cout << str << endl;
+						}						
 						continue;
 					}
 					catch (exception &e) {
-						cout << e.what() << endl;
+						if (output == true) {
+							cout << e.what() << endl;
+						}
 						continue;
 					}
 
@@ -9165,6 +9185,132 @@ float perm_rep::totalCost(vector<Solution> sols) {
 	cost += vehicleCost * maxVehicles;
 	cost += bssCost * stations.size();
 	cost += depotCost * depots.size();
+
+	return cost;
+	/*
+	set<string> stations;
+	set<string> depots;
+
+	float cost = 0;
+
+	float depotCost = 0;
+	float bssCost = 0;
+	float vehicleCost = 0;
+	float drivingCost = 0;
+	float brsEnergyCost = 0;
+	float bssEnergyCost = 0;
+	float bssUseCost = 0;
+
+	int maxVehicles = -1;
+	int cont = 0;
+	for (auto s : sols) {
+
+
+		vehicleCost = s.FOp.at(3);
+		drivingCost = s.FOp.at(4);
+		brsEnergyCost = s.FOp.at(5);
+		bssEnergyCost = s.FOp.at(6);
+		bssUseCost = s.FOp.at(7);
+
+
+		for (route r : s.routes) {
+			for (vertex v : r) {
+				if (v.n.type == "f") {
+					stations.insert(v.n.id);
+				}
+			}
+			depots.insert(r.front().n.id);
+		}
+
+		int numV = s.routes.size();
+		if (numV > maxVehicles) {
+			maxVehicles = numV;
+		}
+		vehicleCost = vehicleCost / maxVehicles;
+
+		cost += drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
+		cont++;
+	}
+
+	if (sols.size() > 0) {
+		set<string> aux;
+
+		for (route r : sols.at(0).routes) {
+			for (vertex v : r) {
+				if (v.n.type == "f") {
+					stations.insert(v.n.id);
+				}
+			}
+		}
+
+		bssCost = sols.at(0).FOp.at(2) / stations.size();
+	}
+
+	bssCost *= stations.size();
+	cost += bssCost;
+
+	depotCost += sols.front().FOp.at(1); // depot cost;
+	cost += depotCost;
+
+	return cost;
+	*/
+}
+
+float perm_rep::totalCost4(vector<Solution> sols) {
+	set<string> depots;
+	set<string> stations;
+
+	float cost = 0;
+
+	float depotCost = 0;
+	float bssCost = 0;
+	float vehicleCost = 0;
+	float drivingCost = 0;
+	float brsEnergyCost = 0;
+	float bssEnergyCost = 0;
+	float bssUseCost = 0;
+
+	int maxVehicles = -1;
+	int cont = 1;
+
+	for (auto s : sols) {
+
+		drivingCost = s.FOp.at(4);
+		brsEnergyCost = s.FOp.at(5);
+		bssEnergyCost = s.FOp.at(6);
+		bssUseCost = s.FOp.at(7);
+
+
+		for (route r : s.routes) {
+			for (vertex v : r) {
+				if (v.n.type == "f") {
+					stations.insert(v.n.id);
+				}
+				else if (v.n.type == "d") {
+					depots.insert(v.n.id);
+				}
+			}
+		}
+
+
+		int numV = s.routes.size();
+		if (numV > maxVehicles) {
+			maxVehicles = numV;
+		}
+
+		if (cont == 1) {
+			depotCost = sols.front().FOp.at(1) / depots.size();
+			bssCost = sols.front().FOp.at(2) / stations.size();
+			vehicleCost = sols.front().FOp.at(3) / sols.front().routes.size();
+		}
+
+		cost += drivingCost + brsEnergyCost + bssEnergyCost + bssUseCost;
+		cont++;
+	}
+
+	//cost += vehicleCost * maxVehicles;
+	//cost += bssCost * stations.size();
+	//cost += depotCost * depots.size();
 
 	return cost;
 	/*

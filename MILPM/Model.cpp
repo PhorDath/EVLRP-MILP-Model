@@ -796,15 +796,19 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 	// set variable t
 	for (route r : s.routes) {
 		for (vertex v : r) {
-			GRBVar *ti = &getT(model, v.key);
-			ti->set(GRB_DoubleAttr_Start, v.aTime + v.wTime);
+			//GRBVar *ti = &getT(model, v.key);
+			//ti->set(GRB_DoubleAttr_Start, v.aTime + v.wTime);
+			GRBVar ti = getT(model, v.key);
+			ti.set(GRB_DoubleAttr_Start, v.aTime + v.wTime);
 		}
 		// dealing with the last vertex in the route
 		vertex v = r.back();
 		node n = inst->getNodeByKey(v.key);
 		if (v.aTime < n.dueDate) {
-			GRBVar* ti = &getT(model, r.back().key);
-			ti->set(GRB_DoubleAttr_Start, n.dueDate);
+			//GRBVar* ti = &getT(model, r.back().key);
+			//ti->set(GRB_DoubleAttr_Start, n.dueDate);
+			GRBVar ti = getT(model, r.back().key);
+			ti.set(GRB_DoubleAttr_Start, n.dueDate);
 		}
 
 	}
@@ -818,10 +822,10 @@ void Model::setInitialSolution(GRBModel& model, Solution s)
 
 		for (int i = 0; i < r.size() - 1; i++) {
 		//for (vertex v : r) {
-v = r.at(i);
-vertex v2 = r.at(i + 1);
-di = getD(model, v2.key);
-di.set(GRB_DoubleAttr_Start, v.vLoad);
+			v = r.at(i);
+			vertex v2 = r.at(i + 1);
+			di = getD(model, v2.key);
+			di.set(GRB_DoubleAttr_Start, v.vLoad);
 		}
 
 		v = r.back();

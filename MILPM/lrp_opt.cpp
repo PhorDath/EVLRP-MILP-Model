@@ -184,10 +184,320 @@ float lrp_opt::totalCost_Desarmotized(vector<Solution> sols, string dir, bool wr
 	return cost;
 }
 
+vector<float> lrp_opt::evalCost(vector<string> BSS)
+{
+	bool inf = false;
+
+	fstream all;
+	string dir = this->dir + region + "/" + to_string(pct) + "/";
+	all.open(dir + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	vector<Solution> sols;
+	set<string> infs;
+	bool ok = true;
+	int count = 0;
+	int qt = 0;
+	string line;
+	while (getline(all, line)) {
+		perm_rep alg;
+		alg.loadInstance(dir, line, 5);
+		alg.removeDPT(DPTs);
+		try {
+			Solution s = alg.greedl(BSS);
+			sols.push_back(s);
+			for (auto i : s.inf) {
+				infs.insert(i);
+			}
+		}
+		catch (PermutationInf& e) {
+			ok = false;
+			count++;
+		}
+		catch (exception& e) {
+			ok = false;
+			count++;
+		}
+		qt++;
+	}
+	all.close();
+
+	float of = perm_rep::totalCost(sols);
+
+	if (ok == true && infs.size() == 0) {
+		return {of, 0};
+	}
+	else {
+		if (count > 0 && infs.size() > 0 && of > 0) {
+
+			of /= count;			
+			of *= qt;
+			
+			float p1 = float(of + (of * (2 + count + infs.size())));
+			float p2 = float(infs.size() + count);
+
+			return { p1, p2 };
+		}
+		else {
+			return { float(INT_MAX), float(INT_MAX) };
+		}
+	}
+	return { float(INT_MAX), float(INT_MAX) };
+}
+
+vector<float> lrp_opt::evalBSS(vector<string> BSS)
+{
+	bool inf = false;
+
+	fstream all;
+	string dir = this->dir + region + "/" + to_string(pct) + "/";
+	all.open(dir + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	vector<Solution> sols;
+	set<string> infs;
+	bool ok = true;
+	int count = 0;
+	int qt = 0;
+	string line;
+	while (getline(all, line)) {
+		perm_rep alg;
+		alg.loadInstance(dir, line, 5);
+		alg.removeDPT(DPTs);
+		try {
+			Solution s = alg.greedl(BSS);
+			sols.push_back(s);
+			for (auto i : s.inf) {
+				infs.insert(i);
+			}
+		}
+		catch (PermutationInf& e) {
+			ok = false;
+			count++;
+		}
+		catch (exception& e) {
+			ok = false;
+			count++;
+		}
+		qt++;
+	}
+	all.close();
+
+	set<string> BSSs;
+	for (auto sol : sols) {
+		for (auto route : sol.routes) {
+			for (auto v : route) {
+				if (v.n.type == "f") {
+					BSSs.insert(v.n.id);
+				}
+			}
+		}
+	}
+
+	int freq = 0;
+	for (auto i : BSSs) {
+		for (auto j : this->stFreq) {
+			if (i == j.first) {
+				freq += j.second;
+				break;
+			}
+		}
+	}
+	//cout << "freq: " << freq << endl;
+	if (BSSs.size() == 0) {
+		//cout << "fuck\n";
+	}
+	
+	if (ok == true && infs.size() == 0) {
+		infs.clear();
+		return { float(BSSs.size()), 0 };
+	}
+	else {
+		float p1 = float(BSSs.size() + count * count + infs.size() * infs.size());
+		float p2 = float(infs.size() + count);
+		//cout << BSSs.size() << " - " << count << " - " << infs.size() << endl;
+		//cout << p1 << " - " << p2 << endl;
+		return { p1, p2 };
+
+		//return { float(BSSs.size() + 2 * count + 2 * infs.size()), float(infs.size() + count) };
+		if (count == qt) {
+			return { float(INT_MAX), float(INT_MAX) };
+		}
+		else {
+			float p1 = float(BSSs.size() + 2 * count + 2 * infs.size());
+			float p2 = float(infs.size() + count);
+			cout << BSSs.size() << " - " << count << " - " << infs.size() << endl;
+			cout << p1 << " - " << p2 << endl;
+			return { p1, p2 };
+		}
+	}
+	return { float(INT_MAX), float(INT_MAX) };
+	
+}
+
+vector<float> lrp_opt::evalCost4P(vector<string> BSS)
+{
+	bool inf = false;
+
+	fstream all;
+	string dir = this->dir + region + "/" + to_string(pct) + "/";
+	all.open(dir + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+
+	vector<Solution> sols;
+	set<string> infs;
+	bool ok = true;
+	int count = 0;
+	int qt = 0;
+	string line;
+	while (getline(all, line)) {
+		perm_rep alg;
+		alg.loadInstance(dir, line, 5);
+		alg.removeDPT(DPTs);
+		try {
+			Solution s = alg.greedl(BSS);
+			sols.push_back(s);
+			for (auto i : s.inf) {
+				infs.insert(i);
+			}
+		}
+		catch (PermutationInf& e) {
+			ok = false;
+			count++;
+		}
+		catch (exception& e) {
+			ok = false;
+			count++;
+		}
+		qt++;
+	}
+	all.close();
+
+	float of = perm_rep::totalCost4(sols);
+
+	if (ok == true && infs.size() == 0) {
+		return { of, 0 };
+	}
+	else {
+		if (count > 0 && infs.size() > 0 && of > 0) {
+
+			of /= count;
+			of *= qt;
+
+			float p1 = float(of + (of * (2 + count + infs.size())));
+			float p2 = float(infs.size() + count);
+
+			return { p1, p2 };
+		}
+		else {
+			return { float(INT_MAX), float(INT_MAX) };
+		}
+	}
+	return { float(INT_MAX), float(INT_MAX) };
+}
+
+vector<float> lrp_opt::evalBSS_teste(vector<string> BSS)
+{
+	bool inf = false;
+
+
+	vector<Solution> sols;
+	set<string> infs;
+	bool ok = true;
+	int count = 0;
+	int qt = 0;
+	for (string line : files) {
+		perm_rep alg = algs.at(qt);
+		alg.loadInstance(dir, line, 5);
+		alg.removeDPT(DPTs);
+		try {
+			Solution s = alg.greedl(BSS);
+			sols.push_back(s);
+			for (auto i : s.inf) {
+				infs.insert(i);
+			}
+		}
+		catch (PermutationInf& e) {
+			ok = false;
+			count++;
+		}
+		catch (exception& e) {
+			ok = false;
+			count++;
+		}
+		qt++;
+	}
+
+	set<string> BSSs;
+	for (auto sol : sols) {
+		for (auto route : sol.routes) {
+			for (auto v : route) {
+				if (v.n.type == "f") {
+					BSSs.insert(v.n.id);
+				}
+			}
+		}
+	}
+
+	int freq = 0;
+	for (auto i : BSSs) {
+		for (auto j : this->stFreq) {
+			if (i == j.first) {
+				freq += j.second;
+				break;
+			}
+		}
+	}
+	//cout << "freq: " << freq << endl;
+	if (BSSs.size() == 0) {
+		//cout << "fuck\n";
+	}
+	/*
+	if (ok == true && infs.size() == 0) {
+		infs.clear();
+		return { (float(BSSs.size()) / float(freq)), 0 };
+	}
+	else {
+		if (freq != 0) {
+			return { float(float(BSSs.size() + 2 * count + 2 * infs.size()) / float(freq)), float(infs.size() + count) };
+		}
+		else {
+			return { float(INT_MAX), float(INT_MAX) };
+		}
+	}
+	return { float(INT_MAX), float(INT_MAX) };
+	*/
+	if (ok == true && infs.size() == 0) {
+		infs.clear();
+		return { float(BSSs.size()), 0 };
+	}
+	else {
+		return { float(BSSs.size() + 2 * count + 2 * infs.size()), float(infs.size() + count) };
+		if (count == qt) {
+			return { float(INT_MAX), float(INT_MAX) };
+		}
+		else {
+			return { float(BSSs.size() + 2 * count + 2 * infs.size()), float(infs.size() + count) };
+		}
+	}
+	return { float(INT_MAX), float(INT_MAX) };
+
+}
+
 vector<string> lrp_opt::chooseBSS(int p, set<string> cities, map<pair<string, string>, float> dists, map<string, int> stFreq)
 {
 	//int p = 70;
-	int n = floor(stFreq.size() * (float(p) / 100.0));
+	int n = (stFreq.size() * (float(p) / 100.0));
+	if (n == 0) {
+		n = 1;
+	}
+
 	vector<string> choosenCities;
 
 	// store the map stFreq in a vector so it can be sorted by the frequency
@@ -209,72 +519,6 @@ vector<string> lrp_opt::chooseBSS(int p, set<string> cities, map<pair<string, st
 	}
 
 	return choosenCities;
-}
-
-vector<string> lrp_opt::chooseBSS_GA()
-{
-	
-	cout << "BRKGA\n";
-	const unsigned n = stFreq.size(); // Size of chromosomes;
-	const unsigned p = 20; // Size of population;
-	const double pe = 0.20; // Fraction of population to be the elite-set
-	const double pm = 0.10; // Fraction of population to be replaced by mutants
-	const double rhoe = 0.70; // Probability offspring inherits elite parent allele
-	const unsigned K = 3; // Number of independent populations
-	const unsigned MAXT = 1; // Number of threads for parallel decoding
-
-	vector<string> aux;
-	for (auto i : stFreq) {
-		aux.push_back(i.first);
-	}
-	Decoder decoder(this->dir, aux); // Initialize decoder
-
-	const long unsigned rngSeed = time(0); // Seed random number generator
-	MTRand rng(rngSeed); // Initialize random number generator
-
-	// Initialize BRKGA-based heuristic
-	BRKGA<Decoder, MTRand> algorithm(n, p, pe, pm, rhoe, decoder, rng, K, MAXT);
-
-	unsigned generation = 1; // Current generation
-	const unsigned X_INTVL = 10; // Exchange best individuals every 100 generations
-	const unsigned X_NUMBER = 2; // Exchange top 2 best
-	const unsigned MAX_GENS = 5; // Run for 1000 generations
-	const unsigned MAX_GENS_NO_IMPROVE = 5; // Run for 1000 generations
-	
-	// Iterations of the algorithm ...
-	float bestFitness = algorithm.getBestFitness();
-	int it = 0;
-	int gen = 1;
-	cout << "Initial objective value = " << algorithm.getBestFitness() << endl;
-	do {
-		cout << "generation: " << generation << endl;
-
-		algorithm.evolve(); // Evolve the population for one generation
-		if ((++generation) % X_INTVL == 0) {
-			algorithm.exchangeElite(X_NUMBER); // Exchange top individuals
-		}
-		
-		if (algorithm.getBestFitness() < bestFitness) {
-			bestFitness = algorithm.getBestFitness();
-			it = 0;
-		}
-		else {
-			it++;
-		}
-
-		cout << "Best solution found so far has objective value = " << algorithm.getBestFitness() << endl;
-		gen++;
-	} 
-	//while (gen < MAX_GENS);
-	while (it < MAX_GENS_NO_IMPROVE);
-	cout << "Best solution found has objective value = " << algorithm.getBestFitness() << endl;
-	auto best = algorithm.getBestChromosome();
-
-	vector<string> BSS = decoder.getBSS(best);
-	
-	return BSS;
-
-	return vector<string>();
 }
 
 vector<string> lrp_opt::chooseBSS_BRKGA()
@@ -442,7 +686,7 @@ vector<Solution> lrp_opt::vns(string dir1, string output)
 		alg.loadInstance(dir1, line, 5);
 		//alg.printInstance();
 		alg.setOutputDir(output);
-		Solution s = alg.VNS(25, 1200);
+		Solution s = alg.VNS(25, 600);
 		sols.push_back(s);
 		///////////////////
 		this->numc = alg.inst->numC;
@@ -560,7 +804,7 @@ vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, 
 		alg.loadInstance(dir1, line, 5);
 		//alg.printInstance();
 		alg.setOutputDir(output);
-		Solution s = alg.VNSL(BSSs, DPTs, 25, 1200);
+		Solution s = alg.VNSL(BSSs, DPTs, 25, 600);
 		sols.push_back(s);
 		///////////////////
 
@@ -597,6 +841,30 @@ vector<Solution> lrp_opt::vnsl(string dir1, string output, vector<string> BSSs, 
 	all.close();
 
 	return sols;
+}
+
+void lrp_opt::loadAlgs()
+{
+	fstream all;
+	string dir = this->dir + region + "/" + to_string(pct) + "/";
+	all.open(dir + "all.txt", ios::in);
+	if (all.is_open() == false) {
+		throw runtime_error("Could not open file all.txt");
+	}
+	string line;
+	vector<perm_rep> aux;
+	while (getline(all, line)) {
+		files.push_back(line);
+		aux.resize(aux.size() + 1);
+		aux.back().loadInstance(dir, line, 5);
+		//alg->loadInstance(dir, line, 5);
+		//aux.push_back(alg);
+	}
+	all.close();
+	algs = aux;
+	//algs.push_back(alg);
+
+	return;
 }
 
 lrp_opt::lrp_opt(string dir, string regionName, int pct)
@@ -690,10 +958,8 @@ lrp_opt::lrp_opt(string regionName, int pct, string dir, map<string, int> stFreq
 	file.close();
 }
 
-bool lrp_opt::opt()
+bool lrp_opt::opt(int op)
 {
-	
-
 	this->dirOutput = dir + "output/" + this->date + "/";
 	boost::filesystem::create_directory(this->dirOutput + region + "/");
 	boost::filesystem::create_directory(this->dirOutput + region + "/" + to_string(pct) + "/");
@@ -715,8 +981,7 @@ bool lrp_opt::opt()
 	this->avgVNSl_b = 0;
 
 	for (int i = 0; i < n; i++) {
-		auto start = std::chrono::high_resolution_clock::now();
-		
+		auto start = std::chrono::high_resolution_clock::now();		
 
 		boost::filesystem::create_directory(this->dirOutput + region + "/" + to_string(pct) + "/" + to_string(i) + "/");
 
@@ -734,14 +999,28 @@ bool lrp_opt::opt()
 		this->stFreq = perm_rep::getBSSFreq(sols);
 		this->dpFreq = perm_rep::getDepotFreq(sols);
 
+		this->vstFreq.clear();
+		for (auto i : stFreq) {
+			this->vstFreq.push_back({ i.first, i.second });
+		}
+		sort(this->vstFreq.begin(), this->vstFreq.end(), [](pair<string, int> a, pair<string, int> b) -> bool {return a.second > b.second; });
+
 		//string citiesfile = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/alto_paranaiba/alto_paranaiba.txt";
 		//string dmfile = "D:/Victor/Pos-Graduacao/UFV/Research/Instances/brelrp/";
 
 		//lrp_opt m(region, pct, dir, freq, freqD);
 		//vector<string> BSSs = m.opt_brkga();	
 
-		this->usedpct = opt_bss();
-		//opt_brkga();
+		this->dirBRKGA = dir2;
+		if (op == 1) {
+			this->usedpct = opt_bss();
+		}
+		else if (op == 2) {
+			opt_SA();
+		}
+
+		//opt_brkga();		
+		//opt_ILS();
 
 		vector<string> DPTs = this->DPTs;
 		vector<string> BSSs = this->BSSs;
@@ -752,6 +1031,9 @@ bool lrp_opt::opt()
 		for (auto i : BSSs) {
 			cout << i << endl;
 		}
+
+		//int c;
+		//cin >> c;
 
 		vector<Solution> sols2 = vnsl(dir2, dirOutput, BSSs, DPTs);
 		auto tcost2_a = totalCost(sols2, "", false);
@@ -780,7 +1062,7 @@ bool lrp_opt::opt()
 
 int lrp_opt::opt_bss()
 {
-	int startpct = 70;
+	int startpct = 5; // 5;
 	bool inf = false;
 
 	vector<string> DPTs;
@@ -818,7 +1100,6 @@ int lrp_opt::opt_bss()
 			perm_rep alg;
 			alg.loadInstance(dir, line, 5);	
 
-
 			alg.removeDPT(DPTs);
 			try {
 				Solution s = alg.greedl(BSS);
@@ -853,13 +1134,652 @@ int lrp_opt::opt_bss()
 		if (ok == true && inf == false) {
 
 			this->BSSs = BSS;
+			this->sols = sols;
+			cout << i << endl;
 			return i;
 		}
 		
 	}
 }
 
-vector<string> lrp_opt::opt_brkga()
+int lrp_opt::opt_brkga()
 {
-	return chooseBSS_GA();
+	cout << "BRKGA\n";
+	const unsigned n = stFreq.size(); // Size of chromosomes;
+	const unsigned p = 10; // Size of population;
+	const double pe = 0.20; // Fraction of population to be the elite-set
+	const double pm = 0.10; // Fraction of population to be replaced by mutants
+	const double rhoe = 0.70; // Probability offspring inherits elite parent allele
+	const unsigned K = 3; // Number of independent populations
+	const unsigned MAXT = 4; // Number of threads for parallel decoding
+	const unsigned X_INTVL = 10; // Exchange best individuals every 100 generations
+	const unsigned X_NUMBER = 2; // Exchange top 2 best
+	const unsigned MAX_GENS = 5; // Run for 1000 generations
+	const unsigned MAX_GENS_NO_IMPROVE = 20; // Run for 1000 generations
+
+	vector<string> aux;
+	for (auto i : stFreq) {
+		aux.push_back(i.first);
+	}
+	Decoder decoder(this->dirBRKGA, aux); // Initialize decoder
+
+	const long unsigned rngSeed = time(0); // Seed random number generator
+	MTRand rng(rngSeed); // Initialize random number generator
+
+	// Initialize BRKGA-based heuristic
+	BRKGA<Decoder, MTRand> algorithm(n, p, pe, pm, rhoe, decoder, rng, K, MAXT);
+
+	// Iterations of the algorithm ...
+	unsigned generation = 1; // Current generation
+	float bestFitness = algorithm.getBestFitness();
+	int it = 0;
+	cout << "Initial objective value = " << algorithm.getBestFitness() << endl;
+	do {
+		cout << "generation: " << generation << endl;
+
+		algorithm.evolve(); // Evolve the population for one generation
+		//if ((++generation) % X_INTVL == 0) {
+		//	algorithm.exchangeElite(X_NUMBER); // Exchange top individuals
+		//}
+
+		if (algorithm.getBestFitness() < bestFitness) {
+			bestFitness = algorithm.getBestFitness();
+			it = 0;
+		}
+		else {
+			it++;
+		}
+
+		cout << "Best solution found so far has objective value = " << algorithm.getBestFitness() << endl;
+		generation++;
+	}
+	//while (gen < MAX_GENS);
+	while (it < MAX_GENS_NO_IMPROVE);
+	cout << "Best solution found has objective value = " << algorithm.getBestFitness() << endl;
+	auto best = algorithm.getBestChromosome();
+
+	vector<string> BSS = decoder.getBSS(best);
+
+	this->BSSs = BSS;
+	return true;
+}
+
+pair<vector<bool>, pair<float, float>> lrp_opt::opt_HD(vector<bool> sol_, float s_Value)
+{
+	vector<bool> b = sol_;
+	float b_Value = s_Value;
+	int b_Ret = 0;
+	bool improvement = true;
+	while (improvement == true) {
+		improvement = false;
+		for (int i = 0; i < sol_.size(); i++) {
+			vector<bool> s = sol_;
+			s.at(i) = (s.at(i) == true) ? false : true;
+
+			vector<string> B;
+			for (int i = 0; i < s.size(); i++) {
+				if (s.at(i) == true) {
+					B.push_back(this->vstFreq.at(i).first);
+				}
+			}
+
+			vector<float> ret;// = evalBSS(B);
+			//auto ret = evalCost(B);
+			if (EVALOPTION == 1) {
+				ret = evalBSS(B);
+			}
+			else if (EVALOPTION == 2) {
+				ret = evalCost(B);
+			}
+			else if (EVALOPTION == 3) {
+				ret = evalCost4P(B);
+			}
+
+			if (ret.size() > 0) {
+				float s_Value_ = int(ret.at(0));
+				float inf_ = ret.at(1);
+				
+				if (s_Value_ < b_Value && inf_ == 0) {
+					//cout << s_Value_ << " - " << b_Value << endl;
+					b_Value = s_Value_;
+					b = s;
+					b_Ret = inf_;
+					improvement = true;
+					break;
+				}
+			}
+		}
+		sol_ = b;
+		s_Value = b_Value;
+	}
+	if (b_Value < 0) {
+		b_Value *= -1;
+	}
+	return { b, {b_Value, b_Ret} };
+}
+
+int lrp_opt::opt_SA()
+{
+	cout << "SA\n";
+	//int evaloption = 1;
+
+	// sort BSSs by frequency
+	//vector<pair<string, int>> BSSs;
+	//for (auto i : stFreq) {
+	//	this->vstFreq.push_back({ i.first, i.second });
+	//}
+	//sort(this->vstFreq.begin(), this->vstFreq.end(), [](pair<string, int> a, pair<string, int> b) -> bool {return a.second > b.second; });
+	
+	// create boolean vector to represent the solution
+	vector<bool> sol;
+	sol.resize(this->vstFreq.size(), false);
+	
+	// generate greed initial solution
+	opt_bss();
+	for (auto i : this->BSSs) {
+		int pos = 0;
+		for (auto j : this->vstFreq) {
+			if (i == j.first) {
+				sol.at(pos) = true;
+				break;
+			}
+			pos++;
+		}
+	}
+	int cost = 0;
+	
+	if (EVALOPTION == 1) {
+		cost = perm_rep::totalCost(this->sols);
+	}
+	else if (EVALOPTION == 2) {
+		cost = perm_rep::totalCost(this->sols);
+	}
+	else if (EVALOPTION == 3) {
+		cost = perm_rep::totalCost4(this->sols);
+	}
+	
+
+	set<string> B;
+	for (auto sol : this->sols) {
+		for (auto route : sol.routes) {
+			for (auto v : route) {
+				if (v.n.type == "f") {
+					B.insert(v.n.id);
+				}
+			}
+		}
+	}
+
+	float bestValue = 0;
+	float sValue = 0;
+
+	vector<bool> best = sol;
+	if (EVALOPTION == 1) {
+		bestValue = B.size();
+		sValue = B.size();
+	}
+	else if (EVALOPTION == 2) {
+		bestValue = cost;
+		sValue = cost;
+	}
+	else if (EVALOPTION == 3) {
+		bestValue = cost;
+		sValue = cost;
+	}
+	
+
+
+	cout << "Initial objective value = " << cost << endl;
+
+	int iteration = 1;
+	int IT = 0;
+	int MAX_ITS_NO_IMPROVE = 5;
+	int TEMP_INIT = 1100;
+	float C_RATE = 200;
+	int TEMP_FINAL = 100;
+	int n = sol.size();
+
+	int TEMP = TEMP_INIT;
+	do {
+		cout << "temp: " << TEMP << endl;
+
+		IT = 1;
+		do {
+			cout << "IT: " << IT << endl;
+			auto sol_ = sol;
+			// random neighborhood
+			int index = Random::get(0, n - 1);
+			sol_.at(index) = (sol_.at(index) == true) ? false : true;
+
+			vector<string> B;
+			for (int i = 0; i < sol_.size(); i++) {
+				if (sol_.at(i) == true) {
+					B.push_back(this->vstFreq.at(i).first);
+				}
+			}
+			 
+			vector<float> ret;// = evalBSS(B);// evalBSS_teste
+			//auto ret = evalCost(B);
+			if (EVALOPTION == 1) {
+				ret = evalBSS(B);
+			}
+			else if (EVALOPTION == 2) {
+				ret = evalCost(B);
+			}
+			else if (EVALOPTION == 3) {
+				ret = evalCost4P(B);
+			}
+
+			float s_Value = 0;
+			float inf = 0;
+			if (ret.size() > 0) {
+				s_Value = int(ret.at(0));
+				inf = ret.at(1);
+			}
+			// random neighborhood end
+
+			// local search - hill descent
+			/*
+			{
+				
+				vector<bool> b = sol_;
+				float b_Value = s_Value;
+				bool improvement = true;
+				while (improvement) {
+					improvement = false;
+					for (int i = 0; i < sol_.size(); i++) {
+						vector<bool> s = sol_;
+						s.at(i) = (s.at(i) == true) ? false : true;
+
+						B.clear();
+						for (int i = 0; i < s.size(); i++) {
+							if (s.at(i) == true) {
+								B.push_back(this->vstFreq.at(i).first);
+							}
+						}
+						ret = evalBSS(B);
+
+						if (ret.size() > 0) {
+							float s_Value_ = int(ret.at(0));
+							float inf_ = ret.at(1);
+
+							if (s_Value_ < b_Value) {
+								b_Value = s_Value_;
+								b = s;
+								improvement = true;
+								break;
+							}
+						}
+					}
+					sol_ = b;
+					s_Value = b_Value;
+				}
+				
+			}
+			*/
+			auto r = opt_HD(sol_, s_Value);
+			sol_ = r.first;
+			s_Value = r.second.first;
+			inf = r.second.second;
+			// local search end
+			
+			// acceptance
+			float delta = s_Value - sValue;
+			if (delta < 0) { // accept improvement solution
+				/*
+				if (s_Value <= 0) {
+					cout << "fuck\n";
+					cout << sol_.size() << endl;
+					for (auto i : sol_) {
+						cout << i << " ";
+					}
+					cout << endl;
+				}*/
+
+				sol = sol_;
+				sValue = s_Value;
+				
+				if (s_Value < bestValue && inf == 0) {
+					cout << "Improvement found: " << bestValue << " -> " << s_Value << endl;
+					IT = 0;
+
+					best = sol_;
+					bestValue = s_Value;
+
+					for (int i = 0; i < best.size(); i++) {
+						if (best.at(i) == true) {
+							cout << this->vstFreq.at(i).first << " ";
+						}
+					}
+					cout << endl;
+				}
+			}
+			else {
+				float prob = pow(EulerConstant, ((-1 * delta) / TEMP));
+				float x = Random::get(0.0, 1.0);
+
+				//cout << "delta: " << delta << endl;
+				//cout << "TEMP : " << TEMP << endl;
+				//cout << "x    : " << x << endl;
+				//cout << "prob : " << prob << endl;
+
+				if (x < prob) {
+					sValue = s_Value;
+					sol = sol_;
+					//IT = 1;
+				}
+			}
+			// acceptance end
+
+			sol = sol_;
+			IT++;
+		} 
+		while (IT < MAX_ITS_NO_IMPROVE); // equilibrium condition
+		
+
+		
+		TEMP -= C_RATE; // update temperature
+		iteration++;
+	}
+	while (TEMP >=  TEMP_FINAL || TEMP > TEMP_INIT);
+
+	vector<string> BSS;
+	for (int i = 0; i < best.size(); i++) {
+		if (best.at(i) == true) {
+			BSS.push_back(this->vstFreq.at(i).first);
+		}
+	}
+
+	this->BSSs = BSS;
+	this->usedpct = float((float(BSS.size()) / float(this->vstFreq.size()))) * 100.0;
+	return true;
+}
+
+int lrp_opt::opt_ILS()
+{
+	cout << "ILS\n";
+
+	// sort BSSs by frequency
+	/*
+	vector<pair<string, int>> BSSs;
+	for (auto i : stFreq) {
+		BSSs.push_back({ i.first, i.second });
+	}
+	sort(BSSs.begin(), BSSs.end(), [](pair<string, int> a, pair<string, int> b) -> bool {return a.second > b.second; });
+	*/
+	// create boolean vector to represent the solution
+	vector<bool> sol;
+	sol.resize(this->vstFreq.size(), false);
+
+	// generate greed initial solution
+	opt_bss();
+	for (auto i : this->BSSs) {
+		int pos = 0;
+		for (auto j : this->vstFreq) {
+			if (i == j.first) {
+				sol.at(pos) = true;
+				break;
+			}
+			pos++;
+		}
+	}
+	int cost = perm_rep::totalCost(this->sols);
+
+	set<string> B;
+	for (auto sol : this->sols) {
+		for (auto route : sol.routes) {
+			for (auto v : route) {
+				if (v.n.type == "f") {
+					B.insert(v.n.id);
+				}
+			}
+		}
+	}
+
+
+	vector<bool> best = sol;
+	float bestValue = B.size();
+	float sValue = B.size();
+
+
+	cout << "Initial objective value = " << cost << endl;
+
+	int IT = 0;
+	int MAX_ITS_NO_IMPROVE = 20;
+	int n = sol.size();
+
+	do {
+		cout << "IT: " << IT << endl;
+		auto sol_ = sol;
+		// random neighborhood
+		int index1 = Random::get(0, n - 1);
+		int index2 = Random::get(0, n - 1);
+		while (index1 == index2) {
+			index2 = Random::get(0, n - 1);
+		}
+		sol_.at(index1) = (sol_.at(index1) == true) ? false : true;
+		sol_.at(index2) = (sol_.at(index2) == true) ? false : true;
+
+		vector<string> B;
+		for (int i = 0; i < sol_.size(); i++) {
+			if (sol_.at(i) == true) {
+				B.push_back(this->vstFreq.at(i).first);
+			}
+		}
+
+		auto ret = evalBSS(B);
+		float s_Value = 0;
+		float inf = 0;
+		if (ret.size() > 0) {
+			s_Value = int(ret.at(0));
+			inf = ret.at(1);
+		}
+		// random neighborhood end
+
+		// local search - hill descent
+		/*
+		{
+			vector<bool> b = sol_;
+			float b_Value = s_Value;
+			bool improvement = true;
+			while (improvement) {
+				improvement = false;
+				for (int i = 0; i < sol_.size(); i++) {
+					vector<bool> s = sol_;
+					s.at(i) = (s.at(i) == true) ? false : true;
+
+					B.clear();
+					for (int i = 0; i < s.size(); i++) {
+						if (s.at(i) == true) {
+							B.push_back(BSSs.at(i).first);
+						}
+					}
+					ret = evalBSS(B);
+
+					if (ret.size() > 0) {
+						float s_Value_ = int(ret.at(0));
+						float inf_ = ret.at(1);
+
+						if (s_Value_ < b_Value) {
+							b_Value = s_Value_;
+							b = s;
+							improvement = true;
+							break;
+						}
+					}
+				}
+				sol_ = b;
+				s_Value = b_Value;
+			}
+		}
+		*/
+		auto r = opt_HD(sol_, s_Value);
+		sol_ = r.first;
+		s_Value = r.second.first;
+		inf = r.second.second;
+		// local search end
+
+
+		// acceptance
+		if (s_Value < bestValue && inf == 0) {
+			cout << "Improvement found: " << bestValue << " -> " << s_Value << endl;
+			IT = -1;
+
+			best = sol_;
+			bestValue = s_Value;
+
+			for (int i = 0; i < best.size(); i++) {
+				if (best.at(i) == true) {
+					cout << this->vstFreq.at(i).first << " ";
+				}
+			}
+			cout << endl;
+		}
+
+		// acceptance end
+
+		sol = sol_;
+		IT++;
+
+	} while (IT < MAX_ITS_NO_IMPROVE);
+
+	vector<string> BSS;
+
+	for (int i = 0; i < best.size(); i++) {
+		if (best.at(i) == true) {
+			BSS.push_back(this->vstFreq.at(i).first);
+		}
+	}
+
+	this->BSSs = BSS;
+	this->usedpct = float((float(BSS.size()) / float(BSSs.size()))) * 100.0;
+	return true;
+}
+
+int lrp_opt::opt_VNS()
+{
+	cout << "VNS\n";
+
+	// sort BSSs by frequency
+	vector<pair<string, int>> BSSs;
+	for (auto i : stFreq) {
+		BSSs.push_back({ i.first, i.second });
+	}
+	sort(BSSs.begin(), BSSs.end(), [](pair<string, int> a, pair<string, int> b) -> bool {return a.second > b.second; });
+
+	// create boolean vector to represent the solution
+	vector<bool> sol;
+	sol.resize(BSSs.size(), false);
+
+	// generate greed initial solution
+	opt_bss();
+	for (auto i : this->BSSs) {
+		int pos = 0;
+		for (auto j : BSSs) {
+			if (i == j.first) {
+				sol.at(pos) = true;
+				break;
+			}
+			pos++;
+		}
+	}
+	int cost = perm_rep::totalCost(this->sols);
+
+	set<string> B;
+	for (auto sol : this->sols) {
+		for (auto route : sol.routes) {
+			for (auto v : route) {
+				if (v.n.type == "f") {
+					B.insert(v.n.id);
+				}
+			}
+		}
+	}
+
+
+	vector<bool> best = sol;
+	float bestValue = B.size();
+	float sValue = B.size();
+
+
+	cout << "Initial objective value = " << cost << endl;
+
+	int IT = 0;
+	int MAX_ITS_NO_IMPROVE = 20;
+	int n = sol.size();
+	int K = n * 0.2;
+
+	do {
+		cout << "IT: " << IT << endl;
+		auto sol_ = sol;
+		while (true) {		
+			
+			
+			// random neighborhood
+			int index1 = Random::get(0, n - 1);
+			int index2 = Random::get(0, n - 1);
+			while (index1 == index2) {
+				index2 = Random::get(0, n - 1);
+			}
+			sol_.at(index1) = (sol_.at(index1) == true) ? false : true;
+			sol_.at(index2) = (sol_.at(index2) == true) ? false : true;
+
+			vector<string> B;
+			for (int i = 0; i < sol_.size(); i++) {
+				if (sol_.at(i) == true) {
+					B.push_back(BSSs.at(i).first);
+				}
+			}
+
+			auto ret = evalBSS(B);
+			float s_Value = 0;
+			float inf = 0;
+			if (ret.size() > 0) {
+				s_Value = int(ret.at(0));
+				inf = ret.at(1);
+			}
+			// random neighborhood end
+
+			// local search - hill descent
+			auto r = opt_HD(sol_, s_Value);
+			sol_ = r.first;
+			s_Value = r.second.first;
+			inf = r.second.second;
+			// local search end
+
+
+			// acceptance
+			if (s_Value < bestValue && inf == 0) {
+				cout << "Improvement found: " << bestValue << " -> " << s_Value << endl;
+				IT = -1;
+
+				best = sol_;
+				bestValue = s_Value;
+
+				for (int i = 0; i < best.size(); i++) {
+					if (best.at(i) == true) {
+						cout << BSSs.at(i).first << " ";
+					}
+				}
+				cout << endl;
+			}
+		}
+		// acceptance end
+
+		sol = sol_;
+		IT++;
+
+	} while (IT < MAX_ITS_NO_IMPROVE);
+
+	vector<string> BSS;
+
+	for (int i = 0; i < best.size(); i++) {
+		if (best.at(i) == true) {
+			BSS.push_back(BSSs.at(i).first);
+		}
+	}
+
+	this->BSSs = BSS;
+	this->usedpct = float((float(BSS.size()) / float(BSSs.size()))) * 100.0;
+	return true;
 }
